@@ -1,26 +1,7 @@
 // app/api/user/route.ts
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { RowDataPacket } from 'mysql2';
 
-// 1. Create a SafeUser type excluding password
-// interface User extends RowDataPacket {
-//   user_id: number;
-//   name: string;
-//   user_category_id: number;
-//   username: string;
-//   password: string;
-//   contact_no: string;
-//   address: string;
-//   taluka_id: number;
-//   village_id: number;
-//   status: string;
-//   created_at: Date;
-//   updated_at: Date;
-// }
-
-// 2. Define type-safe return structure
-interface SafeUser extends Omit<any, 'password'> {}
 
 export async function GET() {
   let connection;
@@ -44,7 +25,7 @@ export async function GET() {
     `);
 
     // 3. Type-safe mapping
-    const safeUsers: SafeUser[] = rows.map(({ password: _, ...user }) => user);
+    const safeUsers = rows.map(({  ...user }) => user);
 
 
     return NextResponse.json(safeUsers);

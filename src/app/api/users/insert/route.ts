@@ -23,9 +23,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const connection = await pool.getConnection();
+    // Database operation
     try {
-      const [result] = await connection.query(
+      const [result] = await pool.query(
         `INSERT INTO users (
           name,
           user_category_id,
@@ -54,18 +54,21 @@ export async function POST(request: Request) {
         success: true,
         userId: (result as any).insertId
       });
-    } finally {
-      connection.release();
+    } catch (error) {
+      console.error('Database error:', error);
+      return NextResponse.json(
+        { error: 'Internal Server Error' },
+        { status: 500 }
+      );
     }
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('Request parsing error:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
+      { error: 'Invalid request format' },
+      { status: 400 }
     );
   }
 }
-
 export async function GET() {
   try {
     const connection = await pool.getConnection();

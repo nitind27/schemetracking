@@ -1,224 +1,160 @@
-import React from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from "../ui/table";
+"use client"
+import React, { useState, useMemo } from "react";
+import { Column, FilterOption } from "./tabletype";
+import FormInModal from "../example/ModalExample/FormInModal";
 
-import Badge from "../ui/badge/Badge";
-import Image from "next/image";
+type Props<T> = {
+  data: T[];
+  columns: Column<T>[];
+  filterOptions?: FilterOption[];
+  filterKey?: keyof T;
+  inputfiled?: React.ReactNode;
+  submitbutton?: React.ReactNode;
+  title?: string;
+  searchKey?: keyof T;
+  rowsPerPage?: number;
 
-interface Order {
-  id: number;
-  user: {
-    image: string;
-    name: string;
-    role: string;
-  };
-  projectName: string;
-  team: {
-    images: string[];
-  };
-  status: string;
-  budget: string;
-}
+};
 
-// Define the table data using the interface
-const tableData: Order[] = [
-  {
-    id: 1,
-    user: {
-      image: "/images/user/user-17.jpg",
-      name: "Lindsey Curtis",
-      role: "Web Designer",
-    },
-    projectName: "Agency Website",
-    team: {
-      images: [
-        "/images/user/user-22.jpg",
-        "/images/user/user-23.jpg",
-        "/images/user/user-24.jpg",
-      ],
-    },
-    budget: "3.9K",
-    status: "Active",
-  },
-  {
-    id: 2,
-    user: {
-      image: "/images/user/user-18.jpg",
-      name: "Kaiya George",
-      role: "Project Manager",
-    },
-    projectName: "Technology",
-    team: {
-      images: ["/images/user/user-25.jpg", "/images/user/user-26.jpg"],
-    },
-    budget: "24.9K",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    user: {
-      image: "/images/user/user-17.jpg",
-      name: "Zain Geidt",
-      role: "Content Writing",
-    },
-    projectName: "Blog Writing",
-    team: {
-      images: ["/images/user/user-27.jpg"],
-    },
-    budget: "12.7K",
-    status: "Active",
-  },
-  {
-    id: 4,
-    user: {
-      image: "/images/user/user-20.jpg",
-      name: "Abram Schleifer",
-      role: "Digital Marketer",
-    },
-    projectName: "Social Media",
-    team: {
-      images: [
-        "/images/user/user-28.jpg",
-        "/images/user/user-29.jpg",
-        "/images/user/user-30.jpg",
-      ],
-    },
-    budget: "2.8K",
-    status: "Cancel",
-  },
-  {
-    id: 5,
-    user: {
-      image: "/images/user/user-21.jpg",
-      name: "Carla George",
-      role: "Front-end Developer",
-    },
-    projectName: "Website",
-    team: {
-      images: [
-        "/images/user/user-31.jpg",
-        "/images/user/user-32.jpg",
-        "/images/user/user-33.jpg",
-      ],
-    },
-    budget: "4.5K",
-    status: "Active",
-  },
-];
+export function ReusableTable<T extends object>({
+  data,
+  columns,
+  filterOptions = [],
+  filterKey,
+  searchKey,
+  title,
+  submitbutton,
+  inputfiled,
+ 
+  rowsPerPage = 5,
+}: Props<T>) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("");
+  const [page, setPage] = useState(1);
 
-export default function BasicTableOne() {
+  // Filtered and searched data
+  const filteredData = useMemo(() => {
+    let d = [...data];
+    if (filter && filterKey) {
+      d = d.filter((row) => String(row[filterKey]) === filter);
+    }
+    if (search && searchKey) {
+      d = d.filter((row) =>
+        String(row[searchKey]).toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    return d;
+  }, [data, filter, filterKey, search, searchKey]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  const paginatedData = filteredData.slice(
+    (page - 1) * rowsPerPage,
+    page * rowsPerPage
+  );
+
+  // Handlers
+  const handlePrev = () => setPage((p) => Math.max(1, p - 1));
+  const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [filter, search]);
+
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-      <div className="max-w-full overflow-x-auto">
-        <div className="min-w-[1102px]">
-          <Table>
-            {/* Table Header */}
-            <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-              <TableRow>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  User
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  Project Name
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  Team
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  Status
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  Budget
-                </TableCell>
-              </TableRow>
-            </TableHeader>
-
-            {/* Table Body */}
-            <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-              {tableData.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="px-5 py-4 sm:px-6 text-start">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 overflow-hidden rounded-full">
-                        <Image
-                          width={40}
-                          height={40}
-                          src={order.user.image}
-                          alt={order.user.name}
-                        />
-                      </div>
-                      <div>
-                        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                          {order.user.name}
-                        </span>
-                        <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                          {order.user.role}
-                        </span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {order.projectName}
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    <div className="flex -space-x-2">
-                      {order.team.images.map((teamImage, index) => (
-                        <div
-                          key={index}
-                          className="w-6 h-6 overflow-hidden border-2 border-white rounded-full dark:border-gray-900"
-                        >
-                          <Image
-                            width={24}
-                            height={24}
-                            src={teamImage}
-                            alt={`Team member ${index + 1}`}
-                            className="w-full"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    <Badge
-                      size="sm"
-                      color={
-                        order.status === "Active"
-                          ? "success"
-                          : order.status === "Pending"
-                          ? "warning"
-                          : "error"
-                      }
-                    >
-                      {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                    {order.budget}
-                  </TableCell>
-                </TableRow>
+    <div className="p-4 bg-white rounded shadow w-full">
+      <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 flex-1">
+          {filterOptions.length > 0 && filterKey && (
+            <select
+              className="border rounded px-2 py-1"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <option value="">All</option>
+              {filterOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
-            </TableBody>
-          </Table>
+            </select>
+          )}
+          {searchKey && (
+            <input
+              type="text"
+              placeholder="Search..."
+              className="border rounded px-2 py-1 flex-1"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          )}
+        </div>
+
+        <div className="ml-auto">
+          <FormInModal inputfiled={inputfiled} title={title} submitbutton={submitbutton} />
+        </div>
+      </div>
+
+      <table className="min-w-full border">
+        <thead>
+          <tr>
+            {/* Add SR Number column header */}
+            <th className="border px-2 py-1 text-left">SR No.</th>
+            {columns.map((col) => (
+              <th key={String(col.key)} className="border px-2 py-1 text-left">
+                {col.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {paginatedData.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length + 1} className="text-center py-4">
+                No data found.
+              </td>
+            </tr>
+          ) : (
+            paginatedData.map((row, idx) => (
+              <tr key={idx}>
+                {/* Add SR Number cell */}
+                <td className="border px-2 py-1">
+                  {idx + 1}
+                </td>
+                {columns.map((col) => (
+                  <td key={`${String(col.key)}-${idx}`} className="border px-2 py-1">
+                    {col.render
+                      ? col.render(row)
+                      : col.accessor
+                        ? String(row[col.accessor])
+                        : null}
+                  </td>
+                ))}
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+
+      <div className="flex items-center justify-between mt-4">
+        <span>
+          Page {page} of {totalPages || 1}
+        </span>
+        <div className="flex gap-2">
+          <button
+            className="px-3 py-1 border rounded disabled:opacity-50"
+            disabled={page === 1}
+            onClick={handlePrev}
+          >
+            Previous
+          </button>
+          <button
+            className="px-3 py-1 border rounded disabled:opacity-50"
+            disabled={page === totalPages || totalPages === 0}
+            onClick={handleNext}
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

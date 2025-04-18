@@ -1,238 +1,336 @@
-"use client"
-import React, { useState } from 'react';
+"use client";
 
+import { useEffect, useState } from 'react';
 
-import { RowDataPacket } from "mysql2";
+import Label from "../form/Label";
+import { ReusableTable } from "../tables/BasicTableOne";
+import { Column } from "../tables/tabletype";
+import Button from "../ui/button/Button";
 
-interface User extends RowDataPacket {
-  user_id: number;
-  name: string;
-  user_category_id: number;
-  username: string;
-  password: string;
-  contact_no: string;
-  address: string;
-  taluka_id: number;
-  village_id: number;
-  status: string;
-  created_at: Date;
-  updated_at: Date;
-}
+import { toast } from 'react-toastify';
+
+import { UserData } from './Userdata';
+
 const Usersdatas = () => {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [formData, setFormData] = useState({
-    name: '',
-    user_category_id: '',
-    username: '',
-    password: '',
-    contact_no: '',
-    address: '',
-    taluka_id: '',
-    village_id: '',
-    status: 'active'
-  });
+  const [data, setData] = useState<UserData[]>([]);
 
-  const fetchUsers = async () => {
+  const [usercategory, setUsercategory] = useState('');
+  const [shemeyear, setSchemeyear] = useState('');
+  const [name, setName] = useState('');
+  const [Contact, setContact] = useState('');
+  const [Username, setUsername] = useState('');
+  const [Password, setPassword] = useState('');
+  const [address, setaddress] = useState('');
+  const [Taluka, setTaluka] = useState('');
+  const [Village, setVillage] = useState('');
+  const [editId, setEditId] = useState<number | null>(null);
+
+  const fetchData = async () => {
     try {
       const response = await fetch('/api/users');
-      const data = await response.json();
-      setUsers(data);
+      const result = await response.json();
+      setData(result);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error fetching data:', error);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+
+  const handleSave = async () => {
+
+    const apiUrl = editId ? `/api/users/insert` : '/api/users/insert';
+    const method = editId ? 'PUT' : 'POST';
+
     try {
-      const response = await fetch('/api/users/insert', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      const response = await fetch(apiUrl, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+
+          name: name,
+          user_category_id: usercategory,
+          username: Username,
+          password: Password,
+          contact_no: Contact,
+          address: address,
+          taluka_id: Taluka,
+          village_id: Village,
+          status: "Active"
+
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      toast.success(editId
+        ? 'Category updated successfully!'
+        : 'Category created successfully!');
+
+   
+      setEditId(null);
+      fetchData();
+
+    } catch (error) {
+      console.error('Error saving category:', error);
+      toast.error(editId
+        ? 'Failed to update category. Please try again.'
+        : 'Failed to create category. Please try again.');
+    }
+  };
+
+
+  const handleDelete = async (id: number) => {
+    try {
+      const response = await fetch('/api/usercategorycrud', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id : id })
       });
 
       if (response.ok) {
-        setModalVisible(false);
-        setFormData({
-          name: '',
-          user_category_id: '',
-          username: '',
-          password: '',
-          contact_no: '',
-          address: '',
-          taluka_id: '',
-          village_id: '',
-          status: 'active'
-        });
-        fetchUsers();
+        fetchData();
       }
     } catch (error) {
-      console.error('Error inserting user:', error);
+      console.error('Error deleting category:', error);
     }
   };
 
-  React.useEffect(() => {
-    fetchUsers();
-  }, []);
+  const handleEdit = (item: UserData) => {
+    console.log(item)
+    // setInputValue(item.category_name);
+    // setEditId(item.user_category_id);
+  };
+
+  const columns: Column<UserData>[] = [
+
+    {
+      key: 'name',
+      label: 'Name',
+      accessor: 'name',
+      render: (data) => <span>{data.name}</span>
+    },
+    {
+      key: 'user_category_id',
+      label: 'User Category',
+      accessor: 'user_category_id',
+      render: (data) => <span>{data.user_category_id}</span>
+    },
+    {
+      key: 'username',
+      label: 'User Name',
+      accessor: 'username',
+      render: (data) => <span>{data.username}</span>
+    },
+    {
+      key: 'password',
+      label: 'Password',
+      accessor: 'password',
+      render: (data) => <span>{data.password}</span>
+    },
+    {
+      key: 'contact_no',
+      label: 'Contact No',
+      accessor: 'contact_no',
+      render: (data) => <span>{data.contact_no}</span>
+    },
+    {
+      key: 'address',
+      label: 'Address',
+      accessor: 'address',
+      render: (data) => <span>{data.address}</span>
+    },
+    {
+      key: 'taluka_id',
+      label: 'Taluka',
+      accessor: 'taluka_id',
+      render: (data) => <span>{data.taluka_id}</span>
+    },
+    {
+      key: 'village_id',
+      label: 'Village',
+      accessor: 'village_id',
+      render: (data) => <span>{data.village_id}</span>
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      accessor: 'status',
+      render: (data) => <span>{data.status}</span>
+    },
+    {
+      key: 'taluka_id',
+      label: 'Taluka',
+      accessor: 'taluka_id',
+      render: (data) => <span>{data.taluka_id}</span>
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (data) => (
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => handleEdit(data)}>
+            Edit
+          </Button>
+          <Button
+            size="sm"
+
+            onClick={() => handleDelete(data.user_id)}
+          >
+            Delete
+          </Button>
+        </div>
+      )
+    }
+  ];
 
   return (
-    <div className="container mx-auto p-4">
-      <button 
-        onClick={() => setModalVisible(true)}
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-      >
-        Add User
-      </button>
+    <div className="p-4">
 
-      {modalVisible && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center ">
-          <div className="bg-white ml-96 p-6 rounded-lg w-[750px] max-h-[80vh] mt-16 overflow-y-auto ">
-            <h2 className="text-xl mb-4">Add New User</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block mb-1">Full Name:</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1">User Category ID:</label>
-                <input
-                  type="number"
-                  value={formData.user_category_id}
-                  onChange={(e) => setFormData({...formData, user_category_id: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1">Username:</label>
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({...formData, username: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1">Password:</label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1">Contact Number:</label>
-                <input
-                  type="tel"
-                  value={formData.contact_no}
-                  onChange={(e) => setFormData({...formData, contact_no: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1">Address:</label>
-                <textarea
-                  value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1">Taluka ID:</label>
-                <input
-                  type="number"
-                  value={formData.taluka_id}
-                  onChange={(e) => setFormData({...formData, taluka_id: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1">Village ID:</label>
-                <input
-                  type="number"
-                  value={formData.village_id}
-                  onChange={(e) => setFormData({...formData, village_id: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1">Status:</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
-                  className="w-full px-3 py-2 border rounded"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setModalVisible(false)}
-                  className="bg-gray-500 text-white px-4 py-2 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded"
-                >
-                  Submit
-                </button>
-              </div>
-            </form>
+      <ReusableTable
+        data={data}
+        inputfiled={
+          <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
+            <div className="col-span-1">
+              <Label>Select Year</Label>
+              <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                onChange={(e) => setSchemeyear(e.target.value)}
+                value={shemeyear}
+              >
+                <option value="">Select Year</option>
+                <option value="2025-26">2025-26</option>
+                <option value="2024-25">2024-25</option>
+                <option value="2023-24">2023-24</option>
+                <option value="2022-23">2022-23</option>
+                <option value="2022-22">2022-22</option>
+
+              </select>
+
+            </div>
+            <div className="col-span-1">
+              <Label>Select Category</Label>
+              <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                onChange={(e) => setUsercategory(e.target.value)}
+                value={usercategory}
+              >
+                <option value="">Select Category</option>
+                <option value="2025-26">2025-26</option>
+                <option value="2024-25">2024-25</option>
+                <option value="2023-24">2023-24</option>
+                <option value="2022-23">2022-23</option>
+                <option value="2022-22">2022-22</option>
+
+              </select>
+
+            </div>
+            <div>
+              <Label>Name</Label>
+              <input
+                type="text"
+                placeholder="Enter Name"
+                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Contact</Label>
+              <input
+                type="text"
+                placeholder="Enter Contact"
+                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+
+                value={Contact}
+                onChange={(e) => setContact(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Address</Label>
+              <input
+                type="text"
+                placeholder="Enter Address"
+                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+
+                value={address}
+                onChange={(e) => setaddress(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Username</Label>
+              <input
+                type="text"
+                placeholder="Enter Username"
+                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+
+                value={Username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Password</Label>
+              <input
+                type="text"
+                placeholder="Enter Password"
+                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+
+                value={Password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Taluka</Label>
+              <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                value={Taluka}
+                onChange={(e) => setTaluka(e.target.value)}
+
+              >
+                <option value="">Select Taluka</option>
+                <option value="2025-26">2025-26</option>
+                <option value="2024-25">2024-25</option>
+                <option value="2023-24">2023-24</option>
+                <option value="2022-23">2022-23</option>
+                <option value="2022-22">2022-22</option>
+
+              </select>
+            </div>
+
+            <div>
+              <Label>Village</Label>
+              <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                value={Village}
+                onChange={(e) => setVillage(e.target.value)}
+              >
+                <option value="">Select Village</option>
+                <option value="2025-26">2025-26</option>
+                <option value="2024-25">2024-25</option>
+                <option value="2023-24">2023-24</option>
+                <option value="2022-23">2022-23</option>
+                <option value="2022-22">2022-22</option>
+
+              </select>
+            </div>
+
           </div>
-        </div>
-      )}
+        }
 
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border p-2">ID</th>
-            <th className="border p-2">Name</th>
-            <th className="border p-2">Username</th>
-            <th className="border p-2">Category</th>
-            <th className="border p-2">Contact</th>
-            <th className="border p-2">Address</th>
-            <th className="border p-2">Taluka</th>
-            <th className="border p-2">Village</th>
-            <th className="border p-2">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map(user => (
-            <tr key={user.user_id} className="hover:bg-gray-50">
-              <td className="border p-2">{user.user_id}</td>
-              <td className="border p-2">{user.name}</td>
-              <td className="border p-2">{user.username}</td>
-              <td className="border p-2">{user.user_category_id}</td>
-              <td className="border p-2">{user.contact_no}</td>
-              <td className="border p-2">{user.address}</td>
-              <td className="border p-2">{user.taluka_id}</td>
-              <td className="border p-2">{user.village_id}</td>
-              <td className="border p-2 capitalize">{user.status}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        columns={columns}
+        title="User Category"
+        filterOptions={[]}
+        // filterKey="role"
+        submitbutton={
+          <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
+            {editId ? 'Update User' : 'Save Changes'}
+          </button>
+        }
+        searchKey="username"
+        rowsPerPage={5}
+      />
     </div>
   );
 };
