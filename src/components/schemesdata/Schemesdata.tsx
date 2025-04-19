@@ -303,7 +303,7 @@ const Schemesdata = () => {
                             >
                                 <option value="">Scheme Subcategory</option>
                                 {filtersubcategory
-                                    .filter((data) => data.scheme_category_id === Number(schemecategoryid))
+                                    .filter((data) => data.scheme_category_id == Number(schemecategoryid))
                                     .map((category) => (
                                         <option key={category.scheme_sub_category_id} value={category.scheme_sub_category_id}>
                                             {category.name}
