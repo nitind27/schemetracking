@@ -4,6 +4,7 @@ import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 
+import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
 
 const AppHeader: React.FC = () => {
@@ -82,11 +83,14 @@ const AppHeader: React.FC = () => {
             {/* Cross Icon */}
           </button>
 
-          <span className="text-white text-[12px]">
+          <Link href="/" className="lg:hidden">
 
-            Scheme Tracking & Monitoring System
-          </span>
+            <span className="text-white text-[12px]">
 
+              Scheme Tracking & Monitoring System
+            </span>
+
+          </Link>
 
           <button
             onClick={toggleApplicationMenu}
