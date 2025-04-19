@@ -43,6 +43,7 @@ const Schemesdata = () => {
             document_name: string;
         }[]
     >([]);
+    console.log("filterdocument", data)
     const [filtersubcategory, setfiltersubcategory] = useState<schemesSubcategory[]>([]);
     const [filteryear, setfilteryear] = useState<schemesYear[]>([]);
     // Remove or use inputValue to fix the no-unused-vars error
@@ -192,12 +193,14 @@ const Schemesdata = () => {
         try {
             const parsedDocs = JSON.parse(item.documents);
             setdocuments(Array.isArray(parsedDocs) ? parsedDocs : []);
-          } catch (error) {
+        } catch (error) {
             console.error("Failed to parse documents:", error);
             setdocuments([]);
-          }
-      
+        }
+
     };
+// Document ID से नाम मैपिंग
+const documentMap = new Map(filterdocument.map(doc => [doc.id, doc.document_name]));
 
     const columns: Column<Schemesdatas>[] = [
         {
@@ -246,7 +249,33 @@ const Schemesdata = () => {
             key: 'documents',
             label: 'Documents',
             accessor: 'documents',
-            render: (data) => <span>{data.documents}</span>
+            render: (data) => {
+              // Case 1: Undefined/Null होने पर
+              if(!data.documents) return <span>-</span>;
+        
+              // Case 2: स्ट्रिंग को अर्रे में कन्वर्ट करें
+              let docIds: number[] = [];
+              
+              try {
+                // "[1,2,3]" जैसे स्ट्रिंग को पार्स करें
+                docIds = JSON.parse(data.documents.replace(/'/g, '"'));
+              } catch {
+                // "[1,2,3]" फॉर्मेट न होने पर कॉमा सेपरेटेड ट्रीट करें
+                docIds = data.documents
+                  .split(',')
+                  .map(part => parseInt(part.trim()))
+                  .filter(num => !isNaN(num));
+              }
+        
+              // Case 3: वैलिड डॉक्यूमेंट आईडी ढूंढें
+              const docNames = docIds
+                .map(id => documentMap.get(id))
+                .filter(Boolean);
+        
+              return docNames.length > 0 
+                ? <span>{docNames.join(', ')}</span>
+                : <span>-</span>;
+            }
         },
         {
             key: 'status',

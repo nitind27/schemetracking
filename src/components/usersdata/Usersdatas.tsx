@@ -10,12 +10,13 @@ import Button from "../ui/button/Button";
 import { toast } from 'react-toastify';
 
 import { UserData } from './Userdata';
+import { useToggleContext } from '@/context/ToggleContext';
 
 const Usersdatas = () => {
   const [data, setData] = useState<UserData[]>([]);
 
   const [usercategory, setUsercategory] = useState('');
-  const [shemeyear, setSchemeyear] = useState('');
+
   const [name, setName] = useState('');
   const [Contact, setContact] = useState('');
   const [Username, setUsername] = useState('');
@@ -24,7 +25,7 @@ const Usersdatas = () => {
   const [Taluka, setTaluka] = useState('');
   const [Village, setVillage] = useState('');
   const [editId, setEditId] = useState<number | null>(null);
-
+  const { isActive, setIsActive } = useToggleContext();
   const fetchData = async () => {
     try {
       const response = await fetch('/api/users');
@@ -72,7 +73,7 @@ const Usersdatas = () => {
         ? 'Category updated successfully!'
         : 'Category created successfully!');
 
-   
+
       setEditId(null);
       fetchData();
 
@@ -90,7 +91,7 @@ const Usersdatas = () => {
       const response = await fetch('/api/usercategorycrud', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id : id })
+        body: JSON.stringify({ user_id: id })
       });
 
       if (response.ok) {
@@ -102,9 +103,17 @@ const Usersdatas = () => {
   };
 
   const handleEdit = (item: UserData) => {
-    console.log(item)
-    // setInputValue(item.category_name);
-    // setEditId(item.user_category_id);
+    setIsActive(!isActive)
+
+    setUsercategory(item.user_category_id)
+  
+    setName(item.name)
+    setContact(item.contact_no)
+    setUsername(item.username)
+    setPassword(item.password)
+    setaddress(item.address)
+    setTaluka(item.taluka_id)
+    setVillage(item.village_id)
   };
 
   const columns: Column<UserData>[] = [
@@ -197,22 +206,7 @@ const Usersdatas = () => {
         classname={"h-[550px] overflow-y-auto scrollbar-hide"}
         inputfiled={
           <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
-            <div className="col-span-1">
-              <Label>Select Year</Label>
-              <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-                onChange={(e) => setSchemeyear(e.target.value)}
-                value={shemeyear}
-              >
-                <option value="">Select Year</option>
-                <option value="2025-26">2025-26</option>
-                <option value="2024-25">2024-25</option>
-                <option value="2023-24">2023-24</option>
-                <option value="2022-23">2022-23</option>
-                <option value="2022-22">2022-22</option>
-
-              </select>
-
-            </div>
+           
             <div className="col-span-1">
               <Label>Select Category</Label>
               <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"

@@ -9,12 +9,13 @@ import Button from "../ui/button/Button";
 import { Documents } from './documents';
 import { toast } from 'react-toastify';
 import React from 'react';
+import { useToggleContext } from '@/context/ToggleContext';
 
 const Documentsdata = () => {
     const [data, setData] = useState<Documents[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
-
+    const { isActive, setIsActive } = useToggleContext();
     const fetchData = async () => {
         try {
             const response = await fetch('/api/documents');
@@ -88,6 +89,7 @@ const Documentsdata = () => {
     };
 
     const handleEdit = (item: Documents) => {
+        setIsActive(!isActive)
         setInputValue(item.document_name);
         setEditId(item.id);
     };

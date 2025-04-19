@@ -1,9 +1,52 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import { BoxIconLine, GroupIcon } from "@/icons";
+import { UserData } from "../usersdata/Userdata";
 
 export const EcommerceMetrics = () => {
+ const [data, setData] = useState<UserData[]>([]);
+ const [dataschems, setDataschems] = useState<UserData[]>([]);
+ const [datauser, setDatausers] = useState<UserData[]>([]);
+
+  console.log("countind",data.length)
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/farmers');
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+  
+    const fetchDataschems = async () => {
+      try {
+        const response = await fetch('/api/schemescrud');
+        const result = await response.json();
+        setDataschems(result);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+  
+    const fetchDatauser = async () => {
+      try {
+        const response = await fetch('/api/users');
+        const result = await response.json();
+        setDatausers(result);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+  
+    useEffect(() => {
+      fetchData();
+      fetchDataschems();
+      fetchDatauser();
+    }, []);
+  
+  
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3  md:gap-10">
       {/* <!-- Metric Item Start --> */}
@@ -18,7 +61,7 @@ export const EcommerceMetrics = () => {
               Farmers
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              3,782
+             {data.length}
             </h4>
           </div>
         
@@ -35,7 +78,7 @@ export const EcommerceMetrics = () => {
               Schemes
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              5,359
+              {dataschems.length}
             </h4>
           </div>
 
@@ -52,7 +95,7 @@ export const EcommerceMetrics = () => {
               System Users
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              5,359
+              {datauser.length}
             </h4>
           </div>
 

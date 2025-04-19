@@ -9,12 +9,13 @@ import Button from "../ui/button/Button";
 import { Scheme_year } from './yearmaster';
 import { toast } from 'react-toastify';
 import React from 'react';
+import { useToggleContext } from '@/context/ToggleContext';
 
 const Yearmasterdata = () => {
     const [data, setData] = useState<Scheme_year[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
-
+    const { isActive, setIsActive } = useToggleContext();
     const fetchData = async () => {
         try {
             const response = await fetch('/api/yearmaster');
@@ -88,6 +89,7 @@ const Yearmasterdata = () => {
     };
 
     const handleEdit = (item: Scheme_year) => {
+        setIsActive(!isActive)
         setInputValue(item.year);
         setEditId(item.scheme_year_id);
     };
