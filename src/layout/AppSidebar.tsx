@@ -33,11 +33,11 @@ const navItems: NavItem[] = [
     path: "/usercategory",
   },
 
-  {
-    icon: <UserCircleIcon />,
-    name: "Users",
-    path: "/profile",
-  },
+  // {
+  //   icon: <UserCircleIcon />,
+  //   name: "Users",
+  //   path: "/profile",
+  // },
   {
     icon: <UserCircleIcon />,
     name: "Schemes",
@@ -55,14 +55,10 @@ const navItems: NavItem[] = [
   },
   {
     icon: <UserCircleIcon />,
-    name: "Users Data",
+    name: "Users",
     path: "/users",
   },
-  {
-    icon: <UserCircleIcon />,
-    name: "Reports",
-    path: "/profile",
-  },
+
 
 
 ];

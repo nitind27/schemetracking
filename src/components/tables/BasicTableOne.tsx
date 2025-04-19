@@ -14,7 +14,6 @@ type Props<T> = {
   searchKey?: keyof T;
   classname?: string;
   rowsPerPage?: number;
-
 };
 
 export function ReusableTable<T extends object>({
@@ -27,14 +26,12 @@ export function ReusableTable<T extends object>({
   title,
   submitbutton,
   inputfiled,
-
   rowsPerPage = 5,
 }: Props<T>) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
 
-  // Filtered and searched data
   const filteredData = useMemo(() => {
     let d = [...data];
     if (filter && filterKey) {
@@ -48,14 +45,12 @@ export function ReusableTable<T extends object>({
     return d;
   }, [data, filter, filterKey, search, searchKey]);
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const paginatedData = filteredData.slice(
     (page - 1) * rowsPerPage,
     page * rowsPerPage
   );
 
-  // Handlers
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
 
@@ -64,12 +59,13 @@ export function ReusableTable<T extends object>({
   }, [filter, search]);
 
   return (
-    <div className="p-4 bg-white rounded shadow w-full">
-      <div className="flex gap-2 mb-4">
-        <div className="flex gap-2 flex-1">
+    <div className="p-4 bg-white rounded-lg w-full max-w-[980px] mx-auto border">
+      {/* Filter/Search Section */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-2 flex-1">
           {filterOptions.length > 0 && filterKey && (
             <select
-              className="border rounded px-2 py-1"
+              className="border rounded-lg px-3 py-2 w-full md:w-auto"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             >
@@ -81,77 +77,95 @@ export function ReusableTable<T extends object>({
               ))}
             </select>
           )}
+
           {searchKey && (
             <input
               type="text"
               placeholder="Search..."
-              className="border rounded px-2 py-1 flex-1"
+              className="border rounded-lg px-3 py-2 w-full"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           )}
         </div>
 
-        <div className="ml-auto">
-          <FormInModal inputfiled={inputfiled} title={title} submitbutton={submitbutton} classname={classname} />
+        <div className="w-full md:w-auto">
+          <FormInModal 
+            inputfiled={inputfiled} 
+            title={title} 
+            submitbutton={submitbutton} 
+            classname={classname} 
+          />
         </div>
       </div>
 
-      <table className="container  border">
-        <thead>
-          <tr>
-            {/* Add SR Number column header */}
-            <th className="border px-2 py-1 text-left">SR No.</th>
-            {columns.map((col) => (
-              <th key={String(col.key)} className="border px-2 py-1 text-left">
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {paginatedData.length === 0 ? (
+      {/* Table Section */}
+      <div className="w-full overflow-x-auto rounded-lg shadow-sm">
+        <table className="w-full min-w-[600px]">
+          <thead className="bg-gray-50">
             <tr>
-              <td colSpan={columns.length + 1} className="text-center py-4">
-                No data found.
-              </td>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">SR No.</th>
+              {columns.map((col) => (
+                <th 
+                  key={String(col.key)} 
+                  className="px-4 py-3 text-left text-sm font-medium text-gray-700"
+                >
+                  {col.label}
+                </th>
+              ))}
             </tr>
-          ) : (
-            paginatedData.map((row, idx) => (
-              <tr key={idx}>
-                {/* Add SR Number cell */}
-                <td className="border px-2 py-1">
-                  {idx + 1}
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {paginatedData.length === 0 ? (
+              <tr>
+                <td 
+                  colSpan={columns.length + 1} 
+                  className="px-4 py-6 text-center text-gray-500"
+                >
+                  No records found
                 </td>
-                {columns.map((col) => (
-                  <td key={`${String(col.key)}-${idx}`} className="border px-2 py-1">
-                    {col.render
-                      ? col.render(row)
-                      : col.accessor
-                        ? String(row[col.accessor])
-                        : null}
-                  </td>
-                ))}
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              paginatedData.map((row, idx) => (
+                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 text-sm text-gray-700">
+                    {(page - 1) * rowsPerPage + idx + 1}
+                  </td>
+                  {columns.map((col) => (
+                    <td 
+                      key={`${String(col.key)}-${idx}`}
+                      className="px-4 py-3 text-sm text-gray-700"
+                    >
+                      {col.render
+                        ? col.render(row)
+                        : col.accessor
+                          ? String(row[col.accessor])
+                          : null}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      <div className="flex items-center justify-between mt-4">
-        <span>
-          Page {page} of {totalPages || 1}
-        </span>
+      {/* Pagination */}
+      <div className="flex flex-col md:flex-row items-center justify-between mt-6 gap-4">
+        <div className="text-sm text-gray-600">
+          Showing {(page - 1) * rowsPerPage + 1} - {Math.min(page * rowsPerPage, filteredData.length)} of {filteredData.length}
+        </div>
+        
         <div className="flex gap-2">
           <button
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-4 py-2 border rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
             disabled={page === 1}
             onClick={handlePrev}
           >
             Previous
           </button>
           <button
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-4 py-2 border rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
             disabled={page === totalPages || totalPages === 0}
             onClick={handleNext}
           >

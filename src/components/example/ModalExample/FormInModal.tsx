@@ -1,11 +1,12 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 
 
 import Button from "../../ui/button/Button";
 import { Modal } from "../../ui/modal";
 
 import { useModal } from "@/hooks/useModal";
+import { useToggleContext } from "@/context/ToggleContext";
 
 interface FormInModalProps {
   inputfiled: React.ReactNode;
@@ -21,9 +22,20 @@ export default function FormInModal({
   submitbutton
 }: FormInModalProps) {
   const { isOpen, openModal, closeModal } = useModal();
+    const { isActive, setIsActive } = useToggleContext();
+
+    useEffect(() => {
+      if (isActive) {
+        openModal();
+        setIsActive(false)
+      }
+      
+    
+    }, [isActive, openModal]);
 
   return (
     <>
+
 
       <Button size="sm" onClick={openModal}>
         Add

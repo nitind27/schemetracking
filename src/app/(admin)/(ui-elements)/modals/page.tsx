@@ -1,5 +1,5 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
-import DefaultModal from "@/components/example/ModalExample/DefaultModal";
+// import DefaultModal from "@/components/example/ModalExample/DefaultModal";
 // import FormInModal from "@/components/example/ModalExample/FormInModal";
 import FullScreenModal from "@/components/example/ModalExample/FullScreenModal";
 import ModalBasedAlerts from "@/components/example/ModalExample/ModalBasedAlerts";
@@ -19,7 +19,7 @@ export default function Modals() {
     <div>
       <PageBreadcrumb pageTitle="Modals" />
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:gap-6">
-        <DefaultModal />
+        {/* <DefaultModal /> */}
         <VerticallyCenteredModal />
         {/* <FormInModal /> */}
         <FullScreenModal />

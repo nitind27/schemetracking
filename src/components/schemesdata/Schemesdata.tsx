@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import React from 'react';
 import { Schemesdatas } from './schemes';
 import { MultiValue } from 'react-select';
+import { useToggleContext } from '@/context/ToggleContext';
 
 // Define a more specific type for document options
 interface DocOption {
@@ -46,6 +47,7 @@ const Schemesdata = () => {
     const [filteryear, setfilteryear] = useState<schemesYear[]>([]);
     // Remove or use inputValue to fix the no-unused-vars error
     // const [inputValue, setInputValue] = useState('');
+    const { isActive, setIsActive } = useToggleContext();
 
     const [schemecategoryid, setschemecategoryid] = useState('');
     const [schemesubcategoryid, setschemesubcategoryid] = useState('');
@@ -179,9 +181,22 @@ const Schemesdata = () => {
     };
 
     const handleEdit = (item: Schemesdatas) => {
-        console.log("fasdfsadf", item);
-        // setInputValue(item.);
-        // setEditId(item.user_category_id);
+        setIsActive(!isActive)
+        setschemecategoryid(item.scheme_category_id)
+        setschemesubcategoryid(item.scheme_sub_category_id)
+        setschemeyearid(item.scheme_year_id)
+        setschemename(item.scheme_name)
+        setbeneficieryname(item.beneficiery_name)
+        setapplyedat(item.applyed_at)
+        setlink(item.link)
+        try {
+            const parsedDocs = JSON.parse(item.documents);
+            setdocuments(Array.isArray(parsedDocs) ? parsedDocs : []);
+          } catch (error) {
+            console.error("Failed to parse documents:", error);
+            setdocuments([]);
+          }
+      
     };
 
     const columns: Column<Schemesdatas>[] = [
@@ -262,16 +277,18 @@ const Schemesdata = () => {
     const handleChange = (
         selected: MultiValue<DocOption>,
         // _actionMeta: ActionMeta<DocOption>
-      ) => {
+    ) => {
         console.log("fasdf")
         // Convert readonly array to regular array
         setdocuments(selected ? [...selected] : []);
-      };
-      
+    };
+
     return (
         <div className="p-4">
+
             <ReusableTable
                 data={data}
+                title='Schemes'
                 classname={"h-[550px] overflow-y-auto scrollbar-hide"}
                 inputfiled={
                     <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
@@ -374,15 +391,18 @@ const Schemesdata = () => {
                             <Select
                                 isMulti
                                 options={docoptions}
-                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+
                                 onChange={handleChange}
                                 value={documents} // Control the selected values
                             />
                         </div>
-                        <Button onClick={handleSave}>
-                            {editId ? 'Update Category' : 'Add Category'}
-                        </Button>
+
                     </div>
+                }
+                submitbutton={
+                    <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
+                        {editId ? 'Update Document' : 'Save Changes'}
+                    </button>
                 }
                 columns={columns}
             />

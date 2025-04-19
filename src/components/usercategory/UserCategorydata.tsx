@@ -9,11 +9,14 @@ import Button from "../ui/button/Button";
 import { UserCategory } from './userCategory';
 import { toast } from 'react-toastify';
 import React from 'react';
+import { useToggleContext } from '@/context/ToggleContext';
+import DefaultModal from '../example/ModalExample/DefaultModal';
 
-const UserCategoryComponent = () => {
+const UserCategorydata = () => {
     const [data, setData] = useState<UserCategory[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
+    const { isActive, setIsActive } = useToggleContext();
 
     const fetchData = async () => {
         try {
@@ -31,14 +34,11 @@ const UserCategoryComponent = () => {
 
 
     const handleSave = async () => {
-        if (!inputValue.trim()) {
-            toast.error("Category name cannot be empty!");
-            return;
-        }
 
+        
         const apiUrl = editId ? `/api/usercategorycrud` : '/api/usercategorycrud';
         const method = editId ? 'PUT' : 'POST';
-
+    
         try {
             const response = await fetch(apiUrl, {
                 method: method,
@@ -53,13 +53,14 @@ const UserCategoryComponent = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-         
+
             toast.success(editId
                 ? 'Category updated successfully!'
                 : 'Category created successfully!');
 
             setInputValue('');
             setEditId(null);
+  
             fetchData();
 
         } catch (error) {
@@ -71,23 +72,10 @@ const UserCategoryComponent = () => {
     };
 
 
-    const handleDelete = async (id: number) => {
-        try {
-            const response = await fetch('/api/usercategorycrud', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_category_id: id })
-            });
 
-            if (response.ok) {
-                fetchData();
-            }
-        } catch (error) {
-            console.error('Error deleting category:', error);
-        }
-    };
 
     const handleEdit = (item: UserCategory) => {
+        setIsActive(!isActive)
         setInputValue(item.category_name);
         setEditId(item.user_category_id);
     };
@@ -107,13 +95,18 @@ const UserCategoryComponent = () => {
                     <Button size="sm" onClick={() => handleEdit(data)}>
                         Edit
                     </Button>
-                    <Button
+                    {/* <Button
                         size="sm"
 
                         onClick={() => handleDelete(data.user_category_id)}
                     >
                         Delete
-                    </Button>
+                    </Button> */}
+                    <span>
+
+                    <DefaultModal id={data.user_category_id} fetchData={fetchData} endpoint={"usercategorycrud"} />
+                    </span>
+
                 </div>
             )
         }
@@ -139,15 +132,16 @@ const UserCategoryComponent = () => {
                         </div>
                     </div>
                 }
-    
+
                 columns={columns}
                 title="User Category"
                 filterOptions={[]}
                 // filterKey="role"
                 submitbutton={
-                    <Button size="sm" onClick={handleSave}>
+          
+                         <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
                         {editId ? 'Update Category' : 'Save Changes'}
-                    </Button>
+                     </button>
                 }
                 searchKey="category_name"
                 rowsPerPage={5}
@@ -156,4 +150,4 @@ const UserCategoryComponent = () => {
     );
 };
 
-export default UserCategoryComponent;
+export default UserCategorydata;
