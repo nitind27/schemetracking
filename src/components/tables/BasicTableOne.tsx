@@ -12,6 +12,7 @@ type Props<T> = {
   submitbutton?: React.ReactNode;
   title?: string;
   searchKey?: keyof T;
+  classname?: string;
   rowsPerPage?: number;
 
 };
@@ -22,10 +23,11 @@ export function ReusableTable<T extends object>({
   filterOptions = [],
   filterKey,
   searchKey,
+  classname,
   title,
   submitbutton,
   inputfiled,
- 
+
   rowsPerPage = 5,
 }: Props<T>) {
   const [search, setSearch] = useState("");
@@ -91,11 +93,11 @@ export function ReusableTable<T extends object>({
         </div>
 
         <div className="ml-auto">
-          <FormInModal inputfiled={inputfiled} title={title} submitbutton={submitbutton} />
+          <FormInModal inputfiled={inputfiled} title={title} submitbutton={submitbutton} classname={classname} />
         </div>
       </div>
 
-      <table className="min-w-full border">
+      <table className="container  border">
         <thead>
           <tr>
             {/* Add SR Number column header */}

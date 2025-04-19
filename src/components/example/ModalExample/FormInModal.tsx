@@ -7,15 +7,19 @@ import { Modal } from "../../ui/modal";
 
 import { useModal } from "@/hooks/useModal";
 
+interface FormInModalProps {
+  inputfiled: React.ReactNode;
+  title?: string;
+  classname?: string;
+  submitbutton: React.ReactNode;
+}
+
 export default function FormInModal({
   inputfiled,
   title,
+  classname,
   submitbutton
-}: {
-  inputfiled: any;
-  title: any;
-  submitbutton: any;
-}) {
+}: FormInModalProps) {
   const { isOpen, openModal, closeModal } = useModal();
 
   return (
@@ -29,7 +33,7 @@ export default function FormInModal({
         isOpen={isOpen}
 
         onClose={closeModal}
-        className="max-w-[584px] p-5 lg:p-10 h-[550px] overflow-y-auto scrollbar-hide"
+        className={`max-w-[584px] p-5 lg:p-10 ${classname}`}
       >
         <form className="">
           <h4 className="mb-6 text-lg font-medium text-gray-800 dark:text-white/90 ">

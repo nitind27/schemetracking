@@ -10,7 +10,7 @@ import {
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
-  
+
   UserCircleIcon,
 } from "../icons/index";
 
@@ -32,15 +32,26 @@ const navItems: NavItem[] = [
     name: "User Category",
     path: "/usercategory",
   },
-  {
-    icon: <CalenderIcon />,
-    name: "Schemes",
-    path: "/calendar",
-  },
+
   {
     icon: <UserCircleIcon />,
     name: "Users",
     path: "/profile",
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Schemes",
+    path: "/schemespage",
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Documents",
+    path: "/documents",
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Year",
+    path: "/yearmaster",
   },
   {
     icon: <UserCircleIcon />,

@@ -1,19 +1,16 @@
-// app/api/user/route.ts
+// app/api/taluka/route.ts
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-
+import type { RowDataPacket } from 'mysql2';
 
 export async function GET() {
     let connection;
     try {
         connection = await pool.getConnection();
-        const [rows] = await connection.query<any[]>(`
-      SELECT * FROM taluka
-    `);
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM taluka');
 
-        // 3. Type-safe mapping
-        const safeUsers = rows.map(({ ...user }) => user);
-
+        // Type-safe mapping (optional - now properly typed)
+        const safeUsers = rows.map((user) => user);
 
         return NextResponse.json(safeUsers);
     } catch (error) {

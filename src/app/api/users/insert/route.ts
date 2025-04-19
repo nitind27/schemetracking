@@ -1,5 +1,21 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { ResultSetHeader } from 'mysql2';
+import { RowDataPacket } from 'mysql2';
+
+// Define the User type to match your database schema
+interface User {
+  user_id?: number; // Auto-incremented, so optional for inserts
+  name: string;
+  user_category_id?: number | null;
+  username: string;
+  password: string;
+  contact_no: string;
+  address?: string | null;
+  taluka_id?: number | null;
+  village_id?: number | null;
+  status?: string | null;
+}
 
 export async function POST(request: Request) {
   try {
@@ -25,7 +41,7 @@ export async function POST(request: Request) {
 
     // Database operation
     try {
-      const [result] = await pool.query(
+      const [result] = await pool.query<ResultSetHeader>(
         `INSERT INTO users (
           name,
           user_category_id,
@@ -50,9 +66,11 @@ export async function POST(request: Request) {
         ]
       );
 
+      const insertId = result.insertId;
+
       return NextResponse.json({
         success: true,
-        userId: (result as any).insertId
+        userId: insertId,
       });
     } catch (error) {
       console.error('Database error:', error);
@@ -69,11 +87,12 @@ export async function POST(request: Request) {
     );
   }
 }
+
 export async function GET() {
   try {
     const connection = await pool.getConnection();
     try {
-      const [rows] = await connection.query(`
+      const [rows] = await connection.query<RowDataPacket[] &User[]>(`
         SELECT 
           user_id,
           name,

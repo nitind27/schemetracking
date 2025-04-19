@@ -1,11 +1,10 @@
-
-import UserCategoryForm from '@/components/usercategory/UserCategoryForm'
+import Yearmasterdata from '@/components/Yearmaster/Yearmasterdata'
 import React from 'react'
 
 const page = () => {
   return (
     <div>
-      <UserCategoryForm />
+      <Yearmasterdata />
     </div>
   )
 }

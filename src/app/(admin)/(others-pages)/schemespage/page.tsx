@@ -1,11 +1,10 @@
-
-import UserCategoryForm from '@/components/usercategory/UserCategoryForm'
+import Schemesdata from '@/components/schemesdata/Schemesdata'
 import React from 'react'
 
 const page = () => {
   return (
     <div>
-      <UserCategoryForm />
+      <Schemesdata />
     </div>
   )
 }

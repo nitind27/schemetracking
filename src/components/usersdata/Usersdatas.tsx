@@ -194,6 +194,7 @@ const Usersdatas = () => {
 
       <ReusableTable
         data={data}
+        classname={"h-[550px] overflow-y-auto scrollbar-hide"}
         inputfiled={
           <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
             <div className="col-span-1">

@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  typescript: {
-    ignoreBuildErrors: true, // Add this line
-  },
+  /* config options here */
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,

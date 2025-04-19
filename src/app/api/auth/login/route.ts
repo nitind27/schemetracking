@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     }
 
     const connection = await pool.getConnection();
-    
+
     const [users] = await connection.query(
       'SELECT * FROM users WHERE username = ?',
       [username]
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { password: _password, ...userData } = user;
+    const { ...userData } = user;
 
     return NextResponse.json({
       message: 'Login successful',

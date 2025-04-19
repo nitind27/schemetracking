@@ -1,12 +1,14 @@
 import pool from '@/lib/db';
 import { NextResponse } from 'next/server';
+import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 // Get all categories
 export async function GET() {
   try {
-    const [rows] = await pool.query('SELECT * FROM user_category');
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM user_category');
     return NextResponse.json(rows);
   } catch (error) {
+    console.error('Fetch error:', error);
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
   }
 }
@@ -20,12 +22,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const [result] = await pool.query(
+    const [result] = await pool.query<ResultSetHeader>(
       'INSERT INTO user_category (category_name) VALUES (?)',
       [category_name]
     );
-    return NextResponse.json({ message: 'Category created', id: (result as any).insertId });
+    return NextResponse.json({ message: 'Category created', id: result.insertId });
   } catch (error) {
+    console.error('Creation error:', error);
     return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });
   }
 }
@@ -45,6 +48,7 @@ export async function PUT(request: Request) {
     );
     return NextResponse.json({ message: 'Category updated' });
   } catch (error) {
+    console.error('Update error:', error);
     return NextResponse.json({ error: 'Failed to update category' }, { status: 500 });
   }
 }
@@ -61,6 +65,7 @@ export async function DELETE(request: Request) {
     await pool.query('DELETE FROM user_category WHERE user_category_id = ?', [user_category_id]);
     return NextResponse.json({ message: 'Category deleted' });
   } catch (error) {
+    console.error('Deletion error:', error);
     return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });
   }
 }

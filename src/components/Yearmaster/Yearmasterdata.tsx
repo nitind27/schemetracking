@@ -6,18 +6,18 @@ import Label from "../form/Label";
 import { ReusableTable } from "../tables/BasicTableOne";
 import { Column } from "../tables/tabletype";
 import Button from "../ui/button/Button";
-import { UserCategory } from './userCategory';
+import { Scheme_year } from './yearmaster';
 import { toast } from 'react-toastify';
 import React from 'react';
 
-const UserCategoryComponent = () => {
-    const [data, setData] = useState<UserCategory[]>([]);
+const Yearmasterdata = () => {
+    const [data, setData] = useState<Scheme_year[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
 
     const fetchData = async () => {
         try {
-            const response = await fetch('/api/usercategorycrud');
+            const response = await fetch('/api/yearmaster');
             const result = await response.json();
             setData(result);
         } catch (error) {
@@ -36,7 +36,7 @@ const UserCategoryComponent = () => {
             return;
         }
 
-        const apiUrl = editId ? `/api/usercategorycrud` : '/api/usercategorycrud';
+        const apiUrl = editId ? `/api/yearmaster` : '/api/yearmaster';
         const method = editId ? 'PUT' : 'POST';
 
         try {
@@ -44,8 +44,8 @@ const UserCategoryComponent = () => {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user_category_id: editId,
-                    category_name: inputValue
+
+                    year: inputValue
                 })
             });
 
@@ -53,7 +53,7 @@ const UserCategoryComponent = () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-         
+
             toast.success(editId
                 ? 'Category updated successfully!'
                 : 'Category created successfully!');
@@ -73,10 +73,10 @@ const UserCategoryComponent = () => {
 
     const handleDelete = async (id: number) => {
         try {
-            const response = await fetch('/api/usercategorycrud', {
+            const response = await fetch('/api/yearmaster', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_category_id: id })
+                body: JSON.stringify({ id: id })
             });
 
             if (response.ok) {
@@ -87,17 +87,17 @@ const UserCategoryComponent = () => {
         }
     };
 
-    const handleEdit = (item: UserCategory) => {
-        setInputValue(item.category_name);
-        setEditId(item.user_category_id);
+    const handleEdit = (item: Scheme_year) => {
+        setInputValue(item.year);
+        setEditId(item.scheme_year_id);
     };
 
-    const columns: Column<UserCategory>[] = [
+    const columns: Column<Scheme_year>[] = [
         {
-            key: 'category_name',
-            label: 'Category Name',
-            accessor: 'category_name',
-            render: (data) => <span>{data.category_name}</span>
+            key: 'year',
+            label: 'Year',
+            accessor: 'year',
+            render: (data) => <span>{data.year}</span>
         },
         {
             key: 'actions',
@@ -110,7 +110,7 @@ const UserCategoryComponent = () => {
                     <Button
                         size="sm"
 
-                        onClick={() => handleDelete(data.user_category_id)}
+                        onClick={() => handleDelete(data.scheme_year_id)}
                     >
                         Delete
                     </Button>
@@ -127,7 +127,7 @@ const UserCategoryComponent = () => {
                 inputfiled={
                     <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
                         <div className="col-span-1">
-                            <Label>User Category</Label>
+                            <Label>Documents</Label>
                             <input
                                 type="text"
                                 placeholder="Enter category name"
@@ -139,21 +139,21 @@ const UserCategoryComponent = () => {
                         </div>
                     </div>
                 }
-    
+
                 columns={columns}
-                title="User Category"
+                title="Document"
                 filterOptions={[]}
                 // filterKey="role"
                 submitbutton={
-                    <Button size="sm" onClick={handleSave}>
-                        {editId ? 'Update Category' : 'Save Changes'}
-                    </Button>
+                    <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
+                        {editId ? 'Update Document' : 'Save Changes'}
+                    </button>
                 }
-                searchKey="category_name"
+                searchKey="year"
                 rowsPerPage={5}
             />
         </div>
     );
 };
 
-export default UserCategoryComponent;
+export default Yearmasterdata;
