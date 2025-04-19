@@ -11,20 +11,24 @@ import { toast } from 'react-toastify';
 import React from 'react';
 import { useToggleContext } from '@/context/ToggleContext';
 import DefaultModal from '../example/ModalExample/DefaultModal';
+import Loader from '@/common/Loader';
 
 const UserCategorydata = () => {
     const [data, setData] = useState<UserCategory[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
     const { isActive, setIsActive } = useToggleContext();
-
+    const [loading, setLoading] = useState(false);
     const fetchData = async () => {
+        setLoading(true);
         try {
             const response = await fetch('/api/usercategorycrud');
             const result = await response.json();
             setData(result);
         } catch (error) {
             console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false); // End loading
         }
     };
 
@@ -35,10 +39,10 @@ const UserCategorydata = () => {
 
     const handleSave = async () => {
 
-        
+        setLoading(true)
         const apiUrl = editId ? `/api/usercategorycrud` : '/api/usercategorycrud';
         const method = editId ? 'PUT' : 'POST';
-    
+
         try {
             const response = await fetch(apiUrl, {
                 method: method,
@@ -60,7 +64,7 @@ const UserCategorydata = () => {
 
             setInputValue('');
             setEditId(null);
-  
+
             fetchData();
 
         } catch (error) {
@@ -68,6 +72,8 @@ const UserCategorydata = () => {
             toast.error(editId
                 ? 'Failed to update category. Please try again.'
                 : 'Failed to create category. Please try again.');
+        } finally {
+            setLoading(false); // End loading
         }
     };
 
@@ -95,16 +101,10 @@ const UserCategorydata = () => {
                     <Button size="sm" onClick={() => handleEdit(data)}>
                         Edit
                     </Button>
-                    {/* <Button
-                        size="sm"
 
-                        onClick={() => handleDelete(data.user_category_id)}
-                    >
-                        Delete
-                    </Button> */}
                     <span>
 
-                    <DefaultModal id={data.user_category_id} fetchData={fetchData} endpoint={"usercategorycrud"} />
+                        <DefaultModal id={data.user_category_id} fetchData={fetchData} endpoint={"usercategorycrud"} />
                     </span>
 
                 </div>
@@ -114,7 +114,7 @@ const UserCategorydata = () => {
 
     return (
         <div className="p-4">
-
+            {loading && <Loader />}
             <ReusableTable
                 data={data}
                 inputfiled={
@@ -138,10 +138,10 @@ const UserCategorydata = () => {
                 filterOptions={[]}
                 // filterKey="role"
                 submitbutton={
-          
-                         <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
+
+                    <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
                         {editId ? 'Update Category' : 'Save Changes'}
-                     </button>
+                    </button>
                 }
                 searchKey="category_name"
                 rowsPerPage={5}
