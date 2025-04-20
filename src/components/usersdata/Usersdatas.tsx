@@ -11,19 +11,25 @@ import { toast } from 'react-toastify';
 
 import { UserData } from './Userdata';
 import { useToggleContext } from '@/context/ToggleContext';
+import { UserCategory } from '../usercategory/userCategory';
+import { Taluka } from '../Taluka/Taluka';
+import { Village } from '../Village/village';
 
 const Usersdatas = () => {
   const [data, setData] = useState<UserData[]>([]);
+  const [datavillage, setDatavillage] = useState<Village[]>([]);
+  const [datataluka, setDatataluka] = useState<Taluka[]>([]);
+  const [datausercategorycrud, setDatausercategorycrud] = useState<UserCategory[]>([]);
 
-  const [usercategory, setUsercategory] = useState('');
+  const [usercategory, setUsercategory] = useState(0);
 
   const [name, setName] = useState('');
   const [Contact, setContact] = useState('');
   const [Username, setUsername] = useState('');
   const [Password, setPassword] = useState('');
   const [address, setaddress] = useState('');
-  const [Taluka, setTaluka] = useState('');
-  const [Village, setVillage] = useState('');
+  const [Taluka, setTaluka] = useState(0);
+  const [Village, setVillage] = useState(0);
   const [editId, setEditId] = useState<number | null>(null);
   const { isActive, setIsActive } = useToggleContext();
   const fetchData = async () => {
@@ -35,9 +41,40 @@ const Usersdatas = () => {
       console.error('Error fetching data:', error);
     }
   };
+  const fetchDatavillages = async () => {
+    try {
+      const response = await fetch('/api/villages');
+      const result = await response.json();
+      setDatavillage(result);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+  const fetchDatataluka = async () => {
+    try {
+      const response = await fetch('/api/taluka');
+      const result = await response.json();
+      setDatataluka(result);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+  const fetchDatausercategorycrud= async () => {
+    try {
+      const response = await fetch('/api/usercategorycrud');
+      const result = await response.json();
+      setDatausercategorycrud(result);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
 
   useEffect(() => {
     fetchData();
+    fetchDatavillages();
+    fetchDatataluka();
+    fetchDatausercategorycrud();
+
   }, []);
 
 
@@ -105,7 +142,7 @@ const Usersdatas = () => {
   const handleEdit = (item: UserData) => {
     setIsActive(!isActive)
 
-    setUsercategory(item.user_category_id)
+    setUsercategory(Number(item.user_category_id))
   
     setName(item.name)
     setContact(item.contact_no)
@@ -128,7 +165,7 @@ const Usersdatas = () => {
       key: 'user_category_id',
       label: 'User Category',
       accessor: 'user_category_id',
-      render: (data) => <span>{data.user_category_id}</span>
+      render: (data) => <span>{datausercategorycrud.filter((pac)=>pac.user_category_id == data.user_category_id).map((data)=>data.category_name)}</span>
     },
     {
       key: 'username',
@@ -158,13 +195,13 @@ const Usersdatas = () => {
       key: 'taluka_id',
       label: 'Taluka',
       accessor: 'taluka_id',
-      render: (data) => <span>{data.taluka_id}</span>
+      render: (data) => <span>{datataluka.filter((datatlk)=>datatlk.taluka_id==data.taluka_id).map((datamap)=>datamap.name)}</span>
     },
     {
       key: 'village_id',
       label: 'Village',
       accessor: 'village_id',
-      render: (data) => <span>{data.village_id}</span>
+      render: (data) => <span>{datavillage.filter((datavlg)=>datavlg.village_id==data.village_id).map((datamap)=>datamap.name)}</span>
     },
     {
       key: 'status',
@@ -172,12 +209,7 @@ const Usersdatas = () => {
       accessor: 'status',
       render: (data) => <span>{data.status}</span>
     },
-    {
-      key: 'taluka_id',
-      label: 'Taluka',
-      accessor: 'taluka_id',
-      render: (data) => <span>{data.taluka_id}</span>
-    },
+    
     {
       key: 'actions',
       label: 'Actions',
@@ -210,7 +242,7 @@ const Usersdatas = () => {
             <div className="col-span-1">
               <Label>Select Category</Label>
               <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-                onChange={(e) => setUsercategory(e.target.value)}
+                onChange={(e) => setUsercategory(Number(e.target.value))}
                 value={usercategory}
               >
                 <option value="">Select Category</option>
@@ -282,7 +314,7 @@ const Usersdatas = () => {
               <Label>Taluka</Label>
               <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                 value={Taluka}
-                onChange={(e) => setTaluka(e.target.value)}
+                onChange={(e) => setTaluka(Number(e.target.value))}
 
               >
                 <option value="">Select Taluka</option>
@@ -299,7 +331,7 @@ const Usersdatas = () => {
               <Label>Village</Label>
               <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                 value={Village}
-                onChange={(e) => setVillage(e.target.value)}
+                onChange={(e) => setVillage(Number(e.target.value))}
               >
                 <option value="">Select Village</option>
                 <option value="2025-26">2025-26</option>

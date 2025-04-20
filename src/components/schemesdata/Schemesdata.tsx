@@ -43,16 +43,16 @@ const Schemesdata = () => {
             document_name: string;
         }[]
     >([]);
-    console.log("filterdocument", data)
+
     const [filtersubcategory, setfiltersubcategory] = useState<schemesSubcategory[]>([]);
     const [filteryear, setfilteryear] = useState<schemesYear[]>([]);
     // Remove or use inputValue to fix the no-unused-vars error
     // const [inputValue, setInputValue] = useState('');
     const { isActive, setIsActive } = useToggleContext();
 
-    const [schemecategoryid, setschemecategoryid] = useState('');
-    const [schemesubcategoryid, setschemesubcategoryid] = useState('');
-    const [schemeyearid, setschemeyearid] = useState('');
+    const [schemecategoryid, setschemecategoryid] = useState(0);
+    const [schemesubcategoryid, setschemesubcategoryid] = useState(0);
+    const [schemeyearid, setschemeyearid] = useState(0);
     const [schemename, setschemename] = useState('');
     const [beneficieryname, setbeneficieryname] = useState('');
     const [applyedat, setapplyedat] = useState('');
@@ -199,27 +199,28 @@ const Schemesdata = () => {
         }
 
     };
-// Document ID से नाम मैपिंग
-const documentMap = new Map(filterdocument.map(doc => [doc.id, doc.document_name]));
+    // Document ID से नाम मैपिंग
+    const documentMap = new Map(filterdocument.map(doc => [doc.id, doc.document_name]));
 
     const columns: Column<Schemesdatas>[] = [
         {
             key: 'scheme_category_id',
             label: 'Scheme Category',
             accessor: 'scheme_category_id',
-            render: (data) => <span>{data.scheme_category_id}</span>
+            render: (data) => <span>{filtercategory.filter((datacat) => datacat.scheme_category_id == data.scheme_category_id).map((datamap) => datamap.name)}</span>
         },
         {
             key: 'scheme_sub_category_id',
             label: 'Scheme SubCategory',
             accessor: 'scheme_sub_category_id',
-            render: (data) => <span>{data.scheme_sub_category_id}</span>
+
+            render: (data) => <span>{filtersubcategory.filter((datacat) => datacat.scheme_sub_category_id == data.scheme_sub_category_id).map((datamap) => datamap.name)}</span>
         },
         {
             key: 'scheme_year_id',
             label: 'Scheme year',
             accessor: 'scheme_year_id',
-            render: (data) => <span>{data.scheme_year_id}</span>
+            render: (data) => <span>{filteryear.filter((datayear) => datayear.scheme_year_id == data.scheme_year_id).map((datamap) => datamap.year)}</span>
         },
         {
             key: 'scheme_name',
@@ -250,31 +251,31 @@ const documentMap = new Map(filterdocument.map(doc => [doc.id, doc.document_name
             label: 'Documents',
             accessor: 'documents',
             render: (data) => {
-              // Case 1: Undefined/Null होने पर
-              if(!data.documents) return <span>-</span>;
-        
-              // Case 2: स्ट्रिंग को अर्रे में कन्वर्ट करें
-              let docIds: number[] = [];
-              
-              try {
-                // "[1,2,3]" जैसे स्ट्रिंग को पार्स करें
-                docIds = JSON.parse(data.documents.replace(/'/g, '"'));
-              } catch {
-                // "[1,2,3]" फॉर्मेट न होने पर कॉमा सेपरेटेड ट्रीट करें
-                docIds = data.documents
-                  .split(',')
-                  .map(part => parseInt(part.trim()))
-                  .filter(num => !isNaN(num));
-              }
-        
-              // Case 3: वैलिड डॉक्यूमेंट आईडी ढूंढें
-              const docNames = docIds
-                .map(id => documentMap.get(id))
-                .filter(Boolean);
-        
-              return docNames.length > 0 
-                ? <span>{docNames.join(', ')}</span>
-                : <span>-</span>;
+                // Case 1: Undefined/Null होने पर
+                if (!data.documents) return <span>-</span>;
+
+                // Case 2: स्ट्रिंग को अर्रे में कन्वर्ट करें
+                let docIds: number[] = [];
+
+                try {
+                    // "[1,2,3]" जैसे स्ट्रिंग को पार्स करें
+                    docIds = JSON.parse(data.documents.replace(/'/g, '"'));
+                } catch {
+                    // "[1,2,3]" फॉर्मेट न होने पर कॉमा सेपरेटेड ट्रीट करें
+                    docIds = data.documents
+                        .split(',')
+                        .map(part => parseInt(part.trim()))
+                        .filter(num => !isNaN(num));
+                }
+
+                // Case 3: वैलिड डॉक्यूमेंट आईडी ढूंढें
+                const docNames = docIds
+                    .map(id => documentMap.get(id))
+                    .filter(Boolean);
+
+                return docNames.length > 0
+                    ? <span>{docNames.join(', ')}</span>
+                    : <span>-</span>;
             }
         },
         {
@@ -328,7 +329,7 @@ const documentMap = new Map(filterdocument.map(doc => [doc.id, doc.document_name
                                 id=""
                                 className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                                 value={schemecategoryid}
-                                onChange={(e) => setschemecategoryid(e.target.value)}
+                                onChange={(e) => setschemecategoryid(Number(e.target.value))}
                             >
                                 <option value="">Scheme Category</option>
                                 {filtercategory.map((category) => (
@@ -345,7 +346,7 @@ const documentMap = new Map(filterdocument.map(doc => [doc.id, doc.document_name
                                 id=""
                                 className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                                 value={schemesubcategoryid}
-                                onChange={(e) => setschemesubcategoryid(e.target.value)}
+                                onChange={(e) => setschemesubcategoryid(Number(e.target.value))}
                             >
                                 <option value="">Scheme Subcategory</option>
                                 {filtersubcategory
@@ -364,7 +365,7 @@ const documentMap = new Map(filterdocument.map(doc => [doc.id, doc.document_name
                                 id=""
                                 className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                                 value={schemeyearid}
-                                onChange={(e) => setschemeyearid(e.target.value)}
+                                onChange={(e) => setschemeyearid(Number(e.target.value))}
                             >
                                 <option value="">Scheme Year</option>
                                 {filteryear.map((category) => (
