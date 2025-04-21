@@ -1,11 +1,11 @@
+// src/components/ecommerce/FarmersDashboard.tsx
 "use client"
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import { UserCategory } from '../usercategory/userCategory';
 import { Column } from '../tables/tabletype';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import { Schemesdatas } from '../schemesdata/schemes';
 import { FarmdersType } from '../farmersdata/farmers';
-
 
 interface AllFarmersData {
     users: UserCategory[];
@@ -13,7 +13,15 @@ interface AllFarmersData {
     farmers: FarmdersType[];
 }
 
-const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData }) => {
+const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
+    const [data, setData] = useState<UserCategory[]>([]);
+    const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
+    const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalTitle, setModalTitle] = useState('');
+    const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
+    const [filteredschemes, setFilteredschemes] = useState<Schemesdatas[]>([]);
+
     useEffect(() => {
         if (farmersData) {
             setData(farmersData.users);
@@ -21,63 +29,59 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
             setDatafarmers(farmersData.farmers);
         }
     }, [farmersData]);
-    const [data, setData] = useState<UserCategory[]>([]);
-    console.log("data", data)
-    const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
-    const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalTitle, setModalTitle] = useState('');
-    const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
 
-    // Get current scheme IDs once data is loaded
-    const schemeIds = dataschems.map(scheme => scheme.scheme_id.toString());
+    const schemeIdss = dataschems.map(datas => {
+        const id = String(datas.scheme_id).replace("1:", "");
+        return Number(id);
+    });
 
-    // Get farmers who have any scheme assigned
-    const alldata = datafarmers.filter(farmer => farmer.schemes?.trim() !== "");
+    const allfarmersname = datafarmers.filter(data => {
+        const farmerScheme = String(data.schemes).replace("1:", "");
+        return schemeIdss.includes(Number(farmerScheme));
+    });
 
-    // Find matching schemes based on farmer's schemes
-    const matches = dataschems.filter(scheme =>
-        alldata.some(farmer => farmer.schemes?.includes(scheme.scheme_id.toString()))
-    );
 
     const handleBenefitedClick = (schemeId: string) => {
-        const benefitedFarmers = datafarmers.filter(farmer =>
-            farmer.schemes?.includes(schemeId)
+        const benefitedFarmers = dataschems.filter(schemes =>
+            schemeId.includes(schemes.scheme_id as any)
         );
 
-        // const scheme = dataschems.find(s => s.scheme_id.toString() === schemeId);
         setModalTitle(`Benefited IFR holders `);
-        setFilteredFarmers(benefitedFarmers);
+        setFilteredschemes(benefitedFarmers);
         setIsModalOpen(true);
     };
 
-    const handleNotBenefitedClick = () => {
-        const notBenefited = datafarmers.filter(farmer =>
-            !schemeIds.some(id => farmer.schemes?.includes(id))
-        );
+    const handleNotBenefitedClick = (farmer_id: string) => {
+        const notBenefited = datafarmers.filter((data) => data.farmer_id == Number(farmer_id)).map((data) => data)
 
         setModalTitle('Non-Benefited Farmers');
         setFilteredFarmers(notBenefited);
         setIsModalOpen(true);
     };
 
-    const columns: Column<Schemesdatas>[] = [
+    const columns: Column<FarmdersType>[] = [
         {
             key: 'scheme_name',
-            label: 'Schemes Name',
-            accessor: 'scheme_name',
-            render: (scheme) => <span>{scheme.scheme_name}</span>
+            label: 'IFR holders Name',
+            accessor: 'name',
+            render: (allfarmersname) => <span >{allfarmersname.name}</span>
+        },
+        {
+            key: 'contactno',
+            label: 'Contact No',
+            accessor: 'contact_no',
+            render: (allfarmersname) => <span >{allfarmersname.contact_no || '-'}</span>
         },
         {
             key: 'Benefited',
             label: 'Benefited',
-            render: (scheme) => (
+            render: (allfarmersname) => (
                 <button
-                    onClick={() => handleBenefitedClick(scheme.scheme_id.toString())}
+                    onClick={() => handleBenefitedClick(allfarmersname.schemes.toString())}
                     className="text-blue-700 hover:underline cursor-pointer"
                 >
-                    {datafarmers.filter(farmer =>
-                        farmer.schemes?.includes(scheme.scheme_id.toString())
+                    {dataschems.filter(farmer =>
+                        farmer.scheme_id == Number(allfarmersname.schemes)
                     ).length}
                 </button>
             )
@@ -85,26 +89,40 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         {
             key: 'NotBenefited',
             label: 'Not Benefited',
-            render: () => (
+            render: (allfarmersname) => (
                 <button
-                    onClick={handleNotBenefitedClick}
                     className="hover:underline cursor-pointer"
                 >
-                    {datafarmers.filter(farmer =>
-                        !schemeIds.some(id => farmer.schemes?.includes(id))
+                    {datafarmers.length - dataschems.filter(farmer =>
+                        farmer.scheme_id == Number(allfarmersname.schemes)
                     ).length}
+                </button>
+            )
+        },
+        {
+            key: 'Info',
+            label: 'Not Benefited',
+            render: (allfarmersname) => (
+                <button
+                    onClick={() => handleNotBenefitedClick(allfarmersname.farmer_id.toString())}
+                    className="hover:underline cursor-pointer text-blue-700 font-semibold"
+                >
+                    Info
                 </button>
             )
         }
     ];
 
-
-
+    const handleclosemodel = () => {
+        setFilteredFarmers([])
+        setFilteredschemes([])
+        setIsModalOpen(false)
+    }
 
     return (
         <div>
             <Simpletableshowdata
-                data={matches}
+                data={allfarmersname}
                 inputfiled={
                     <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
                         <div className="col-span-1"></div>
@@ -113,7 +131,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                 columns={columns}
                 title="Scheme Beneficiaries"
                 filterOptions={[]}
-                searchKey="scheme_name"
+                searchKey="name"
                 rowsPerPage={5}
             />
 
@@ -123,7 +141,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                         <div className="flex justify-between items-center p-4 border-b">
                             <h3 className="text-lg font-semibold">{modalTitle}</h3>
                             <button
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={() => handleclosemodel()}
                                 className="p-2 hover:bg-gray-100 rounded-full"
                             >
                                 ✕
@@ -146,16 +164,29 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredFarmers.map((farmer) => (
-                                            <tr key={farmer.farmer_id}>
+                                        {filteredschemes.length > 0 && filteredschemes.map((farmer) => (
+                                            <tr key={farmer.scheme_id}>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {farmer.scheme_name}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {farmer.beneficiery_name}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {farmer.scheme_sub_category_id}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filteredFarmers.length > 0 && filteredFarmers.map((farmer) => (
+                                            <tr key={farmer.name}>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {farmer.farmer_id}
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {farmer.name}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.adivasi}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.vanksetra}
+                                                    {farmer.schemes}
                                                 </td>
                                             </tr>
                                         ))}
@@ -165,7 +196,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                         </div>
                         <div className="p-4 border-t flex justify-end">
                             <button
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={() => handleclosemodel()}
                                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
                             >
                                 Close
@@ -178,4 +209,4 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
     )
 }
 
-export default SchemesDashboardcounting
+export default FarmersDashboard;

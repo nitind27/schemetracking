@@ -1,58 +1,29 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { BoxIconLine, GroupIcon, UserIcon } from "@/icons"; // Add UserIcon import
 
-export const EcommerceMetrics = () => {
-  const [metrics, setMetrics] = useState({
-    farmers: 0,
-    schemes: 0,
-    users: 0
-  });
+import React from "react";
+import { BoxIconLine, GroupIcon, UserIcon } from "@/icons";
 
-  useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        const [farmersRes, schemesRes, usersRes] = await Promise.all([
-          fetch('/api/farmers'),
-          fetch('/api/schemescrud'),
-          fetch('/api/users')
-        ]);
+interface Metrics {
+  farmers: number;
+  schemes: number;
+  users: number;
+}
 
-        const [farmers, schemes, users] = await Promise.all([
-          farmersRes.json(),
-          schemesRes.json(),
-          usersRes.json()
-        ]);
-
-        setMetrics({
-          farmers: farmers.length,
-          schemes: schemes.length,
-          users: users.length
-        });
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    fetchAllData();
-  }, []);
-
+export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4 p-5">
       <MetricCard
         icon={<GroupIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />}
-        label="Farmers"
+        label="IFR holders"
         value={metrics.farmers}
       />
-
       <MetricCard
         icon={<BoxIconLine className="w-7 h-7 text-gray-600 dark:text-gray-200" />}
         label="Schemes"
         value={metrics.schemes}
       />
-
       <MetricCard
-        icon={<UserIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />} // Add UserIcon component
+        icon={<UserIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />}
         label="System Users"
         value={metrics.users}
       />

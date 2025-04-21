@@ -26,7 +26,7 @@ export default function AuthLayout({
                   <img
                     width={500}
                     height={50}
-                    src="./images/logo/loginlogo.webp"
+                    src="./images/logo/maharasstralogo.png"
                     alt="Logo"
                   />
                 </Link>

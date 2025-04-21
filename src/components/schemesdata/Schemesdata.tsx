@@ -130,7 +130,7 @@ const Schemesdata = () => {
             console.error('Error fetching data:', error);
         }
         finally {
-            setLoading(false); // End loading
+            setLoading(false); 
         }
     };
 
