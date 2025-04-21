@@ -205,32 +205,32 @@ const Schemesdata = () => {
     const columns: Column<Schemesdatas>[] = [
         {
             key: 'scheme_category_id',
-            label: 'Scheme Category',
+            label: 'Category',
             accessor: 'scheme_category_id',
             render: (data) => <span>{filtercategory.filter((datacat) => datacat.scheme_category_id == data.scheme_category_id).map((datamap) => datamap.name)}</span>
         },
         {
             key: 'scheme_sub_category_id',
-            label: 'Scheme SubCategory',
+            label: 'SubCategory',
             accessor: 'scheme_sub_category_id',
 
             render: (data) => <span>{filtersubcategory.filter((datacat) => datacat.scheme_sub_category_id == data.scheme_sub_category_id).map((datamap) => datamap.name)}</span>
         },
         {
             key: 'scheme_year_id',
-            label: 'Scheme year',
+            label: 'Year',
             accessor: 'scheme_year_id',
             render: (data) => <span>{filteryear.filter((datayear) => datayear.scheme_year_id == data.scheme_year_id).map((datamap) => datamap.year)}</span>
         },
         {
             key: 'scheme_name',
-            label: 'Scheme Name',
+            label: 'Name',
             accessor: 'scheme_name',
             render: (data) => <span>{data.scheme_name}</span>
         },
         {
             key: 'beneficiery_name',
-            label: 'Beneficiery Name',
+            label: 'Beneficiery',
             accessor: 'beneficiery_name',
             render: (data) => <span>{data.beneficiery_name}</span>
         },
@@ -323,7 +323,7 @@ const Schemesdata = () => {
                 inputfiled={
                     <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
                         <div>
-                            <Label>Scheme Category</Label>
+                            <Label>Category</Label>
                             <select
                                 name=""
                                 id=""
@@ -331,7 +331,7 @@ const Schemesdata = () => {
                                 value={schemecategoryid}
                                 onChange={(e) => setschemecategoryid(Number(e.target.value))}
                             >
-                                <option value="">Scheme Category</option>
+                                <option value="">Category</option>
                                 {filtercategory.map((category) => (
                                     <option key={category.scheme_category_id} value={category.scheme_category_id}>
                                         {category.name}
@@ -340,7 +340,7 @@ const Schemesdata = () => {
                             </select>
                         </div>
                         <div>
-                            <Label>Scheme Subcategory</Label>
+                            <Label>Subcategory</Label>
                             <select
                                 name=""
                                 id=""
@@ -348,7 +348,7 @@ const Schemesdata = () => {
                                 value={schemesubcategoryid}
                                 onChange={(e) => setschemesubcategoryid(Number(e.target.value))}
                             >
-                                <option value="">Scheme Subcategory</option>
+                                <option value="">Subcategory</option>
                                 {filtersubcategory
                                     .filter((data) => data.scheme_category_id == Number(schemecategoryid))
                                     .map((category) => (
@@ -367,7 +367,7 @@ const Schemesdata = () => {
                                 value={schemeyearid}
                                 onChange={(e) => setschemeyearid(Number(e.target.value))}
                             >
-                                <option value="">Scheme Year</option>
+                                <option value="">Year</option>
                                 {filteryear.map((category) => (
                                     <option key={category.scheme_year_id} value={category.scheme_year_id}>
                                         {category.year}
@@ -377,7 +377,7 @@ const Schemesdata = () => {
                         </div>
 
                         <div className="col-span-1">
-                            <Label>Scheme Name</Label>
+                            <Label>Name</Label>
                             <input
                                 type="text"
                                 placeholder="Enter category name"
@@ -387,7 +387,7 @@ const Schemesdata = () => {
                             />
                         </div>
                         <div className="col-span-1">
-                            <Label>Beneficiery Name</Label>
+                            <Label>Beneficiery</Label>
                             <input
                                 type="text"
                                 placeholder="Enter category name"

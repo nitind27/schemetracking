@@ -3,19 +3,19 @@
 import { useEffect, useState } from 'react';
 
 import Label from "../form/Label";
-import { ReusableTable } from "../tables/BasicTableOne";
+
 import { Column } from "../tables/tabletype";
-import Button from "../ui/button/Button";
+// import Button from "../ui/button/Button";
 
 import { toast } from 'react-toastify';
 import React from 'react';
-import { useToggleContext } from '@/context/ToggleContext';
-import DefaultModal from '../example/ModalExample/DefaultModal';
+
 import Loader from '@/common/Loader';
 import { FarmdersType } from './farmers';
 import { Village } from '../Village/village';
 import { Taluka } from '../Taluka/Taluka';
 import { Schemesdatas } from '../schemesdata/schemes';
+import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 
 const Farmersdata = () => {
   const [data, setData] = useState<FarmdersType[]>([]);
@@ -24,7 +24,7 @@ const Farmersdata = () => {
   const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [editId, setEditId] = useState<number | null>(null);
-  const { isActive, setIsActive } = useToggleContext();
+
   const [loading, setLoading] = useState(false);
   const fetchData = async () => {
     setLoading(true);
@@ -118,12 +118,12 @@ const Farmersdata = () => {
 
 
 
-  const handleEdit = (item: FarmdersType) => {
-    console.log("item",item)
-    setIsActive(!isActive)
-    // setInputValue(item.category_name);
-    // setEditId(item.user_category_id);
-  };
+  // const handleEdit = (item: FarmdersType) => {
+  //   console.log("item",item)
+  //   setIsActive(!isActive)
+  //   // setInputValue(item.category_name);
+  //   // setEditId(item.user_category_id);
+  // };
 
   const columns: Column<FarmdersType>[] = [
     {
@@ -207,29 +207,29 @@ const Farmersdata = () => {
       render: (data) => <span>{dataschems.filter((datas) => datas.scheme_id == Number(data.schemes)).map((data) => data.scheme_name)}</span>
     },
 
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (data) => (
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => handleEdit(data)}>
-            Edit
-          </Button>
+    // {
+    //   key: 'actions',
+    //   label: 'Actions',
+    //   render: (data) => (
+    //     <div className="flex gap-2">
+    //       <Button size="sm" onClick={() => handleEdit(data)}>
+    //         Edit
+    //       </Button>
 
-          <span>
+    //       <span>
 
-            <DefaultModal id={data.farmer_id} fetchData={fetchData} endpoint={"usercategorycrud"} />
-          </span>
+    //         <DefaultModal id={data.farmer_id} fetchData={fetchData} endpoint={"usercategorycrud"} />
+    //       </span>
 
-        </div>
-      )
-    }
+    //     </div>
+    //   )
+    // }
   ];
 
   return (
     <div className="p-4">
       {loading && <Loader />}
-      <ReusableTable
+      <Simpletableshowdata
         data={data}
         inputfiled={
           <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">

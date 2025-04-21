@@ -100,55 +100,59 @@ export function ReusableTable<T extends object>({
       </div>
 
       {/* Table Section */}
-      <div className="w-full overflow-x-auto rounded-lg shadow-sm">
-        <table className="w-full min-w-[600px]">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">SR No.</th>
-              {columns.map((col) => (
-                <th 
-                  key={String(col.key)} 
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-700"
-                >
-                  {col.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {paginatedData.length === 0 ? (
-              <tr>
-                <td 
-                  colSpan={columns.length + 1} 
-                  className="px-4 py-6 text-center text-gray-500"
-                >
-                  No records found
-                </td>
-              </tr>
-            ) : (
-              paginatedData.map((row, idx) => (
-                <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {(page - 1) * rowsPerPage + idx + 1}
-                  </td>
-                  {columns.map((col) => (
-                    <td 
-                      key={`${String(col.key)}-${idx}`}
-                      className="px-4 py-3 text-sm text-gray-700"
-                    >
-                      {col.render
-                        ? col.render(row)
-                        : col.accessor
-                          ? String(row[col.accessor])
-                          : null}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+ {/* Table Section */}
+<div className="w-full overflow-x-auto rounded-lg shadow-sm">
+  <table className="w-full min-w-[600px] border-collapse border border-gray-300">
+    <thead className="bg-gray-50">
+      <tr className="border-b border-gray-300">
+        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-r border-gray-300">SR No.</th>
+        {columns.map((col) => (
+          <th 
+            key={String(col.key)} 
+            className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-r border-gray-300 last:border-r-0"
+          >
+            {col.label}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-gray-200 bg-white">
+      {paginatedData.length === 0 ? (
+        <tr>
+          <td 
+            colSpan={columns.length + 1} 
+            className="px-4 py-6 text-center text-gray-500 border-t border-gray-300"
+          >
+            No records found
+          </td>
+        </tr>
+      ) : (
+        paginatedData.map((row, idx) => (
+          <tr 
+            key={idx} 
+            className="hover:bg-gray-50 transition-colors border-b border-gray-200 last:border-b-0"
+          >
+            <td className="px-4 py-3 text-sm text-gray-700 border-r border-gray-200">
+              {(page - 1) * rowsPerPage + idx + 1}
+            </td>
+            {columns.map((col) => (
+              <td 
+                key={`${String(col.key)}-${idx}`}
+                className="px-4 py-3 text-sm text-gray-700 border-r border-gray-200 last:border-r-0"
+              >
+                {col.render
+                  ? col.render(row)
+                  : col.accessor
+                    ? String(row[col.accessor])
+                    : null}
+              </td>
+            ))}
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>
 
       {/* Pagination */}
       <div className="flex flex-col md:flex-row items-center justify-between mt-6 gap-4">

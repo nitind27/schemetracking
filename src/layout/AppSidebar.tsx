@@ -60,7 +60,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <UserCircleIcon />,
-    name: "Farmers",
+    name: "IFR holders",
     path: "/farmerspage",
   },
 

@@ -59,7 +59,7 @@ const Usersdatas = () => {
       console.error('Error fetching data:', error);
     }
   };
-  const fetchDatausercategorycrud= async () => {
+  const fetchDatausercategorycrud = async () => {
     try {
       const response = await fetch('/api/usercategorycrud');
       const result = await response.json();
@@ -143,7 +143,7 @@ const Usersdatas = () => {
     setIsActive(!isActive)
 
     setUsercategory(Number(item.user_category_id))
-  
+
     setName(item.name)
     setContact(item.contact_no)
     setUsername(item.username)
@@ -165,7 +165,7 @@ const Usersdatas = () => {
       key: 'user_category_id',
       label: 'User Category',
       accessor: 'user_category_id',
-      render: (data) => <span>{datausercategorycrud.filter((pac)=>pac.user_category_id == data.user_category_id).map((data)=>data.category_name)}</span>
+      render: (data) => <span>{datausercategorycrud.filter((pac) => pac.user_category_id == data.user_category_id).map((data) => data.category_name)}</span>
     },
     {
       key: 'username',
@@ -195,13 +195,13 @@ const Usersdatas = () => {
       key: 'taluka_id',
       label: 'Taluka',
       accessor: 'taluka_id',
-      render: (data) => <span>{datataluka.filter((datatlk)=>datatlk.taluka_id==data.taluka_id).map((datamap)=>datamap.name)}</span>
+      render: (data) => <span>{datataluka.filter((datatlk) => datatlk.taluka_id == data.taluka_id).map((datamap) => datamap.name)}</span>
     },
     {
       key: 'village_id',
       label: 'Village',
       accessor: 'village_id',
-      render: (data) => <span>{datavillage.filter((datavlg)=>datavlg.village_id==data.village_id).map((datamap)=>datamap.name)}</span>
+      render: (data) => <span>{datavillage.filter((datavlg) => datavlg.village_id == data.village_id).map((datamap) => datamap.name)}</span>
     },
     {
       key: 'status',
@@ -209,7 +209,7 @@ const Usersdatas = () => {
       accessor: 'status',
       render: (data) => <span>{data.status}</span>
     },
-    
+
     {
       key: 'actions',
       label: 'Actions',
@@ -238,20 +238,24 @@ const Usersdatas = () => {
         classname={"h-[550px] overflow-y-auto scrollbar-hide"}
         inputfiled={
           <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
-           
-            <div className="col-span-1">
-              <Label>Select Category</Label>
-              <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-                onChange={(e) => setUsercategory(Number(e.target.value))}
-                value={usercategory}
-              >
-                <option value="">Select Category</option>
-                <option value="2025-26">2025-26</option>
-                <option value="2024-25">2024-25</option>
-                <option value="2023-24">2023-24</option>
-                <option value="2022-23">2022-23</option>
-                <option value="2022-22">2022-22</option>
 
+            <div className="col-span-1">
+              <Label>Category</Label>
+
+
+              <select
+                name=""
+                id=""
+                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                value={usercategory}
+                onChange={(e) => setUsercategory(Number(e.target.value))}
+              >
+                <option value="">Category</option>
+                {datausercategorycrud.map((category) => (
+                  <option key={category.user_category_id} value={category.user_category_id}>
+                    {category.category_name}
+                  </option>
+                ))}
               </select>
 
             </div>
@@ -317,12 +321,13 @@ const Usersdatas = () => {
                 onChange={(e) => setTaluka(Number(e.target.value))}
 
               >
-                <option value="">Select Taluka</option>
-                <option value="2025-26">2025-26</option>
-                <option value="2024-25">2024-25</option>
-                <option value="2023-24">2023-24</option>
-                <option value="2022-23">2022-23</option>
-                <option value="2022-22">2022-22</option>
+                <option value="">Taluka</option>
+                <option value="">Category</option>
+                {datataluka.map((category) => (
+                  <option key={category.taluka_id} value={category.taluka_id}>
+                    {category.name}
+                  </option>
+                ))}
 
               </select>
             </div>
@@ -333,13 +338,12 @@ const Usersdatas = () => {
                 value={Village}
                 onChange={(e) => setVillage(Number(e.target.value))}
               >
-                <option value="">Select Village</option>
-                <option value="2025-26">2025-26</option>
-                <option value="2024-25">2024-25</option>
-                <option value="2023-24">2023-24</option>
-                <option value="2022-23">2022-23</option>
-                <option value="2022-22">2022-22</option>
-
+                <option value="">Village</option>
+                {datavillage.filter((data) => data.taluka_id == Taluka.toString()).map((category) => (
+                  <option key={category.village_id} value={category.village_id}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </div>
 
