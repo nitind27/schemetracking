@@ -75,7 +75,7 @@ console.log("fasfsdaf",data)
             key: 'Benefited',
             label: 'Benefited',
             render: () => (
-                <div className="flex">
+                <div className="flex text-blue-700">
                     {farmdatasdone.length} 
 
                 </div>
