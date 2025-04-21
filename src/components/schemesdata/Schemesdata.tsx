@@ -366,7 +366,7 @@ const Schemesdata = () => {
                             </select>
                         </div>
                         <div>
-                            <Label>Subcategory</Label>
+                            <Label>Sub Category</Label>
                             <select
                                 name=""
                                 id=""
@@ -374,7 +374,7 @@ const Schemesdata = () => {
                                 value={schemesubcategoryid}
                                 onChange={(e) => setschemesubcategoryid(Number(e.target.value))}
                             >
-                                <option value="">Subcategory</option>
+                                <option value="">Sub Category</option>
                                 {filtersubcategory
                                     .filter((data) => data.scheme_category_id == Number(schemecategoryid))
                                     .map((category) => (
