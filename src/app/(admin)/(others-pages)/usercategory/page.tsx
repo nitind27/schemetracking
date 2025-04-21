@@ -16,6 +16,7 @@ const page = () => {
         breadcrumbs={breadcrumbItems} 
       />
       <UserCategorydata />
+      
     </div>
   )
 }

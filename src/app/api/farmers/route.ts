@@ -1,48 +1,28 @@
 // app/api/farmers/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 import fs from 'fs';
 import path from 'path';
 
 // GET handler (existing)
-export async function GET(request: NextRequest) {
-    const searchParams = request.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = (page - 1) * limit;
-  
+export async function GET() {
     let connection;
     try {
-      connection = await pool.getConnection();
-      
-      // Get paginated data
-      const [rows] = await connection.query<RowDataPacket[]>(
-        'SELECT * FROM farmers LIMIT ? OFFSET ?',
-        [limit, offset]
-      );
-  
-      // Get total count
-      const [total] = await connection.query<RowDataPacket[]>(
-        'SELECT COUNT(*) AS total FROM farmers'
-      );
-  
-      return NextResponse.json({
-        data: rows,
-        total: total[0].total,
-        page,
-        totalPages: Math.ceil(total[0].total / limit)
-      });
+        connection = await pool.getConnection();
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM farmers');
+        const safeUsers = rows.map(user => ({ ...user }));
+        return NextResponse.json(safeUsers);
     } catch (error) {
-      console.error('Database query failed:', error);
-      return NextResponse.json(
-        { message: 'Failed to fetch farmers' },
-        { status: 500 }
-      );
+        console.error('Database query failed:', error);
+        return NextResponse.json(
+            { message: 'Failed to fetch farmers' },
+            { status: 500 }
+        );
     } finally {
-      if (connection) connection.release();
+        if (connection) connection.release();
     }
-  }
+}
 
 // POST handler (new)
 export async function POST(request: Request) {

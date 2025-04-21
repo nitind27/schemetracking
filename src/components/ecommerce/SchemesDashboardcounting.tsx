@@ -111,10 +111,7 @@ const SchemesDashboardcounting = () => {
                 columns={columns}
                 title="User Category"
                 filterOptions={[]}
-                // filterKey="role"
-                submitbutton={
-                    []
-                }
+          
                 searchKey="scheme_name"
                 rowsPerPage={5}
             />
