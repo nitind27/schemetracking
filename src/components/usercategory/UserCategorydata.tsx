@@ -138,11 +138,16 @@ const UserCategorydata = () => {
                 filterOptions={[]}
                 // filterKey="role"
                 submitbutton={
-
-                    <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
-                        {editId ? 'Update Category' : 'Save Changes'}
+                    <button
+                        type='button'
+                        onClick={handleSave}
+                        className='bg-blue-700 text-white py-2 p-2 rounded'
+                        disabled={loading}
+                    >
+                        {loading ? 'Submitting...' : (editId ? 'Update Category' : 'Save Changes')}
                     </button>
                 }
+
                 searchKey="category_name"
                 rowsPerPage={5}
             />

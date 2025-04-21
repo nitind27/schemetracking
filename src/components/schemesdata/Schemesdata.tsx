@@ -11,6 +11,7 @@ import React from 'react';
 import { Schemesdatas } from './schemes';
 import { MultiValue } from 'react-select';
 import { useToggleContext } from '@/context/ToggleContext';
+import Loader from '@/common/Loader';
 
 // Define a more specific type for document options
 interface DocOption {
@@ -58,7 +59,7 @@ const Schemesdata = () => {
     const [applyedat, setapplyedat] = useState('');
     const [link, setlink] = useState('');
     const [documents, setdocuments] = useState<DocOption[]>([]);
-
+    const [loading, setLoading] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
 
     // Use the DocOption type here
@@ -68,52 +69,68 @@ const Schemesdata = () => {
     }));
 
     const fetchData = async () => {
+        setLoading(true);
         try {
             const response = await fetch('/api/schemescrud');
             const result = await response.json();
             setData(result);
         } catch (error) {
             console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false); // End loading
         }
     };
 
     const fetchDataCategory = async () => {
+        setLoading(true);
         try {
             const response = await fetch('/api/schemescategory');
             const result = await response.json();
             setfiltercategory(result);
         } catch (error) {
             console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false); // End loading
         }
     };
 
     const fetchDataDocument = async () => {
+        setLoading(true);
         try {
             const response = await fetch('/api/documents');
             const result = await response.json();
             setfilterdocument(result);
         } catch (error) {
             console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false); // End loading
         }
     };
 
     const fetchDataSubCategory = async () => {
+        setLoading(true);
         try {
             const response = await fetch('/api/schemessubcategory');
             const result = await response.json();
             setfiltersubcategory(result);
         } catch (error) {
             console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false); // End loading
         }
     };
 
     const fetchDatayear = async () => {
+        setLoading(true);
         try {
             const response = await fetch('/api/yearmaster');
             const result = await response.json();
             setfilteryear(result);
         } catch (error) {
             console.error('Error fetching data:', error);
+        }
+        finally {
+            setLoading(false); // End loading
         }
     };
 
@@ -126,6 +143,7 @@ const Schemesdata = () => {
     }, []);
 
     const handleSave = async () => {
+        setLoading(true)
         const apiUrl = editId ? `/api/schemescrud` : '/api/schemescrud';
         const method = editId ? 'PUT' : 'POST';
 
@@ -150,18 +168,21 @@ const Schemesdata = () => {
             }
 
             toast.success(editId
-                ? 'Category updated successfully!'
-                : 'Category created successfully!');
+                ? 'Schemes updated successfully!'
+                : 'Schemes created successfully!');
 
             // setInputValue(''); // Remove or use inputValue
             setEditId(null);
             fetchData();
 
         } catch (error) {
-            console.error('Error saving category:', error);
+            console.error('Error saving Schemes:', error);
             toast.error(editId
-                ? 'Failed to update category. Please try again.'
-                : 'Failed to create category. Please try again.');
+                ? 'Failed to update Schemes. Please try again.'
+                : 'Failed to create Schemes. Please try again.');
+        }
+        finally {
+            setLoading(false); // End loading
         }
     };
 
@@ -251,24 +272,27 @@ const Schemesdata = () => {
             label: 'Documents',
             accessor: 'documents',
             render: (data) => {
-                // Case 1: Undefined/Null होने पर
                 if (!data.documents) return <span>-</span>;
 
-                // Case 2: स्ट्रिंग को अर्रे में कन्वर्ट करें
-                let docIds: number[] = [];
-
+                let docIds = [];
                 try {
-                    // "[1,2,3]" जैसे स्ट्रिंग को पार्स करें
-                    docIds = JSON.parse(data.documents.replace(/'/g, '"'));
+                    // Parse the string, replacing single quotes with double quotes for valid JSON
+                    const parsed = JSON.parse(data.documents.replace(/'/g, '"'));
+                    // If parsed value is an array, use as is; if not, wrap in array
+                    docIds = Array.isArray(parsed) ? parsed : [parsed];
                 } catch {
-                    // "[1,2,3]" फॉर्मेट न होने पर कॉमा सेपरेटेड ट्रीट करें
+                    // Fallback: split by comma, parse as integers, filter out NaN
                     docIds = data.documents
                         .split(',')
                         .map(part => parseInt(part.trim()))
                         .filter(num => !isNaN(num));
                 }
 
-                // Case 3: वैलिड डॉक्यूमेंट आईडी ढूंढें
+                // Ensure docIds is always an array (extra safety)
+                if (!Array.isArray(docIds)) {
+                    docIds = [docIds];
+                }
+
                 const docNames = docIds
                     .map(id => documentMap.get(id))
                     .filter(Boolean);
@@ -277,7 +301,9 @@ const Schemesdata = () => {
                     ? <span>{docNames.join(', ')}</span>
                     : <span>-</span>;
             }
-        },
+        }
+
+        ,
         {
             key: 'status',
             label: 'Status',
@@ -315,7 +341,7 @@ const Schemesdata = () => {
 
     return (
         <div className="p-4">
-
+            {loading && <Loader />}
             <ReusableTable
                 data={data}
                 title='Schemes'
@@ -380,7 +406,7 @@ const Schemesdata = () => {
                             <Label>Name</Label>
                             <input
                                 type="text"
-                                placeholder="Enter category name"
+                                placeholder="Enter name"
                                 className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                                 value={schemename}
                                 onChange={(e) => setschemename(e.target.value)}
@@ -390,7 +416,7 @@ const Schemesdata = () => {
                             <Label>Beneficiery</Label>
                             <input
                                 type="text"
-                                placeholder="Enter category name"
+                                placeholder="Enter Beneficiery"
                                 className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                                 value={beneficieryname}
                                 onChange={(e) => setbeneficieryname(e.target.value)}
@@ -400,7 +426,7 @@ const Schemesdata = () => {
                             <Label>Applyed</Label>
                             <input
                                 type="text"
-                                placeholder="Enter category name"
+                                placeholder="Applyed"
                                 className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                                 value={applyedat}
                                 onChange={(e) => setapplyedat(e.target.value)}
@@ -410,7 +436,7 @@ const Schemesdata = () => {
                             <Label>Link</Label>
                             <input
                                 type="text"
-                                placeholder="Enter category name"
+                                placeholder="Link"
                                 className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                                 value={link}
                                 onChange={(e) => setlink(e.target.value)}
@@ -430,10 +456,16 @@ const Schemesdata = () => {
                     </div>
                 }
                 submitbutton={
-                    <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
-                        {editId ? 'Update Document' : 'Save Changes'}
+                    <button
+                        type='button'
+                        onClick={handleSave}
+                        className='bg-blue-700 text-white py-2 p-2 rounded'
+                        disabled={loading}
+                    >
+                        {loading ? 'Submitting...' : (editId ? 'Update Schemes' : 'Save Changes')}
                     </button>
                 }
+
                 columns={columns}
             />
         </div>

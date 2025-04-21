@@ -16,13 +16,17 @@ const Yearmasterdata = () => {
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
     const { isActive, setIsActive } = useToggleContext();
+     const [loading, setLoading] = useState(false);
     const fetchData = async () => {
+        setLoading(true);
         try {
             const response = await fetch('/api/yearmaster');
             const result = await response.json();
             setData(result);
         } catch (error) {
             console.error('Error fetching data:', error);
+        }finally {
+            setLoading(false); // End loading
         }
     };
 
@@ -32,6 +36,7 @@ const Yearmasterdata = () => {
 
 
     const handleSave = async () => {
+        setLoading(true);
         if (!inputValue.trim()) {
             toast.error("Category name cannot be empty!");
             return;
@@ -68,11 +73,14 @@ const Yearmasterdata = () => {
             toast.error(editId
                 ? 'Failed to update category. Please try again.'
                 : 'Failed to create category. Please try again.');
+        }finally {
+            setLoading(false); // End loading
         }
     };
 
 
     const handleDelete = async (id: number) => {
+        setLoading(true);
         try {
             const response = await fetch('/api/yearmaster', {
                 method: 'DELETE',
@@ -85,6 +93,8 @@ const Yearmasterdata = () => {
             }
         } catch (error) {
             console.error('Error deleting category:', error);
+        }finally {
+            setLoading(false); // End loading
         }
     };
 
@@ -129,10 +139,10 @@ const Yearmasterdata = () => {
                 inputfiled={
                     <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
                         <div className="col-span-1">
-                            <Label>Documents</Label>
+                            <Label>Year</Label>
                             <input
                                 type="text"
-                                placeholder="Enter category name"
+                                placeholder="Enter Year"
                                 className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
 
                                 value={inputValue}
@@ -143,12 +153,17 @@ const Yearmasterdata = () => {
                 }
 
                 columns={columns}
-                title="Document"
+                title="Year"
                 filterOptions={[]}
                 // filterKey="role"
                 submitbutton={
-                    <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
-                        {editId ? 'Update Document' : 'Save Changes'}
+                    <button
+                        type='button'
+                        onClick={handleSave}
+                        className='bg-blue-700 text-white py-2 p-2 rounded'
+                        disabled={loading}
+                    >
+                        {loading ? 'Submitting...' : (editId ? 'Update Year' : 'Save Changes')}
                     </button>
                 }
                 searchKey="year"

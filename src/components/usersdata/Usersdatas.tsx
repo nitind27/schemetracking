@@ -107,18 +107,18 @@ const Usersdatas = () => {
       }
 
       toast.success(editId
-        ? 'Category updated successfully!'
-        : 'Category created successfully!');
+        ? 'Users updated successfully!'
+        : 'Users created successfully!');
 
 
       setEditId(null);
       fetchData();
 
     } catch (error) {
-      console.error('Error saving category:', error);
+      console.error('Error saving Users:', error);
       toast.error(editId
-        ? 'Failed to update category. Please try again.'
-        : 'Failed to create category. Please try again.');
+        ? 'Failed to update Users. Please try again.'
+        : 'Failed to create Users. Please try again.');
     }
   };
 
@@ -322,7 +322,7 @@ const Usersdatas = () => {
 
               >
                 <option value="">Taluka</option>
-                <option value="">Category</option>
+             
                 {datataluka.map((category) => (
                   <option key={category.taluka_id} value={category.taluka_id}>
                     {category.name}
@@ -351,7 +351,7 @@ const Usersdatas = () => {
         }
 
         columns={columns}
-        title="User Category"
+        title="Users"
         filterOptions={[]}
         // filterKey="role"
         submitbutton={

@@ -16,13 +16,17 @@ const Documentsdata = () => {
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
     const { isActive, setIsActive } = useToggleContext();
+        const [loading, setLoading] = useState(false);
     const fetchData = async () => {
+        setLoading(true);
         try {
             const response = await fetch('/api/documents');
             const result = await response.json();
             setData(result);
         } catch (error) {
             console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false); // End loading
         }
     };
 
@@ -32,6 +36,7 @@ const Documentsdata = () => {
 
 
     const handleSave = async () => {
+        setLoading(true);
         if (!inputValue.trim()) {
             toast.error("Category name cannot be empty!");
             return;
@@ -68,11 +73,14 @@ const Documentsdata = () => {
             toast.error(editId
                 ? 'Failed to update category. Please try again.'
                 : 'Failed to create category. Please try again.');
+        } finally {
+            setLoading(false); // End loading
         }
     };
 
 
     const handleDelete = async (id: number) => {
+        setLoading(true);
         try {
             const response = await fetch('/api/documents', {
                 method: 'DELETE',
@@ -85,6 +93,8 @@ const Documentsdata = () => {
             }
         } catch (error) {
             console.error('Error deleting category:', error);
+        } finally {
+            setLoading(false); // End loading
         }
     };
 
@@ -147,10 +157,16 @@ const Documentsdata = () => {
                 filterOptions={[]}
                 // filterKey="role"
                 submitbutton={
-                    <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
-                        {editId ? 'Update Document' : 'Save Changes'}
+                    <button
+                        type='button'
+                        onClick={handleSave}
+                        className='bg-blue-700 text-white py-2 p-2 rounded'
+                        disabled={loading}
+                    >
+                        {loading ? 'Submitting...' : (editId ? 'Update Documents' : 'Save Changes')}
                     </button>
                 }
+
                 searchKey="document_name"
                 rowsPerPage={5}
             />
