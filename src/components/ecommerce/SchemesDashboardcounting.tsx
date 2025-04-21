@@ -9,7 +9,7 @@ import { FarmdersType } from '../farmersdata/farmers';
 
 const SchemesDashboardcounting = () => {
     const [data, setData] = useState<UserCategory[]>([]);
-    console.log("fasdf",data)
+console.log("fasfsdaf",data)
     const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
     const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
 
@@ -67,7 +67,7 @@ const SchemesDashboardcounting = () => {
     const columns: Column<Schemesdatas>[] = [
         {
             key: 'scheme_name',
-            label: 'Category Name',
+            label: 'Schemes Name',
             accessor: 'scheme_name',
             render: (matches) => <span>{matches.scheme_name}</span>
         },
@@ -76,7 +76,7 @@ const SchemesDashboardcounting = () => {
             label: 'Benefited',
             render: () => (
                 <div className="flex">
-                    {farmdatasdone.length}
+                    {farmdatasdone.length} 
 
                 </div>
             )
