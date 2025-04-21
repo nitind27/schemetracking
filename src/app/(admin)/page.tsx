@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import React from "react";
+import SchemesDashboardcounting from "@/components/ecommerce/SchemesDashboardcounting";
 
 export const metadata: Metadata = {
   title:
@@ -13,6 +14,8 @@ export default function Ecommerce() {
     <div className="grid grid-cols-6 gap-4 md:gap-6">
       <div className="col-span-12 space-y-6 xl:col-span-7">
        <EcommerceMetrics />
+
+       <SchemesDashboardcounting />
         {/*  <UserPage /> */}
         {/* <UserCategory /> */}
 
