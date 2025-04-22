@@ -75,6 +75,8 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+// Any component
+const currentUser = sessionStorage?.getItem('userName');
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -249,8 +251,8 @@ const AppSidebar: React.FC = () => {
                 width={150}
                 height={40}
               /> */}
-              <h1 className="dark:hidden text-[20px] font-semibold">Hello, District Collector</h1>
-              <h1 className="hidden dark:block text-white text-[20px] font-semibold">Hello, District Collector</h1>
+              <h1 className="dark:hidden text-[20px] font-semibold">Hello, {currentUser}</h1>
+              <h1 className="hidden dark:block text-white text-[20px] font-semibold">Hello, {currentUser}</h1>
               {/* <Image
                 className="hidden dark:block"
                 src="/images/logo/logo-dark.svg"

@@ -22,29 +22,46 @@ export default function FormInModal({
   submitbutton
 }: FormInModalProps) {
   const { isOpen, openModal, closeModal } = useModal();
-    const { isActive, setIsActive } = useToggleContext();
+  const { isActive, setIsActive, setIsEditmode, isModelopen,setIsmodelopen } = useToggleContext();
 
-    useEffect(() => {
-      if (isActive) {
-        openModal();
-        setIsActive(false)
-      }
-      
-    
-    }, [isActive, openModal]);
+  useEffect(() => {
+    if (isActive) {
+      openModal();
+      setIsActive(false)
+    }
 
+
+  }, [isActive, openModal]);
+
+  useEffect(() => {
+
+    if (!isModelopen) {
+      closeModal();
+    }
+  }, [isModelopen, closeModal]);
+
+  const handleclose = () => {
+    closeModal()
+    setIsEditmode(false)
+    setIsActive(false)
+
+  }
+  const handlepenmodel=()=>{
+    openModal()
+    setIsmodelopen(true)
+  }
   return (
     <>
 
 
-      <Button size="sm" onClick={openModal}>
+      <Button size="sm" onClick={handlepenmodel}>
         Add
       </Button>
 
       <Modal
         isOpen={isOpen}
 
-        onClose={closeModal}
+        onClose={handleclose}
         className={`max-w-[584px] p-5 lg:p-10 ${classname}`}
       >
         <form className="">
@@ -55,9 +72,9 @@ export default function FormInModal({
           {inputfiled}
 
           <div className="flex items-center justify-end w-full gap-3 mt-6">
-            <Button size="sm" variant="outline" onClick={closeModal}>
+            <button className='bg-gray-600 text-white py-2 p-2 rounded' onClick={handleclose}>
               Close
-            </Button>
+            </button>
 
             {submitbutton}
           </div>

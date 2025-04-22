@@ -43,16 +43,16 @@ export default function SignInForm() {
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
+      // ✅ Store name in session storage
+      if (data.user.name) {
+        sessionStorage.setItem('userName', data.user.name);
+      }
 
-      // Handle successful login
       toast.success('Login successful!');
       router.push('/');
-      // alert("ok")
-
     } catch (error) {
       console.error('Login error:', error);
-      toast.error( 'Invalid credentials');
-      // alert("no")
+      toast.error('Invalid credentials');
     } finally {
       setIsSubmitting(false);
     }

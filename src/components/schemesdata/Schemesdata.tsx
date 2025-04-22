@@ -12,6 +12,7 @@ import { Schemesdatas } from './schemes';
 import { MultiValue } from 'react-select';
 import { useToggleContext } from '@/context/ToggleContext';
 import Loader from '@/common/Loader';
+import DefaultModal from '../example/ModalExample/DefaultModal';
 
 // Define a more specific type for document options
 interface DocOption {
@@ -34,23 +35,26 @@ interface schemesYear {
     year: string;
 }
 
+interface Props {
+    initialdata: Schemesdatas[];
+    filtercategory: schemescategory[];
+    filterdocument: {
+        id: number;
+        document_name: string;
+    }[];
+    filtersubcategory: schemesSubcategory[];
+    filteryear: schemesYear[];
+}
 
-const Schemesdata = () => {
-    const [data, setData] = useState<Schemesdatas[]>([]);
-    const [filtercategory, setfiltercategory] = useState<schemescategory[]>([]);
-    const [filterdocument, setfilterdocument] = useState<
-        {
-            id: number;
-            document_name: string;
-        }[]
-    >([]);
-
-    const [filtersubcategory, setfiltersubcategory] = useState<schemesSubcategory[]>([]);
-    const [filteryear, setfilteryear] = useState<schemesYear[]>([]);
-    // Remove or use inputValue to fix the no-unused-vars error
-    // const [inputValue, setInputValue] = useState('');
-    const { isActive, setIsActive } = useToggleContext();
-
+const Schemesdata: React.FC<Props> = ({
+    initialdata,
+    filtercategory,
+    filterdocument,
+    filtersubcategory,
+    filteryear
+}) => {
+    const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen } = useToggleContext();
+    const [data, setData] = useState<Schemesdatas[]>(initialdata || []);
     const [schemecategoryid, setschemecategoryid] = useState(0);
     const [schemesubcategoryid, setschemesubcategoryid] = useState(0);
     const [schemeyearid, setschemeyearid] = useState(0);
@@ -59,14 +63,16 @@ const Schemesdata = () => {
     const [applyedat, setapplyedat] = useState('');
     const [link, setlink] = useState('');
     const [documents, setdocuments] = useState<DocOption[]>([]);
+    const [documentsedit, setdocumentsedit] = useState("");
     const [loading, setLoading] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
-
+    console.log("documentsedit", documentsedit)
     // Use the DocOption type here
     const docoptions: DocOption[] = filterdocument.map(doc => ({
         label: doc.document_name,
         value: doc.id
     }));
+    console.log("filterdocument", filterdocument.filter((data) => documentsedit.includes(data.id.toString())).map((data) => data.document_name))
 
     const fetchData = async () => {
         setLoading(true);
@@ -81,71 +87,13 @@ const Schemesdata = () => {
         }
     };
 
-    const fetchDataCategory = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/schemescategory');
-            const result = await response.json();
-            setfiltercategory(result);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false); // End loading
-        }
-    };
 
-    const fetchDataDocument = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/documents');
-            const result = await response.json();
-            setfilterdocument(result);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false); // End loading
-        }
-    };
 
-    const fetchDataSubCategory = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/schemessubcategory');
-            const result = await response.json();
-            setfiltersubcategory(result);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false); // End loading
-        }
-    };
-
-    const fetchDatayear = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/yearmaster');
-            const result = await response.json();
-            setfilteryear(result);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        }
-        finally {
-            setLoading(false); 
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-        fetchDataDocument();
-        fetchDataCategory();
-        fetchDataSubCategory();
-        fetchDatayear();
-    }, []);
 
     const handleSave = async () => {
         setLoading(true)
-        const apiUrl = editId ? `/api/schemescrud` : '/api/schemescrud';
-        const method = editId ? 'PUT' : 'POST';
+        const apiUrl = isEditMode ? `/api/schemescrud` : '/api/schemescrud';
+        const method = isEditMode ? 'PUT' : 'POST';
 
         try {
             const response = await fetch(apiUrl, {
@@ -183,6 +131,7 @@ const Schemesdata = () => {
         }
         finally {
             setLoading(false); // End loading
+            setIsmodelopen(false);
         }
     };
 
@@ -202,7 +151,23 @@ const Schemesdata = () => {
         }
     };
 
+    useEffect(() => {
+        if (!isEditMode) {
+
+            setschemecategoryid(0)
+            setschemesubcategoryid(0)
+            setschemeyearid(0)
+            setschemename("")
+            setbeneficieryname("")
+            setapplyedat("")
+            setlink("")
+            setEditId(0);
+        }
+    }, [isEditMode]);
     const handleEdit = (item: Schemesdatas) => {
+
+        setIsmodelopen(true);
+        setIsEditmode(true);
         setIsActive(!isActive)
         setschemecategoryid(item.scheme_category_id)
         setschemesubcategoryid(item.scheme_sub_category_id)
@@ -211,15 +176,10 @@ const Schemesdata = () => {
         setbeneficieryname(item.beneficiery_name)
         setapplyedat(item.applyed_at)
         setlink(item.link)
-        try {
-            const parsedDocs = JSON.parse(item.documents);
-            setdocuments(Array.isArray(parsedDocs) ? parsedDocs : []);
-        } catch (error) {
-            console.error("Failed to parse documents:", error);
-            setdocuments([]);
-        }
+        setdocumentsedit(item.documents)
 
     };
+
     // Document ID से नाम मैपिंग
     const documentMap = new Map(filterdocument.map(doc => [doc.id, doc.document_name]));
 
@@ -318,12 +278,9 @@ const Schemesdata = () => {
                     <Button size="sm" onClick={() => handleEdit(data)}>
                         Edit
                     </Button>
-                    <Button
-                        size="sm"
-                        onClick={() => handleDelete(data.scheme_id)}
-                    >
-                        Delete
-                    </Button>
+                    <span>
+                        <DefaultModal id={data.scheme_id} fetchData={fetchData} endpoint={"schemescrud"} bodyname={"scheme_id"} />
+                    </span>
                 </div>
             )
         }
@@ -334,7 +291,7 @@ const Schemesdata = () => {
         selected: MultiValue<DocOption>,
         // _actionMeta: ActionMeta<DocOption>
     ) => {
-        console.log("fasdf")
+
         // Convert readonly array to regular array
         setdocuments(selected ? [...selected] : []);
     };
@@ -442,11 +399,20 @@ const Schemesdata = () => {
                                 onChange={(e) => setlink(e.target.value)}
                             />
                         </div>
+
                         <div className="col-span-1">
                             <Label>Documents</Label>
                             <Select
                                 isMulti
                                 options={docoptions}
+                                // defaultValue={
+                                //     filterdocument
+                                //         .filter(data => documentsedit.includes(data.id.toString()))
+                                //         .map(data => ({
+                                //             label: data.document_name,  // Must match DocOption's label
+                                //             value: data.id.toString()    // Must match DocOption's value type
+                                //         }))
+                                // }
 
                                 onChange={handleChange}
                                 value={documents} // Control the selected values
@@ -462,10 +428,10 @@ const Schemesdata = () => {
                         className='bg-blue-700 text-white py-2 p-2 rounded'
                         disabled={loading}
                     >
-                        {loading ? 'Submitting...' : (editId ? 'Update Schemes' : 'Save Changes')}
+                        {loading ? 'Submitting...' : (isEditMode ? 'Update' : 'Save Changes')}
                     </button>
                 }
-
+                searchKey="beneficiery_name"
                 columns={columns}
             />
         </div>

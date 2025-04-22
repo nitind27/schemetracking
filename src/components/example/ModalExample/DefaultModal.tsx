@@ -10,9 +10,10 @@ interface DefaultModalProps {
   id: number;
   fetchData: () => void;
   endpoint:string;
+  bodyname:string;
 }
 
-export default function DefaultModal({ id, fetchData ,endpoint}: DefaultModalProps) {
+export default function DefaultModal({ id, fetchData ,endpoint,bodyname}: DefaultModalProps) {
   const { isOpen, openModal, closeModal } = useModal();
 
   const handleDelete = async () => {
@@ -20,7 +21,7 @@ export default function DefaultModal({ id, fetchData ,endpoint}: DefaultModalPro
       const response = await fetch(`/api/${endpoint}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_category_id: id }),
+        body: JSON.stringify({ [bodyname]: id }),
       });
 
       if (response.ok) {
@@ -51,7 +52,7 @@ export default function DefaultModal({ id, fetchData ,endpoint}: DefaultModalPro
           Confirmation
         </h4>
         <p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
-          Are you sure you want to delete this category?
+          Are you sure you want to delete ?
         </p>
 
         <div className="flex items-center justify-end w-full gap-3 mt-8">

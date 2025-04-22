@@ -5,6 +5,10 @@ import { createContext, useState, ReactNode, useContext } from 'react';
 type ToggleContextType = {
   isActive: boolean;
   setIsActive: (value: boolean) => void;
+  isEditMode: boolean;
+  setIsEditmode: (value: boolean) => void;
+  isModelopen: boolean;
+  setIsmodelopen: (value: boolean) => void;
 };
 
 // Context Creation
@@ -26,9 +30,11 @@ type ToggleProviderProps = {
 
 export function ToggleProvider({ children }: ToggleProviderProps) {
   const [isActive, setIsActive] = useState(false);
+  const [isEditMode, setIsEditmode] = useState(false);
+  const [isModelopen, setIsmodelopen] = useState(false);
 
   return (
-    <ToggleContext.Provider value={{ isActive, setIsActive }}>
+    <ToggleContext.Provider value={{ isActive, setIsActive, isEditMode, setIsEditmode,isModelopen,setIsmodelopen }}>
       {children}
     </ToggleContext.Provider>
   );

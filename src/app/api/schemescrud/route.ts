@@ -124,14 +124,14 @@ export async function PUT(request: Request) {
 
 // Delete scheme
 export async function DELETE(request: Request) {
-  const { id } = await request.json();
+  const { scheme_id } = await request.json();
 
-  if (!id) {
+  if (!scheme_id) {
     return NextResponse.json({ error: 'Scheme ID is required' }, { status: 400 });
   }
 
   try {
-    await pool.query('DELETE FROM schemes WHERE id = ?', [id]);
+    await pool.query('DELETE FROM schemes WHERE scheme_id  = ?', [scheme_id]);
     return NextResponse.json({ message: 'Scheme deleted' });
   } catch (error) {
     console.error('Deletion failed:', error);

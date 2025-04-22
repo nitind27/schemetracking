@@ -30,12 +30,7 @@ export async function POST(request: Request) {
     const farmerId = formData.get('farmer_id') as string;
     const files = formData.getAll('files') as File[];
 
-    if (!farmerId || !files.length) {
-        return NextResponse.json(
-            { message: 'Farmer ID and files are required' },
-            { status: 400 }
-        );
-    }
+
 
     let connection;
     try {
