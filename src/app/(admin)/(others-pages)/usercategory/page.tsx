@@ -1,8 +1,8 @@
-import Loader from '@/common/Loader';
+
 import Breadcrumbs from '@/components/common/BreadcrumbItem';
 
 import UserCategorydata from '@/components/usercategory/UserCategorydata';
-import React, { Suspense } from 'react';
+import React from 'react';
 
 const Page = async () => {
   const breadcrumbItems = [
@@ -19,15 +19,13 @@ const Page = async () => {
   return (
     <div className="grid grid-cols-6 gap-4 md:gap-6">
       <div className="col-span-12 space-y-6 xl:col-span-7">
-
-        <Suspense fallback={<Loader />}>
+\
           <Breadcrumbs
             title="User Category"
             breadcrumbs={breadcrumbItems}
           />
           <UserCategorydata serverData={data} />
 
-        </Suspense>
       </div>
     </div>
   );
