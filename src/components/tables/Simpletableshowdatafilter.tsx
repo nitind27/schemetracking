@@ -80,7 +80,7 @@ export function Simpletableshowdatafilter<T extends object>({
   }, [filter, search, serverSidePagination]);
 
   return (
-    <div className="p-4 bg-white rounded-lg w-full max-w-[980px] mx-auto border">
+    <div className="p-4 bg-white rounded-lg w-full  mx-auto border">
       {/* Filter/Search Section */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex flex-col md:flex-row gap-2 flex-1">

@@ -1,129 +1,39 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import {  useState } from 'react';
 
 import Label from "../form/Label";
 
 import { Column } from "../tables/tabletype";
 // import Button from "../ui/button/Button";
 
-import { toast } from 'react-toastify';
 import React from 'react';
 
-import Loader from '@/common/Loader';
 import { FarmdersType } from './farmers';
 import { Village } from '../Village/village';
 import { Taluka } from '../Taluka/Taluka';
 import { Schemesdatas } from '../schemesdata/schemes';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 
-const Farmersdata = () => {
-  const [data, setData] = useState<FarmdersType[]>([]);
-  const [datavillage, setDatavillage] = useState<Village[]>([]);
-  const [datataluka, setDatataluka] = useState<Taluka[]>([]);
-  const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
+interface FarmersdataProps {
+  data: FarmdersType[];
+  datavillage: Village[];
+  datataluka: Taluka[];
+  dataschems: Schemesdatas[];
+}
+
+const Farmersdata: React.FC<FarmersdataProps> = ({
+  data,
+  datavillage,
+  datataluka,
+  dataschems,
+}) => {
+
+  // const [datavillage, setDatavillage] = useState<Village[]>([]);
+  // const [datataluka, setDatataluka] = useState<Taluka[]>([]);
+  // const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [editId, setEditId] = useState<number | null>(null);
-
-  const [loading, setLoading] = useState(false);
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/farmers');
-      const result = await response.json();
-      setData(result);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false); // End loading
-    }
-  };
-
-  const fetchDatavillages = async () => {
-    try {
-      const response = await fetch('/api/villages');
-      const result = await response.json();
-      setDatavillage(result);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-  const fetchDatataluka = async () => {
-    try {
-      const response = await fetch('/api/taluka');
-      const result = await response.json();
-      setDatataluka(result);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-  const fetchDatausercategorycrud = async () => {
-    try {
-      const response = await fetch('/api/schemescrud');
-      const result = await response.json();
-      setDataschems(result);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchDatausercategorycrud();
-    fetchDatataluka();
-    fetchDatavillages();
-    fetchData();
-  }, []);
-
-
-  const handleSave = async () => {
-
-    setLoading(true)
-    const apiUrl = editId ? `/api/usercategorycrud` : '/api/usercategorycrud';
-    const method = editId ? 'PUT' : 'POST';
-
-    try {
-      const response = await fetch(apiUrl, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_category_id: editId,
-          category_name: inputValue
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-
-      toast.success(editId
-        ? 'Category updated successfully!'
-        : 'Category created successfully!');
-
-      setInputValue('');
-      setEditId(null);
-
-      fetchData();
-
-    } catch (error) {
-      console.error('Error saving category:', error);
-      toast.error(editId
-        ? 'Failed to update category. Please try again.'
-        : 'Failed to create category. Please try again.');
-    } finally {
-      setLoading(false); // End loading
-    }
-  };
-
-
-
-
-  // const handleEdit = (item: FarmdersType) => {
-  //   console.log("item",item)
-  //   setIsActive(!isActive)
-  //   // setInputValue(item.category_name);
-  //   // setEditId(item.user_category_id);
-  // };
+  
 
   const columns: Column<FarmdersType>[] = [
     {
@@ -207,28 +117,11 @@ const Farmersdata = () => {
       render: (data) => <span>{dataschems.filter((datas) => datas.scheme_id == Number(data.schemes)).map((data) => data.scheme_name)}</span>
     },
 
-    // {
-    //   key: 'actions',
-    //   label: 'Actions',
-    //   render: (data) => (
-    //     <div className="flex gap-2">
-    //       <Button size="sm" onClick={() => handleEdit(data)}>
-    //         Edit
-    //       </Button>
-
-    //       <span>
-
-    //         <DefaultModal id={data.farmer_id} fetchData={fetchData} endpoint={"usercategorycrud"} />
-    //       </span>
-
-    //     </div>
-    //   )
-    // }
   ];
 
   return (
-    <div className="p-4">
-      {loading && <Loader />}
+    <div className="">
+   
       <Simpletableshowdata
         data={data}
         inputfiled={
@@ -253,8 +146,8 @@ const Farmersdata = () => {
         // filterKey="role"
         submitbutton={
 
-          <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
-            {editId ? 'Update Category' : 'Save Changes'}
+          <button type='button' className='bg-blue-700 text-white py-2 p-2 rounded'>
+            {'Save Changes'}
           </button>
         }
         searchKey="name"

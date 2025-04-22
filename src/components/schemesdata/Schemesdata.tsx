@@ -17,7 +17,7 @@ import DefaultModal from '../example/ModalExample/DefaultModal';
 // Define a more specific type for document options
 interface DocOption {
     label: string;
-    value: number; // Or string, depending on your data
+    value: string; // Or string, depending on your data
 }
 
 // Define a type for the data fetched from the API
@@ -66,13 +66,13 @@ const Schemesdata: React.FC<Props> = ({
     const [documentsedit, setdocumentsedit] = useState("");
     const [loading, setLoading] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
-    console.log("documentsedit", documentsedit)
+ 
     // Use the DocOption type here
     const docoptions: DocOption[] = filterdocument.map(doc => ({
         label: doc.document_name,
-        value: doc.id
+        value: doc.id.toString()
     }));
-    console.log("filterdocument", filterdocument.filter((data) => documentsedit.includes(data.id.toString())).map((data) => data.document_name))
+ 
 
     const fetchData = async () => {
         setLoading(true);
@@ -100,6 +100,7 @@ const Schemesdata: React.FC<Props> = ({
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    scheme_id:editId,
                     scheme_category_id: schemecategoryid,
                     scheme_sub_category_id: schemesubcategoryid,
                     scheme_year_id: schemeyearid,
@@ -135,22 +136,6 @@ const Schemesdata: React.FC<Props> = ({
         }
     };
 
-    const handleDelete = async (id: number) => {
-        try {
-            const response = await fetch('/api/usercategorycrud', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_category_id: id })
-            });
-
-            if (response.ok) {
-                fetchData();
-            }
-        } catch (error) {
-            console.error('Error deleting category:', error);
-        }
-    };
-
     useEffect(() => {
         if (!isEditMode) {
 
@@ -169,6 +154,7 @@ const Schemesdata: React.FC<Props> = ({
         setIsmodelopen(true);
         setIsEditmode(true);
         setIsActive(!isActive)
+        setEditId(item.scheme_id)
         setschemecategoryid(item.scheme_category_id)
         setschemesubcategoryid(item.scheme_sub_category_id)
         setschemeyearid(item.scheme_year_id)
@@ -285,8 +271,6 @@ const Schemesdata: React.FC<Props> = ({
             )
         }
     ];
-
-    // Use the DocOption type here
     const handleChange = (
         selected: MultiValue<DocOption>,
         // _actionMeta: ActionMeta<DocOption>
@@ -297,7 +281,7 @@ const Schemesdata: React.FC<Props> = ({
     };
 
     return (
-        <div className="p-4">
+        <div className="">
             {loading && <Loader />}
             <ReusableTable
                 data={data}
@@ -405,17 +389,18 @@ const Schemesdata: React.FC<Props> = ({
                             <Select
                                 isMulti
                                 options={docoptions}
-                                // defaultValue={
-                                //     filterdocument
-                                //         .filter(data => documentsedit.includes(data.id.toString()))
-                                //         .map(data => ({
-                                //             label: data.document_name,  // Must match DocOption's label
-                                //             value: data.id.toString()    // Must match DocOption's value type
-                                //         }))
-                                // }
+                                defaultValue={isEditMode ?
+                                    filterdocument
+                                        .filter(data => documentsedit.includes(data.id.toString()))
+                                        .map(data => ({
+                                            label: data.document_name,  // Must match DocOption's label
+                                            value: data.id.toString()    // Must match DocOption's value type
+                                        }))
+                                    : documents
+                                }
 
                                 onChange={handleChange}
-                                value={documents} // Control the selected values
+                        
                             />
                         </div>
 

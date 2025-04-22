@@ -15,6 +15,7 @@ interface AllFarmersData {
 
 const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const [data, setData] = useState<UserCategory[]>([]);
+    console.log("fadfs",data)
     const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
     const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,7 +44,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     const handleBenefitedClick = (schemeId: string) => {
         const benefitedFarmers = dataschems.filter(schemes =>
-            schemeId.includes(schemes.scheme_id as any)
+            schemeId.includes(schemes.scheme_id.toString())
         );
 
         setModalTitle(`Benefited IFR holders `);
@@ -149,17 +150,17 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                         </div>
                         <div className="p-4">
                             <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
+                                <table className="min-w-full divide-y divide-gray-200 ">
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                IFR holders
+                                                Shcemes
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Adivasi
+                                            Beneficiery
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Vanksetra
+                                                Applyed
                                             </th>
                                         </tr>
                                     </thead>
@@ -173,7 +174,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                                                     {farmer.beneficiery_name}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.scheme_sub_category_id}
+                                                    {farmer.applyed_at}
                                                 </td>
                                             </tr>
                                         ))}

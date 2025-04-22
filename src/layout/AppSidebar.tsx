@@ -14,6 +14,8 @@ import {
   UserCircleIcon,
 } from "../icons/index";
 
+import { useToggleContext } from "@/context/ToggleContext";
+
 type NavItem = {
   name: string;
   icon: React.ReactNode;
@@ -33,11 +35,6 @@ const navItems: NavItem[] = [
     path: "/usercategory",
   },
 
-  // {
-  //   icon: <UserCircleIcon />,
-  //   name: "Users",
-  //   path: "/profile",
-  // },
   {
     icon: <UserCircleIcon />,
     name: "Schemes",
@@ -75,14 +72,47 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
-// Any component
-const currentUser = sessionStorage?.getItem('userName');
+  // Any component
+  const { setIsglobleloading } = useToggleContext();
+  // const currentUser = sessionStorage?.getItem('userName');
+  const router = usePathname();
+  const [storedValue, setStoredValue] = useState<string | null>(null);
+
+  // const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const value = sessionStorage.getItem('userName');
+    setStoredValue(value);
+  }, []);
+
+
+  // Function to handle click and store path in localStorage
+  const handleItemClick = (path: string) => {
+    setIsglobleloading(true);
+    localStorage.setItem("currentPath", path);
+  };
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+
+      setIsglobleloading(false);
+    };
+
+    if (router) {
+      handleRouteChange();
+    }
+    return () => {
+
+    };
+  }, [router]);
+
 
   const renderMenuItems = (
     navItems: NavItem[],
     menuType: "main" | "others"
   ) => (
     <ul className="flex flex-col gap-4">
+
       {navItems.map((nav, index) => (
         <li key={nav.name}>
           {nav.subItems ? (
@@ -119,23 +149,28 @@ const currentUser = sessionStorage?.getItem('userName');
             </button>
           ) : (
             nav.path && (
-              <Link
-                href={nav.path}
-                className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
-                  }`}
-              >
-                <span
-                  className={`${isActive(nav.path)
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
+              <>
+
+                <Link
+                  href={nav.path}
+                  className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
                     }`}
+
+                  onClick={() => handleItemClick(`${nav.path}`)}
                 >
-                  {nav.icon}
-                </span>
-                {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className={`menu-item-text`}>{nav.name}</span>
-                )}
-              </Link>
+                  <span
+                    className={`${isActive(nav.path)
+                      ? "menu-item-icon-active"
+                      : "menu-item-icon-inactive"
+                      }`}
+                  >
+                    {nav.icon}
+                  </span>
+                  {(isExpanded || isHovered || isMobileOpen) && (
+                    <span className={`menu-item-text`}>{nav.name}</span>
+                  )}
+                </Link>
+              </>
             )
           )}
           {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
@@ -251,8 +286,8 @@ const currentUser = sessionStorage?.getItem('userName');
                 width={150}
                 height={40}
               /> */}
-              <h1 className="dark:hidden text-[20px] font-semibold">Hello, {currentUser}</h1>
-              <h1 className="hidden dark:block text-white text-[20px] font-semibold">Hello, {currentUser}</h1>
+              <h1 className="dark:hidden text-[20px] font-semibold">Hello, {storedValue}</h1>
+              <h1 className="hidden dark:block text-white text-[20px] font-semibold">Hello, {storedValue}</h1>
               {/* <Image
                 className="hidden dark:block"
                 src="/images/logo/logo-dark.svg"

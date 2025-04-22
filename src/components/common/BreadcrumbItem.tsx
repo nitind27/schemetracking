@@ -12,7 +12,7 @@ interface BreadcrumbsProps {
 
 const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ title, breadcrumbs }) => {
   return (
-    <div className="p-4 bg-white rounded-lg w-full max-w-[980px] mx-auto border">
+    <div className="p-4 bg-white rounded-lg w-full  mx-auto border">
       <h1 className="text-3xl font-bold mb-2">{title}</h1>
       <nav className="flex space-x-2 text-gray-600">
         {breadcrumbs.map((item, index) => (

@@ -66,7 +66,7 @@ export async function POST(request: Request) {
 // Update scheme
 export async function PUT(request: Request) {
   const {
-    id,
+    scheme_id,
     scheme_category_id,
     scheme_sub_category_id,
     scheme_year_id,
@@ -78,7 +78,7 @@ export async function PUT(request: Request) {
   } = await request.json();
 
   if (
-    !id ||
+    !scheme_id ||
     scheme_category_id === undefined ||
     scheme_sub_category_id === undefined ||
     scheme_year_id === undefined ||
@@ -102,7 +102,7 @@ export async function PUT(request: Request) {
         applyed_at = ?,
         link = ?,
         documents = ?
-      WHERE id = ?`,
+      WHERE scheme_id = ?`,
       [
         scheme_category_id,
         scheme_sub_category_id,
@@ -112,7 +112,7 @@ export async function PUT(request: Request) {
         applyed_at,
         link,
         documents,
-        id
+        scheme_id
       ]
     );
     return NextResponse.json({ message: 'Scheme updated' });

@@ -1,14 +1,15 @@
 // app/ecommerce/page.tsx
 import type { Metadata } from "next";
 import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
-import FarmersDashboard from "@/components/ecommerce/FarmersDashboard";
+
 import Showschemstable from "@/components/ecommerce/Showschemstable";
 import { Suspense } from "react";
 import Loader from "@/common/Loader";
 
 export const metadata: Metadata = {
-  title: "Next.js E-commerce Dashboard | TailAdmin - Next.js Dashboard Template",
-  description: "This is Next.js Home for TailAdmin Dashboard Template",
+  title: "Next.js Profile | TailAdmin - Next.js Dashboard Template",
+  description:
+    "This is Next.js Profile page for TailAdmin - Next.js Tailwind CSS Admin Dashboard Template",
 };
 
 async function fetchMetrics() {

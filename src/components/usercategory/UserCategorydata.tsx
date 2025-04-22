@@ -103,7 +103,7 @@ const UserCategorydata: React.FC<Props> = ({ serverData }) => {
   ];
 
   return (
-    <div className="p-4">
+    <div className="">
       {loading && <Loader />}
       <ReusableTable
         data={data}

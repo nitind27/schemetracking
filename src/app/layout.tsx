@@ -6,6 +6,7 @@ import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { ToastContainer } from 'react-toastify';
 import { ToggleProvider } from '@/context/ToggleContext';
+import GlobleLoader from '@/components/common/GlobleLoader';
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -23,7 +24,7 @@ export default function RootLayout({
 
           <ToggleProvider>
 
-            <SidebarProvider>{children}<ToastContainer
+            <SidebarProvider><GlobleLoader />{children}<ToastContainer
               position="top-right"
 
               autoClose={3000}

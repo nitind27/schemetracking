@@ -25,14 +25,14 @@ export default function DefaultModal({ id, fetchData ,endpoint,bodyname}: Defaul
       });
 
       if (response.ok) {
-        toast.success("Category deleted successfully!");
+        toast.success("Deleted successfully!");
         fetchData();
         closeModal();
       } else {
-        toast.error("Failed to delete category.");
+        toast.error("Failed to delete.");
       }
     } catch (error) {
-      console.error("Error deleting category:", error);
+      console.error("Error deleting:", error);
       toast.error("An error occurred while deleting.");
     }
   };

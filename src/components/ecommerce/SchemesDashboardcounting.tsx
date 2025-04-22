@@ -138,7 +138,10 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                                 IFR holders
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Adivasi
+                                                Type
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Contact No
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Vanksetra
@@ -153,6 +156,9 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {farmer.adivasi}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {farmer.contact_no || '-'}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {farmer.vanksetra}

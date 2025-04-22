@@ -14,13 +14,18 @@ import { useToggleContext } from '@/context/ToggleContext';
 import { UserCategory } from '../usercategory/userCategory';
 import { Taluka } from '../Taluka/Taluka';
 import { Village } from '../Village/village';
+import DefaultModal from '../example/ModalExample/DefaultModal';
 
-const Usersdatas = () => {
-  const [data, setData] = useState<UserData[]>([]);
-  const [datavillage, setDatavillage] = useState<Village[]>([]);
-  const [datataluka, setDatataluka] = useState<Taluka[]>([]);
-  const [datausercategorycrud, setDatausercategorycrud] = useState<UserCategory[]>([]);
+type Props = {
+  users: UserData[];
+  datavillage: Village[];
+  datataluka: Taluka[];
+  datausercategorycrud: UserCategory[];
+};
 
+const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Props) => {
+
+  const [data, setData] = useState<UserData[]>(users || []);
   const [usercategory, setUsercategory] = useState(0);
 
   const [name, setName] = useState('');
@@ -31,64 +36,50 @@ const Usersdatas = () => {
   const [Taluka, setTaluka] = useState(0);
   const [Village, setVillage] = useState(0);
   const [editId, setEditId] = useState<number | null>(null);
-  const { isActive, setIsActive } = useToggleContext();
+  const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen } = useToggleContext();
+  const [loading, setLoading] = useState(false);
   const fetchData = async () => {
+    setLoading(true);
     try {
       const response = await fetch('/api/users');
       const result = await response.json();
       setData(result);
     } catch (error) {
       console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false); // End loading
     }
   };
-  const fetchDatavillages = async () => {
-    try {
-      const response = await fetch('/api/villages');
-      const result = await response.json();
-      setDatavillage(result);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-  const fetchDatataluka = async () => {
-    try {
-      const response = await fetch('/api/taluka');
-      const result = await response.json();
-      setDatataluka(result);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-  const fetchDatausercategorycrud = async () => {
-    try {
-      const response = await fetch('/api/usercategorycrud');
-      const result = await response.json();
-      setDatausercategorycrud(result);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
+
+
+
 
   useEffect(() => {
-    fetchData();
-    fetchDatavillages();
-    fetchDatataluka();
-    fetchDatausercategorycrud();
+    if (!isEditMode) {
+      setUsercategory(Number(""))
 
-  }, []);
-
+      setName("")
+      setContact("")
+      setUsername("")
+      setPassword("")
+      setaddress("")
+      setTaluka(Number(""))
+      setVillage(Number(""))
+      setEditId(0);
+    }
+  }, [isEditMode]);
 
   const handleSave = async () => {
-
-    const apiUrl = editId ? `/api/users/insert` : '/api/users/insert';
-    const method = editId ? 'PUT' : 'POST';
+    setLoading(true);
+    const apiUrl = isEditMode ? `/api/users/insert` : '/api/users/insert';
+    const method = isEditMode ? 'PUT' : 'POST';
 
     try {
       const response = await fetch(apiUrl, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-
+          user_id: editId,
           name: name,
           user_category_id: usercategory,
           username: Username,
@@ -119,31 +110,21 @@ const Usersdatas = () => {
       toast.error(editId
         ? 'Failed to update Users. Please try again.'
         : 'Failed to create Users. Please try again.');
+    } finally {
+      setLoading(false);
+      setIsmodelopen(false);
     }
   };
 
 
-  const handleDelete = async (id: number) => {
-    try {
-      const response = await fetch('/api/usercategorycrud', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: id })
-      });
 
-      if (response.ok) {
-        fetchData();
-      }
-    } catch (error) {
-      console.error('Error deleting category:', error);
-    }
-  };
 
   const handleEdit = (item: UserData) => {
     setIsActive(!isActive)
-
+    setIsmodelopen(true);
+    setIsEditmode(true);
     setUsercategory(Number(item.user_category_id))
-
+    setEditId(item.user_id)
     setName(item.name)
     setContact(item.contact_no)
     setUsername(item.username)
@@ -218,20 +199,18 @@ const Usersdatas = () => {
           <Button size="sm" onClick={() => handleEdit(data)}>
             Edit
           </Button>
-          <Button
-            size="sm"
 
-            onClick={() => handleDelete(data.user_id)}
-          >
-            Delete
-          </Button>
+
+          <span>
+            <DefaultModal id={data.user_id} fetchData={fetchData} endpoint={"users/insert"} bodyname='user_id' />
+          </span>
         </div>
       )
     }
   ];
 
   return (
-    <div className="p-4">
+    <div className="">
 
       <ReusableTable
         data={data}
@@ -322,7 +301,7 @@ const Usersdatas = () => {
 
               >
                 <option value="">Taluka</option>
-             
+
                 {datataluka.map((category) => (
                   <option key={category.taluka_id} value={category.taluka_id}>
                     {category.name}
@@ -355,8 +334,13 @@ const Usersdatas = () => {
         filterOptions={[]}
         // filterKey="role"
         submitbutton={
-          <button type='button' onClick={handleSave} className='bg-blue-700 text-white py-2 p-2 rounded'>
-            {editId ? 'Update User' : 'Save Changes'}
+          <button
+            type='button'
+            onClick={handleSave}
+            className='bg-blue-700 text-white py-2 p-2 rounded'
+            disabled={loading}
+          >
+            {loading ? 'Submitting...' : (editId ? 'Update' : 'Save Changes')}
           </button>
         }
         searchKey="username"

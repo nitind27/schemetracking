@@ -10,13 +10,19 @@ import { Scheme_year } from './yearmaster';
 import { toast } from 'react-toastify';
 import React from 'react';
 import { useToggleContext } from '@/context/ToggleContext';
+import DefaultModal from '../example/ModalExample/DefaultModal';
 
-const Yearmasterdata = () => {
-    const [data, setData] = useState<Scheme_year[]>([]);
+
+interface Props {
+    serverData: Scheme_year[];
+}
+
+const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
+    const [data, setData] = useState<Scheme_year[]>(serverData || []);
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
-    const { isActive, setIsActive } = useToggleContext();
-     const [loading, setLoading] = useState(false);
+    const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen } = useToggleContext();
+    const [loading, setLoading] = useState(false);
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -25,22 +31,17 @@ const Yearmasterdata = () => {
             setData(result);
         } catch (error) {
             console.error('Error fetching data:', error);
-        }finally {
-            setLoading(false); // End loading
+        } finally {
+            setLoading(false);
+            setIsmodelopen(false);
         }
     };
 
-    useEffect(() => {
-        fetchData();
-    }, []);
 
 
     const handleSave = async () => {
         setLoading(true);
-        if (!inputValue.trim()) {
-            toast.error("Category name cannot be empty!");
-            return;
-        }
+
 
         const apiUrl = editId ? `/api/yearmaster` : '/api/yearmaster';
         const method = editId ? 'PUT' : 'POST';
@@ -50,7 +51,7 @@ const Yearmasterdata = () => {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-
+                    scheme_year_id:editId,
                     year: inputValue
                 })
             });
@@ -61,44 +62,33 @@ const Yearmasterdata = () => {
 
 
             toast.success(editId
-                ? 'Category updated successfully!'
-                : 'Category created successfully!');
+                ? 'Year updated successfully!'
+                : 'Year created successfully!');
 
             setInputValue('');
             setEditId(null);
             fetchData();
 
         } catch (error) {
-            console.error('Error saving category:', error);
+            console.error('Error saving Year:', error);
             toast.error(editId
-                ? 'Failed to update category. Please try again.'
-                : 'Failed to create category. Please try again.');
-        }finally {
+                ? 'Failed to update Year. Please try again.'
+                : 'Failed to create Year. Please try again.');
+        } finally {
             setLoading(false); // End loading
         }
     };
 
-
-    const handleDelete = async (id: number) => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/yearmaster', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id })
-            });
-
-            if (response.ok) {
-                fetchData();
-            }
-        } catch (error) {
-            console.error('Error deleting category:', error);
-        }finally {
-            setLoading(false); // End loading
+    useEffect(() => {
+        if (!isEditMode) {
+            setInputValue("");
+            setEditId(0);
         }
-    };
+    }, [isEditMode]);
 
     const handleEdit = (item: Scheme_year) => {
+        setIsmodelopen(true);
+        setIsEditmode(true);
         setIsActive(!isActive)
         setInputValue(item.year);
         setEditId(item.scheme_year_id);
@@ -119,20 +109,16 @@ const Yearmasterdata = () => {
                     <Button size="sm" onClick={() => handleEdit(data)}>
                         Edit
                     </Button>
-                    <Button
-                        size="sm"
-
-                        onClick={() => handleDelete(data.scheme_year_id)}
-                    >
-                        Delete
-                    </Button>
+                    <span>
+                        <DefaultModal id={data.scheme_year_id} fetchData={fetchData} endpoint={"yearmaster"} bodyname='scheme_year_id' />
+                    </span>
                 </div>
             )
         }
     ];
 
     return (
-        <div className="p-4">
+        <div className="">
 
             <ReusableTable
                 data={data}
@@ -163,7 +149,7 @@ const Yearmasterdata = () => {
                         className='bg-blue-700 text-white py-2 p-2 rounded'
                         disabled={loading}
                     >
-                        {loading ? 'Submitting...' : (editId ? 'Update Year' : 'Save Changes')}
+                        {loading ? 'Submitting...' : (editId ? 'Update' : 'Save Changes')}
                     </button>
                 }
                 searchKey="year"

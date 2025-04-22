@@ -47,14 +47,14 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
             <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 md:gap-2 p-5">
                 {activeTab === 'schemes' && (
 
-                    <div>
+                    <div className='w-full'>
 
                         <SchemesDashboardcounting farmersData={farmersData}/>
                     </div>
                 )}
 
                 {activeTab === 'farmers' && (
-                    <div>
+                    <div className='w-full '>
 
                         <FarmersDashboard farmersData={farmersData} />
                     </div>

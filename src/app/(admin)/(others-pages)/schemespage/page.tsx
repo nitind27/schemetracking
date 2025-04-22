@@ -27,7 +27,8 @@ const Page = async () => {
   ];
 
   return (
-    <div>
+    <div className="grid grid-cols-6 gap-4 md:gap-6">
+      <div className="col-span-12 space-y-6 xl:col-span-7">
       <Suspense fallback={<Loader />}>
         <Breadcrumbs title="Schemes Master" breadcrumbs={breadcrumbItems} />
         <Schemesdata
@@ -38,6 +39,7 @@ const Page = async () => {
           filteryear={filteryear}
         />
       </Suspense>
+    </div>
     </div>
   );
 };

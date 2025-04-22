@@ -10,13 +10,19 @@ import { Documents } from './documents';
 import { toast } from 'react-toastify';
 import React from 'react';
 import { useToggleContext } from '@/context/ToggleContext';
+import DefaultModal from '../example/ModalExample/DefaultModal';
 
-const Documentsdata = () => {
-    const [data, setData] = useState<Documents[]>([]);
+
+interface Props {
+    serverData: Documents[];
+}
+
+const Documentsdata: React.FC<Props> = ({ serverData }) => {
+    const [data, setData] = useState<Documents[]>(serverData || []);
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
-    const { isActive, setIsActive } = useToggleContext();
-        const [loading, setLoading] = useState(false);
+    const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen } = useToggleContext();
+    const [loading, setLoading] = useState(false);
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -31,17 +37,13 @@ const Documentsdata = () => {
     };
 
     useEffect(() => {
-        fetchData();
-    }, []);
-
-
+        if (!isEditMode) {
+            setInputValue("");
+            setEditId(0);
+        }
+    }, [isEditMode]);
     const handleSave = async () => {
         setLoading(true);
-        if (!inputValue.trim()) {
-            toast.error("Category name cannot be empty!");
-            return;
-        }
-
         const apiUrl = editId ? `/api/documents` : '/api/documents';
         const method = editId ? 'PUT' : 'POST';
 
@@ -50,7 +52,7 @@ const Documentsdata = () => {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-
+                    id: editId,
                     document_name: inputValue
                 })
             });
@@ -61,44 +63,29 @@ const Documentsdata = () => {
 
 
             toast.success(editId
-                ? 'Category updated successfully!'
-                : 'Category created successfully!');
+                ? 'Documents updated successfully!'
+                : 'Documents created successfully!');
 
             setInputValue('');
             setEditId(null);
             fetchData();
 
         } catch (error) {
-            console.error('Error saving category:', error);
+            console.error('Error saving Documents:', error);
             toast.error(editId
-                ? 'Failed to update category. Please try again.'
-                : 'Failed to create category. Please try again.');
+                ? 'Failed to update Documents. Please try again.'
+                : 'Failed to create Documents. Please try again.');
         } finally {
-            setLoading(false); // End loading
+            setLoading(false);
+            setIsmodelopen(false);
         }
     };
 
 
-    const handleDelete = async (id: number) => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/documents', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id })
-            });
-
-            if (response.ok) {
-                fetchData();
-            }
-        } catch (error) {
-            console.error('Error deleting category:', error);
-        } finally {
-            setLoading(false); // End loading
-        }
-    };
 
     const handleEdit = (item: Documents) => {
+        setIsmodelopen(true);
+        setIsEditmode(true);
         setIsActive(!isActive)
         setInputValue(item.document_name);
         setEditId(item.id);
@@ -119,20 +106,16 @@ const Documentsdata = () => {
                     <Button size="sm" onClick={() => handleEdit(data)}>
                         Edit
                     </Button>
-                    <Button
-                        size="sm"
-
-                        onClick={() => handleDelete(data.id)}
-                    >
-                        Delete
-                    </Button>
+                    <span>
+                        <DefaultModal id={data.id} fetchData={fetchData} endpoint={"documents"} bodyname='id' />
+                    </span>
                 </div>
             )
         }
     ];
 
     return (
-        <div className="p-4">
+        <div className="">
 
             <ReusableTable
                 data={data}
@@ -163,7 +146,7 @@ const Documentsdata = () => {
                         className='bg-blue-700 text-white py-2 p-2 rounded'
                         disabled={loading}
                     >
-                        {loading ? 'Submitting...' : (editId ? 'Update Documents' : 'Save Changes')}
+                        {loading ? 'Submitting...' : (editId ? 'Update' : 'Save Changes')}
                     </button>
                 }
 
