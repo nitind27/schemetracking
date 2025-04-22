@@ -1,14 +1,16 @@
 import pool from '@/lib/db';
 import { NextResponse } from 'next/server';
-import type { ResultSetHeader } from 'mysql2';
+import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 // Get all years
+
+
 export async function GET() {
   try {
-    const [rows] = await pool.query('SELECT * FROM scheme_year');
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM scheme_year');
     return NextResponse.json(rows);
   } catch (error) {
-    console.error("Error fetching scheme_year:", error);
+    console.error('Fetch error:', error);
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
   }
 }
