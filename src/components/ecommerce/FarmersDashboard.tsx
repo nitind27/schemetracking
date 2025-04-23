@@ -47,7 +47,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
             schemeId.includes(schemes.scheme_id.toString())
         );
 
-        setModalTitle(`Benefited IFR holders `);
+        setModalTitle(`Benefited Schemmes `);
         setFilteredschemes(benefitedFarmers);
         setIsModalOpen(true);
     };
@@ -55,8 +55,15 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const handleNotBenefitedClick = (farmer_id: string) => {
         const notBenefited = datafarmers.filter((data) => data.farmer_id == Number(farmer_id)).map((data) => data)
 
-        setModalTitle('Non-Benefited Farmers');
+        setModalTitle('Non-Benefited Schemes');
         setFilteredFarmers(notBenefited);
+        setIsModalOpen(true);
+    };
+    const handleNotBenefitedClickschemes = (farmer_id: string) => {
+        const notBenefiteddata = dataschems.filter((data) => data.scheme_id != Number(farmer_id)).map((data) => data)
+
+        setModalTitle('Non-Benefited Schemes');
+        setFilteredschemes(notBenefiteddata);
         setIsModalOpen(true);
     };
 
@@ -93,8 +100,9 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
             render: (allfarmersname) => (
                 <button
                     className="hover:underline cursor-pointer"
+                    onClick={()=>handleNotBenefitedClickschemes(allfarmersname.schemes)}
                 >
-                    {datafarmers.length - dataschems.filter(farmer =>
+                    {dataschems.length - dataschems.filter(farmer =>
                         farmer.scheme_id == Number(allfarmersname.schemes)
                     ).length}
                 </button>

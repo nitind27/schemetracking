@@ -6,7 +6,6 @@ import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import { Schemesdatas } from '../schemesdata/schemes';
 import { FarmdersType } from '../farmersdata/farmers';
 
-
 interface AllFarmersData {
     users: UserCategory[];
     schemes: Schemesdatas[];
@@ -14,28 +13,33 @@ interface AllFarmersData {
 }
 
 const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData }) => {
-    useEffect(() => {
-        if (farmersData) {
-            setData(farmersData.users);
-            setDataschems(farmersData.schemes);
-            setDatafarmers(farmersData.farmers);
-        }
-    }, [farmersData]);
-    const [data, setData] = useState<UserCategory[]>([]);
-    console.log("data", data)
+    // const [data, setData] = useState<UserCategory[]>([]);
     const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
     const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
 
-    // Get current scheme IDs once data is loaded
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 10;
+
+    useEffect(() => {
+        if (farmersData) {
+            // setData(farmersData.users);
+            setDataschems(farmersData.schemes);
+            setDatafarmers(farmersData.farmers);
+        }
+    }, [farmersData]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filteredFarmers]);
+
     const schemeIds = dataschems.map(scheme => scheme.scheme_id.toString());
 
-    // Get farmers who have any scheme assigned
     const alldata = datafarmers.filter(farmer => farmer.schemes?.trim() !== "");
 
-    // Find matching schemes based on farmer's schemes
     const matches = dataschems.filter(scheme =>
         alldata.some(farmer => farmer.schemes?.includes(scheme.scheme_id.toString()))
     );
@@ -44,9 +48,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         const benefitedFarmers = datafarmers.filter(farmer =>
             farmer.schemes?.includes(schemeId)
         );
-
-        // const scheme = dataschems.find(s => s.scheme_id.toString() === schemeId);
-        setModalTitle(`Benefited IFR holders `);
+        setModalTitle(`Benefited IFR holders`);
         setFilteredFarmers(benefitedFarmers);
         setIsModalOpen(true);
     };
@@ -55,10 +57,23 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         const notBenefited = datafarmers.filter(farmer =>
             !schemeIds.some(id => farmer.schemes?.includes(id))
         );
-
         setModalTitle('Non-Benefited Farmers');
         setFilteredFarmers(notBenefited);
         setIsModalOpen(true);
+    };
+
+    const totalPages = Math.ceil(filteredFarmers.length / rowsPerPage);
+    const paginatedFarmers = filteredFarmers.slice(
+        (currentPage - 1) * rowsPerPage,
+        currentPage * rowsPerPage
+    );
+
+    const handlePreviousPage = () => {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
     };
 
     const columns: Column<Schemesdatas>[] = [
@@ -97,9 +112,6 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
             )
         }
     ];
-
-
-
 
     return (
         <div>
@@ -149,7 +161,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredFarmers.map((farmer) => (
+                                        {paginatedFarmers.map((farmer) => (
                                             <tr key={farmer.farmer_id}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {farmer.name}
@@ -169,13 +181,27 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                 </table>
                             </div>
                         </div>
-                        <div className="p-4 border-t flex justify-end">
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
-                            >
-                                Close
-                            </button>
+                        <div className="p-4 border-t flex justify-between items-center">
+                            <div className="text-sm text-gray-600">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={handlePreviousPage}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-50"
+                                >
+                                    Previous
+                                </button>
+                                <button
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                                
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -184,4 +210,4 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
     )
 }
 
-export default SchemesDashboardcounting
+export default SchemesDashboardcounting;
