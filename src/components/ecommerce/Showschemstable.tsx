@@ -30,7 +30,7 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
                             } text-white`}
                         onClick={() => setActiveTab('farmers')}
                     >
-                        Scheme wise IFR holders
+                        IFR holders wise schemes
                     </button>
                 </div>
                 <div>
@@ -39,7 +39,8 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
                             } text-white`}
                         onClick={() => setActiveTab('schemes')}
                     >
-                        IFR holders wise schemes
+
+                        Scheme wise IFR holders
                     </button>
                 </div>
             </div>
@@ -49,7 +50,7 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
                     <div className='w-full'>
 
-                        <SchemesDashboardcounting farmersData={farmersData}/>
+                        <SchemesDashboardcounting farmersData={farmersData} />
                     </div>
                 )}
 
