@@ -29,60 +29,96 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const farmerId = formData.get('farmer_id') as string;
     const files = formData.getAll('files') as File[];
+    const files2 = formData.getAll('files2') as File[];
 
-
+    const updatableFields = [
+        'name', 'adivasi', 'village_id', 'taluka_id', 'gat_no',
+        'vanksetra', 'nivas_seti', 'aadhaar_no', 'contact_no',
+        'email', 'kisan_id', 'schemes', 'documents'
+    ];
 
     let connection;
     try {
-        // Create upload directory
-        const uploadDir = path.join(process.cwd(), 'public/uploads');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
+        // Upload path for farmer documents
+        const farmerDocDir = path.join(process.cwd(), 'public/uploads/farmersdocument');
+        if (!fs.existsSync(farmerDocDir)) {
+            fs.mkdirSync(farmerDocDir, { recursive: true });
         }
 
-        // Process files
-        const newFilePaths: string[] = [];
+        // Upload path for scheme documents
+        const schemeDocDir = path.join(process.cwd(), 'public/uploads/schemedocument');
+        if (!fs.existsSync(schemeDocDir)) {
+            fs.mkdirSync(schemeDocDir, { recursive: true });
+        }
+
+        // Save farmer document files
+        const newFarmerDocNames: string[] = [];
         for (const file of files) {
             const buffer = Buffer.from(await file.arrayBuffer());
-            const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '-')}`;
-            const filePath = path.join(uploadDir, fileName);
-            
+            const fileName = file.name;
+            const filePath = path.join(farmerDocDir, fileName);
+
             await fs.promises.writeFile(filePath, buffer);
-            newFilePaths.push(`/uploads/${fileName}`);
+            newFarmerDocNames.push(fileName);
+        }
+
+        // Save scheme document files
+        const newSchemeDocNames: string[] = [];
+        for (const file of files2) {
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const fileName = file.name;
+            const filePath = path.join(schemeDocDir, fileName);
+
+            await fs.promises.writeFile(filePath, buffer);
+            newSchemeDocNames.push(fileName);
         }
 
         connection = await pool.getConnection();
-        
-        // Get existing documents
+
+        // Get existing farmer documents
         const [existing] = await connection.query<RowDataPacket[]>(
             'SELECT documents FROM farmers WHERE farmer_id = ?',
             [farmerId]
         );
-        
-        const existingDocs = existing[0]?.documents 
-            ? existing[0].documents.split(',') 
+
+        const existingDocs = existing[0]?.documents
+            ? existing[0].documents.split('|')
             : [];
 
-        // Combine documents
-        const updatedDocs = [...existingDocs, ...newFilePaths].join(',');
+        // Combine existing and new farmer documents
+        const updatedDocs = [...existingDocs, ...newFarmerDocNames];
 
-        // Update database
-        await connection.query(
-            'UPDATE farmers SET documents = ? WHERE farmer_id = ?',
-            [updatedDocs, farmerId]
-        );
+        // Build update query
+        const updateFields: string[] = [];
+        const updateValues: string[] = [];
+
+        for (const field of updatableFields) {
+            const value = formData.get(field);
+            if (value !== null && value !== undefined) {
+                updateFields.push(`${field} = ?`);
+                updateValues.push(value.toString());
+            }
+        }
+
+        // Optionally, update the 'documents' field with combined filenames
+        // updateFields.push('documents = ?');
+        // updateValues.push(updatedDocs.join('|'));
+
+        if (updateFields.length > 0) {
+            updateValues.push(farmerId);
+            const updateQuery = `UPDATE farmers SET ${updateFields.join(', ')} WHERE farmer_id = ?`;
+            await connection.query(updateQuery, updateValues);
+        }
 
         return NextResponse.json({
-            message: 'Files uploaded successfully',
-            paths: newFilePaths
+            message: 'Farmer data updated successfully',
+            uploadedFarmerDocs: newFarmerDocNames,
+            uploadedSchemeDocs: newSchemeDocNames
         });
 
     } catch (error) {
-        console.error('Upload failed:', error);
-        return NextResponse.json(
-            { message: 'File upload failed' },
-            { status: 500 }
-        );
+        console.error('Error updating farmer:', error);
+        return NextResponse.json({ message: 'Update failed' }, { status: 500 });
     } finally {
         if (connection) connection.release();
     }
