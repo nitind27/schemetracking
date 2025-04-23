@@ -76,17 +76,17 @@ export async function POST(request: Request) {
         connection = await pool.getConnection();
 
         // Get existing farmer documents
-        const [existing] = await connection.query<RowDataPacket[]>(
-            'SELECT documents FROM farmers WHERE farmer_id = ?',
-            [farmerId]
-        );
+        // const [existing] = await connection.query<RowDataPacket[]>(
+        //     'SELECT documents FROM farmers WHERE farmer_id = ?',
+        //     [farmerId]
+        // );
 
-        const existingDocs = existing[0]?.documents
-            ? existing[0].documents.split('|')
-            : [];
+        // const existingDocs = existing[0]?.documents
+        //     ? existing[0].documents.split('|')
+        //     : [];
 
         // Combine existing and new farmer documents
-        const updatedDocs = [...existingDocs, ...newFarmerDocNames];
+        // const updatedDocs = [...existingDocs, ...newFarmerDocNames];
 
         // Build update query
         const updateFields: string[] = [];
