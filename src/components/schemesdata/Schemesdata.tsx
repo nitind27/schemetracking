@@ -66,13 +66,13 @@ const Schemesdata: React.FC<Props> = ({
     const [documentsedit, setdocumentsedit] = useState("");
     const [loading, setLoading] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
- 
+
     // Use the DocOption type here
     const docoptions: DocOption[] = filterdocument.map(doc => ({
         label: doc.document_name,
         value: doc.id.toString()
     }));
- 
+
 
     const fetchData = async () => {
         setLoading(true);
@@ -100,7 +100,7 @@ const Schemesdata: React.FC<Props> = ({
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    scheme_id:editId,
+                    scheme_id: editId,
                     scheme_category_id: schemecategoryid,
                     scheme_sub_category_id: schemesubcategoryid,
                     scheme_year_id: schemeyearid,
@@ -108,7 +108,9 @@ const Schemesdata: React.FC<Props> = ({
                     beneficiery_name: beneficieryname,
                     applyed_at: applyedat,
                     link: link,
-                    documents: documents.map((data: DocOption) => data.value).join(',')
+                    documents: isEditMode ? filterdocument
+                        .filter(data => documentsedit.includes(data.id.toString()))
+                        .map(data => (data.id)).join(',') : documents.map((data: DocOption) => data.value).join(',')
                 })
             });
 
@@ -279,7 +281,7 @@ const Schemesdata: React.FC<Props> = ({
         // Convert readonly array to regular array
         setdocuments(selected ? [...selected] : []);
     };
-
+    console.log("fadsfsafd", documents)
     return (
         <div className="">
             {loading && <Loader />}
@@ -400,7 +402,7 @@ const Schemesdata: React.FC<Props> = ({
                                 }
 
                                 onChange={handleChange}
-                        
+
                             />
                         </div>
 
