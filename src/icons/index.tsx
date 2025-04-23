@@ -51,8 +51,10 @@ import HorizontaLDots from "./horizontal-dots.svg";
 import ChatIcon from "./chat.svg";
 import MoreDotIcon from "./more-dot.svg";
 import BellIcon from "./bell.svg";
+import Documents from "./document-svgrepo-com.svg";
 
 export {
+  Documents,
   DownloadIcon,
   BellIcon,
   MoreDotIcon,

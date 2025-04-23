@@ -5,7 +5,7 @@ import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 // Get all documents
 export async function GET() {
   try {
-    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM documents');
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM documents where status = "Active"');
     return NextResponse.json(rows);
   } catch (error) {
     console.error('Fetch error:', error);
@@ -67,5 +67,25 @@ export async function DELETE(request: Request) {
   } catch (error) {
     console.error('Deletion error:', error);
     return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });
+  }
+}
+
+
+export async function PATCH(request: Request) {
+  const { id, status } = await request.json();
+
+  if (!id || !status) {
+    return NextResponse.json({ error: 'documents ID and status are required' }, { status: 400 });
+  }
+
+  try {
+    await pool.query(
+      'UPDATE documents SET status = ? WHERE id = ?',
+      [status, id]
+    );
+    return NextResponse.json({ message: `documents ${status === 'active' ? 'activated' : 'deactivated'}` });
+  } catch (error) {
+    console.error('Status update error:', error);
+    return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
   }
 }

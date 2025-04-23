@@ -9,33 +9,35 @@ import { toast } from "react-toastify";
 interface DefaultModalProps {
   id: number;
   fetchData: () => void;
-  endpoint:string;
-  bodyname:string;
+  endpoint: string;
+  bodyname: string;
+  newstatus: string;
 }
 
-export default function DefaultModal({ id, fetchData ,endpoint,bodyname}: DefaultModalProps) {
+export default function DefaultModal({ id, fetchData, endpoint, bodyname, newstatus }: DefaultModalProps) {
   const { isOpen, openModal, closeModal } = useModal();
 
-  const handleDelete = async () => {
+  const handleStatusChange = async () => {
     try {
       const response = await fetch(`/api/${endpoint}`, {
-        method: "DELETE",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [bodyname]: id }),
+        body: JSON.stringify({ [bodyname]: id, status: newstatus == "Active" ? "Inactive" : "Active" }),
       });
 
       if (response.ok) {
-        toast.success("Deleted successfully!");
+        toast.success(`Status updated to ${'newStatus'}!`);
         fetchData();
         closeModal();
       } else {
-        toast.error("Failed to delete.");
+        toast.error("Failed to update status.");
       }
     } catch (error) {
-      console.error("Error deleting:", error);
-      toast.error("An error occurred while deleting.");
+      console.error("Error updating status:", error);
+      toast.error("An error occurred while updating status.");
     }
   };
+
 
   return (
     <div>
@@ -59,7 +61,7 @@ export default function DefaultModal({ id, fetchData ,endpoint,bodyname}: Defaul
           <Button size="sm" variant="outline" onClick={closeModal}>
             Close
           </Button>
-          <Button size="sm" onClick={handleDelete}>
+          <Button size="sm" onClick={handleStatusChange}>
             Confirm
           </Button>
         </div>

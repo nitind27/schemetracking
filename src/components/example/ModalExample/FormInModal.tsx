@@ -22,7 +22,7 @@ export default function FormInModal({
   submitbutton
 }: FormInModalProps) {
   const { isOpen, openModal, closeModal } = useModal();
-  const { isActive, setIsActive, setIsEditmode, isModelopen,setIsmodelopen } = useToggleContext();
+  const { isActive, setIsActive, setIsEditmode, isModelopen, setIsmodelopen,setisvalidation } = useToggleContext();
 
   useEffect(() => {
     if (isActive) {
@@ -44,9 +44,11 @@ export default function FormInModal({
     closeModal()
     setIsEditmode(false)
     setIsActive(false)
+    setisvalidation(false)
+
 
   }
-  const handlepenmodel=()=>{
+  const handlepenmodel = () => {
     openModal()
     setIsmodelopen(true)
   }

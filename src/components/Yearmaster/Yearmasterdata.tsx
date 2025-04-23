@@ -16,13 +16,18 @@ import DefaultModal from '../example/ModalExample/DefaultModal';
 interface Props {
     serverData: Scheme_year[];
 }
+type FormErrors = {
 
+    years?: string;
+};
 const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
     const [data, setData] = useState<Scheme_year[]>(serverData || []);
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
-    const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen } = useToggleContext();
+    const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen,isvalidation,setisvalidation } = useToggleContext();
     const [loading, setLoading] = useState(false);
+        const [error, setErrors] = useState<FormErrors>({});
+    
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -37,9 +42,31 @@ const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
         }
     };
 
+   useEffect(() => {
 
+        if (!isvalidation) {
+
+            setErrors({})
+        }
+    }, [isvalidation])
+
+
+    const validateInputs = () => {
+        const newErrors: FormErrors = {};
+        setisvalidation(true)
+        // Category validation
+
+        // Documents validation
+        if (!inputValue || inputValue.length === 0) {
+            newErrors.years = "Year is required";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleSave = async () => {
+        if (!validateInputs()) return;
         setLoading(true);
 
 
@@ -110,7 +137,7 @@ const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
                         Edit
                     </Button>
                     <span>
-                        <DefaultModal id={data.scheme_year_id} fetchData={fetchData} endpoint={"yearmaster"} bodyname='scheme_year_id' />
+                        <DefaultModal id={data.scheme_year_id} fetchData={fetchData} endpoint={"yearmaster"} bodyname='scheme_year_id' newstatus ={data.status}/>
                     </span>
                 </div>
             )
@@ -129,11 +156,16 @@ const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
                             <input
                                 type="text"
                                 placeholder="Enter Year"
-                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.years ? "border-red-500" : ""
+                                }`}
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                             />
+                             {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.years}
+                                </div>
+                            )}
                         </div>
                     </div>
                 }

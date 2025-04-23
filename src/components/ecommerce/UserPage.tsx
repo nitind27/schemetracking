@@ -32,9 +32,9 @@ export default function UserPage() {
 
                 const data: SafeUser[] = await response.json();
                 setUsers(data);
-                console.log('Fetched users:', data);
+               
             } catch (err) {
-                console.error('Fetch error:', err);
+               
                 setError(err instanceof Error ? err.message : 'Unknown error');
             } finally {
                 setLoading(false);

@@ -7,10 +7,18 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { ToastContainer } from 'react-toastify';
 import { ToggleProvider } from '@/context/ToggleContext';
 import GlobleLoader from '@/components/common/GlobleLoader';
+import { Metadata } from 'next';
 
 const outfit = Outfit({
   subsets: ["latin"],
 });
+
+export const metadata: Metadata = {
+  title: "Scheme Monitoring & Tracking System",
+  description:
+    "Scheme Monitoring & Tracking System",
+
+};
 
 export default function RootLayout({
   children,
@@ -19,6 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+     
       <body className={`${outfit.className} dark:bg-gray-900`}>
         <ThemeProvider>
 

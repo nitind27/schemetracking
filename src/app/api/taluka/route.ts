@@ -7,7 +7,7 @@ export async function GET() {
     let connection;
     try {
         connection = await pool.getConnection();
-        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM taluka');
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM taluka where status = "Active"');
 
         // Type-safe mapping (optional - now properly typed)
         const safeUsers = rows.map((user) => user);

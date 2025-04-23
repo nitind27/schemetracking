@@ -11,6 +11,8 @@ type ToggleContextType = {
   setIsmodelopen: (value: boolean) => void;
   isglobleloading: boolean;
   setIsglobleloading: (value: boolean) => void;
+  isvalidation: boolean;
+  setisvalidation: (value: boolean) => void;
 };
 
 // Context Creation
@@ -35,9 +37,10 @@ export function ToggleProvider({ children }: ToggleProviderProps) {
   const [isEditMode, setIsEditmode] = useState(false);
   const [isModelopen, setIsmodelopen] = useState(false);
   const [isglobleloading, setIsglobleloading] = useState(false);
+  const [isvalidation, setisvalidation] = useState(false);
 
   return (
-    <ToggleContext.Provider value={{ isActive, setIsActive, isEditMode, setIsEditmode,isModelopen,setIsmodelopen,isglobleloading,setIsglobleloading }}>
+    <ToggleContext.Provider value={{ isActive, setIsActive, isEditMode, setIsEditmode, isModelopen, setIsmodelopen, isglobleloading, setIsglobleloading, isvalidation, setisvalidation }}>
       {children}
     </ToggleContext.Provider>
   );

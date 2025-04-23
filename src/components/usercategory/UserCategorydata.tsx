@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-
 import { useToggleContext } from '@/context/ToggleContext';
 import Label from "../form/Label";
 import { ReusableTable } from "../tables/BasicTableOne";
@@ -15,13 +14,17 @@ import Loader from '@/common/Loader';
 interface Props {
   serverData: UserCategory[];
 }
+type FormErrors = {
 
+  usercategory?: string;
+};
 const UserCategorydata: React.FC<Props> = ({ serverData }) => {
   const [data, setData] = useState<UserCategory[]>(serverData || []);
   const [inputValue, setInputValue] = useState('');
-  const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen } = useToggleContext();
+  const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen, isvalidation, setisvalidation } = useToggleContext();
   const [editId, setEditId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setErrors] = useState<FormErrors>({});
 
   const fetchData = async () => {
     setLoading(true);
@@ -35,6 +38,34 @@ const UserCategorydata: React.FC<Props> = ({ serverData }) => {
       setLoading(false);
     }
   };
+  useEffect(() => {
+
+    if (!isvalidation) {
+
+      setErrors({})
+    }
+  }, [isvalidation])
+
+  const validateInputs = () => {
+    const newErrors: FormErrors = {};
+    setisvalidation(true)
+
+    if (!inputValue.trim()) {
+      newErrors.usercategory = ("Category name is required");
+
+    }
+    if (inputValue.length < 3) {
+      newErrors.usercategory = ("Category name must be at least 3 characters");
+
+    }
+    if (inputValue.length > 50) {
+      newErrors.usercategory = ("Category name cannot exceed 50 characters");
+
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   useEffect(() => {
     if (!isEditMode) {
@@ -44,6 +75,8 @@ const UserCategorydata: React.FC<Props> = ({ serverData }) => {
   }, [isEditMode]);
 
   const handleSave = async () => {
+    if (!validateInputs()) return;
+
     setLoading(true);
     const apiUrl = '/api/usercategorycrud';
     const method = isEditMode ? 'PUT' : 'POST';
@@ -79,12 +112,13 @@ const UserCategorydata: React.FC<Props> = ({ serverData }) => {
     setIsActive(!isActive);
     setInputValue(item.category_name);
     setEditId(item.user_category_id);
+    setErrors({}); // Clear previous errors when editing
   };
 
   const columns: Column<UserCategory>[] = [
     {
       key: 'category_name',
-      label: 'Categories',
+      label: 'User Category',
       accessor: 'category_name',
       render: (data) => <span>{data.category_name}</span>,
     },
@@ -95,7 +129,7 @@ const UserCategorydata: React.FC<Props> = ({ serverData }) => {
         <div className="flex gap-2">
           <Button size="sm" onClick={() => handleEdit(data)}>Edit</Button>
           <span>
-            <DefaultModal id={data.user_category_id} fetchData={fetchData} endpoint={"usercategorycrud"} bodyname='user_category_id'/>
+            <DefaultModal id={data.user_category_id} fetchData={fetchData} endpoint={"usercategorycrud"} bodyname='user_category_id' newstatus={data.status} />
           </span>
         </div>
       ),
@@ -114,10 +148,20 @@ const UserCategorydata: React.FC<Props> = ({ serverData }) => {
               <input
                 type="text"
                 placeholder="Enter category name"
-                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.usercategory ? "border-red-500" : ""
+                  }`}
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  // Clear error when user starts typing
+
+                }}
               />
+              {error && (
+                <div className="text-red-500 text-sm mt-1 pl-1">
+                  {error.usercategory}
+                </div>
+              )}
             </div>
           </div>
         }

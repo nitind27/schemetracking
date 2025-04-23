@@ -22,7 +22,18 @@ type Props = {
   datataluka: Taluka[];
   datausercategorycrud: UserCategory[];
 };
+type FormErrors = {
 
+  usercategory?: string;
+  name?: string;
+  Contact?: string;
+  Username?: string;
+  Password?: string;
+  address?: string;
+  Taluka?: string;
+  Village?: string;
+
+};
 const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Props) => {
 
   const [data, setData] = useState<UserData[]>(users || []);
@@ -36,8 +47,10 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
   const [Taluka, setTaluka] = useState(0);
   const [Village, setVillage] = useState(0);
   const [editId, setEditId] = useState<number | null>(null);
-  const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen } = useToggleContext();
+  const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen, isvalidation, setisvalidation } = useToggleContext();
   const [loading, setLoading] = useState(false);
+  const [error, setErrors] = useState<FormErrors>({});
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -51,6 +64,13 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
     }
   };
 
+  useEffect(() => {
+
+    if (!isvalidation) {
+
+      setErrors({})
+    }
+  }, [isvalidation])
 
 
 
@@ -69,7 +89,43 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
     }
   }, [isEditMode]);
 
+  const validateInputs = () => {
+    const newErrors: FormErrors = {};
+    setisvalidation(true)
+    // Category validation
+
+    // Documents validation
+    if (!usercategory) {
+      newErrors.usercategory = "Usercategory is required";
+    }
+    if (!name || name.length === 0) {
+      newErrors.name = "Name is required";
+    }
+    if (!Contact || Contact.length === 0) {
+      newErrors.Contact = "Contact is required";
+    }
+    if (!Username || Username.length === 0) {
+      newErrors.Username = "Username is required";
+    }
+    if (!Password || Password.length === 0) {
+      newErrors.Password = "Password is required";
+    }
+    if (!address || address.length === 0) {
+      newErrors.address = "Address is required";
+    }
+    if (!Taluka) {
+      newErrors.Taluka = "Taluka is required";
+    }
+    if (!Village) {
+      newErrors.Village = "Village is required";
+    }
+
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   const handleSave = async () => {
+    if (!validateInputs()) return;
     setLoading(true);
     const apiUrl = isEditMode ? `/api/users/insert` : '/api/users/insert';
     const method = isEditMode ? 'PUT' : 'POST';
@@ -202,7 +258,7 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
 
 
           <span>
-            <DefaultModal id={data.user_id} fetchData={fetchData} endpoint={"users/insert"} bodyname='user_id' />
+            <DefaultModal id={data.user_id} fetchData={fetchData} endpoint={"users/insert"} bodyname='user_id' newstatus={data.status} />
           </span>
         </div>
       )
@@ -225,7 +281,8 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
               <select
                 name=""
                 id=""
-                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.usercategory ? "border-red-500" : ""
+                  }`}
                 value={usercategory}
                 onChange={(e) => setUsercategory(Number(e.target.value))}
               >
@@ -236,66 +293,101 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
                   </option>
                 ))}
               </select>
-
+              {error && (
+                <div className="text-red-500 text-sm mt-1 pl-1">
+                  {error.usercategory}
+                </div>
+              )}
             </div>
             <div>
               <Label>Name</Label>
               <input
                 type="text"
                 placeholder="Enter Name"
-                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.name ? "border-red-500" : ""
+                  }`}
 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
+              {error && (
+                <div className="text-red-500 text-sm mt-1 pl-1">
+                  {error.name}
+                </div>
+              )}
             </div>
             <div>
               <Label>Contact</Label>
               <input
                 type="text"
                 placeholder="Enter Contact"
-                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Contact ? "border-red-500" : ""
+                  }`}
 
                 value={Contact}
                 onChange={(e) => setContact(e.target.value)}
               />
+              {error && (
+                <div className="text-red-500 text-sm mt-1 pl-1">
+                  {error.Contact}
+                </div>
+              )}
             </div>
             <div>
               <Label>Address</Label>
               <input
                 type="text"
                 placeholder="Enter Address"
-                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.address ? "border-red-500" : ""
+                  }`}
 
                 value={address}
                 onChange={(e) => setaddress(e.target.value)}
               />
+              {error && (
+                <div className="text-red-500 text-sm mt-1 pl-1">
+                  {error.address}
+                </div>
+              )}
             </div>
             <div>
               <Label>Username</Label>
               <input
                 type="text"
                 placeholder="Enter Username"
-                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Username ? "border-red-500" : ""
+                  }`}
 
                 value={Username}
                 onChange={(e) => setUsername(e.target.value)}
               />
+              {error && (
+                <div className="text-red-500 text-sm mt-1 pl-1">
+                  {error.Username}
+                </div>
+              )}
             </div>
             <div>
               <Label>Password</Label>
               <input
                 type="text"
                 placeholder="Enter Password"
-                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Password ? "border-red-500" : ""
+                  }`}
 
                 value={Password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              {error && (
+                <div className="text-red-500 text-sm mt-1 pl-1">
+                  {error.Password}
+                </div>
+              )}
             </div>
             <div>
               <Label>Taluka</Label>
-              <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+              <select name="" id="" className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Taluka ? "border-red-500" : ""
+                }`}
                 value={Taluka}
                 onChange={(e) => setTaluka(Number(e.target.value))}
 
@@ -309,11 +401,17 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
                 ))}
 
               </select>
+              {error && (
+                <div className="text-red-500 text-sm mt-1 pl-1">
+                  {error.Taluka}
+                </div>
+              )}
             </div>
 
             <div>
               <Label>Village</Label>
-              <select name="" id="" className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+              <select name="" id="" className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Village ? "border-red-500" : ""
+                }`}
                 value={Village}
                 onChange={(e) => setVillage(Number(e.target.value))}
               >
@@ -324,6 +422,11 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
                   </option>
                 ))}
               </select>
+              {error && (
+                <div className="text-red-500 text-sm mt-1 pl-1">
+                  {error.Village}
+                </div>
+              )}
             </div>
 
           </div>

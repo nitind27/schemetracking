@@ -4,14 +4,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
+import { RxDashboard } from "react-icons/rx";
+import { TbCategoryPlus } from "react-icons/tb"
+import { FaEdit } from "react-icons/fa";
+import { IoDocumentOutline  } from "react-icons/io5";
+import { CiCalendar } from "react-icons/ci";
+import { CiUser } from "react-icons/ci";
+import { GiFarmer } from "react-icons/gi";
 import {
 
-  CalenderIcon,
   ChevronDownIcon,
-  GridIcon,
+
   HorizontaLDots,
 
-  UserCircleIcon,
 } from "../icons/index";
 
 import { useToggleContext } from "@/context/ToggleContext";
@@ -25,38 +30,38 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
+    icon: <RxDashboard />,
     name: "Dashboard",
     path: "/",
   },
   {
-    icon: <CalenderIcon />,
+    icon: <TbCategoryPlus />,
     name: "User Category",
     path: "/usercategory",
   },
 
   {
-    icon: <UserCircleIcon />,
+    icon: <FaEdit />,
     name: "Schemes",
     path: "/schemespage",
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <IoDocumentOutline   />,
     name: "Documents",
     path: "/documents",
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <CiCalendar  />,
     name: "Year",
     path: "/yearmaster",
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <CiUser />,
     name: "Users",
     path: "/users",
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <GiFarmer  />,
     name: "IFR holders",
     path: "/farmerspage",
   },
@@ -298,10 +303,10 @@ const AppSidebar: React.FC = () => {
             </>
           ) : (
             <Image
-              src="/images/logo/logo-icon.svg"
+              src="/images/logo/maharasstralogo.png"
               alt="Logo"
-              width={32}
-              height={32}
+              width={50}
+              height={50}
             />
           )}
         </Link>

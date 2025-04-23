@@ -45,7 +45,16 @@ interface Props {
     filtersubcategory: schemesSubcategory[];
     filteryear: schemesYear[];
 }
-
+type FormErrors = {
+    category?: string;
+    subcategory?: string;
+    year?: string;
+    schemename?: string;
+    beneficieryname?: string;
+    applyedat?: string;
+    link?: string;
+    documents?: string;
+};
 const Schemesdata: React.FC<Props> = ({
     initialdata,
     filtercategory,
@@ -53,7 +62,7 @@ const Schemesdata: React.FC<Props> = ({
     filtersubcategory,
     filteryear
 }) => {
-    const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen } = useToggleContext();
+    const { isActive, setIsActive, isEditMode, setIsEditmode, isvalidation, setIsmodelopen, setisvalidation } = useToggleContext();
     const [data, setData] = useState<Schemesdatas[]>(initialdata || []);
     const [schemecategoryid, setschemecategoryid] = useState(0);
     const [schemesubcategoryid, setschemesubcategoryid] = useState(0);
@@ -63,6 +72,8 @@ const Schemesdata: React.FC<Props> = ({
     const [applyedat, setapplyedat] = useState('');
     const [link, setlink] = useState('');
     const [documents, setdocuments] = useState<DocOption[]>([]);
+    const [error, setErrors] = useState<FormErrors>({});
+
     const [documentsedit, setdocumentsedit] = useState("");
     const [loading, setLoading] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
@@ -73,6 +84,60 @@ const Schemesdata: React.FC<Props> = ({
         value: doc.id.toString()
     }));
 
+    useEffect(() => {
+
+        if (!isvalidation) {
+
+            setErrors({})
+        }
+    }, [isvalidation])
+
+    const validateInputs = () => {
+        const newErrors: FormErrors = {};
+        setisvalidation(true)
+        // Category validation
+        if (!schemecategoryid) {
+            newErrors.category = "Category is required";
+        }
+
+        // Subcategory validation
+        if (!schemesubcategoryid) {
+            newErrors.subcategory = "Sub Category is required";
+        }
+
+        // Year validation
+        if (!schemeyearid) {
+            newErrors.year = "Year is required";
+        }
+
+        // Scheme name validation
+        if (!schemename.trim()) {
+            newErrors.schemename = "Scheme name is required";
+        }
+
+        // Beneficiary name validation
+        if (!beneficieryname.trim()) {
+            newErrors.beneficieryname = "Beneficiary name is required";
+        }
+
+        // Applied date validation
+        if (!applyedat.trim()) {
+            newErrors.applyedat = "Applied is required";
+        }
+
+        // Link validation
+        if (!link.trim()) {
+            newErrors.link = "Link is required";
+        }
+
+        // Documents validation
+        if (!documents || documents.length === 0) {
+            newErrors.documents = "Documents are required";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -91,6 +156,8 @@ const Schemesdata: React.FC<Props> = ({
 
 
     const handleSave = async () => {
+
+        if (!validateInputs()) return;
         setLoading(true)
         const apiUrl = isEditMode ? `/api/schemescrud` : '/api/schemescrud';
         const method = isEditMode ? 'PUT' : 'POST';
@@ -108,7 +175,7 @@ const Schemesdata: React.FC<Props> = ({
                     beneficiery_name: beneficieryname,
                     applyed_at: applyedat,
                     link: link,
-                    documents: isEditMode ? filterdocument
+                    documents: isEditMode && documents.length == 0 ? filterdocument
                         .filter(data => documentsedit.includes(data.id.toString()))
                         .map(data => (data.id)).join(',') : documents.map((data: DocOption) => data.value).join(',')
                 })
@@ -267,7 +334,7 @@ const Schemesdata: React.FC<Props> = ({
                         Edit
                     </Button>
                     <span>
-                        <DefaultModal id={data.scheme_id} fetchData={fetchData} endpoint={"schemescrud"} bodyname={"scheme_id"} />
+                        <DefaultModal id={data.scheme_id} fetchData={fetchData} endpoint={"schemescrud"} bodyname={"scheme_id"} newstatus={data.status} />
                     </span>
                 </div>
             )
@@ -281,7 +348,7 @@ const Schemesdata: React.FC<Props> = ({
         // Convert readonly array to regular array
         setdocuments(selected ? [...selected] : []);
     };
-    console.log("fadsfsafd", documents)
+
     return (
         <div className="">
             {loading && <Loader />}
@@ -296,7 +363,8 @@ const Schemesdata: React.FC<Props> = ({
                             <select
                                 name=""
                                 id=""
-                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.category ? "border-red-500" : ""
+                                    }`}
                                 value={schemecategoryid}
                                 onChange={(e) => setschemecategoryid(Number(e.target.value))}
                             >
@@ -307,13 +375,19 @@ const Schemesdata: React.FC<Props> = ({
                                     </option>
                                 ))}
                             </select>
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.category}
+                                </div>
+                            )}
                         </div>
                         <div>
                             <Label>Sub Category</Label>
                             <select
                                 name=""
                                 id=""
-                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.subcategory ? "border-red-500" : ""
+                                    }`}
                                 value={schemesubcategoryid}
                                 onChange={(e) => setschemesubcategoryid(Number(e.target.value))}
                             >
@@ -326,13 +400,19 @@ const Schemesdata: React.FC<Props> = ({
                                         </option>
                                     ))}
                             </select>
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.subcategory}
+                                </div>
+                            )}
                         </div>
                         <div>
                             <Label>Scheme Year</Label>
                             <select
                                 name=""
                                 id=""
-                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.year ? "border-red-500" : ""
+                                    }`}
                                 value={schemeyearid}
                                 onChange={(e) => setschemeyearid(Number(e.target.value))}
                             >
@@ -343,6 +423,11 @@ const Schemesdata: React.FC<Props> = ({
                                     </option>
                                 ))}
                             </select>
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.year}
+                                </div>
+                            )}
                         </div>
 
                         <div className="col-span-1">
@@ -350,40 +435,64 @@ const Schemesdata: React.FC<Props> = ({
                             <input
                                 type="text"
                                 placeholder="Enter name"
-                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.schemename ? "border-red-500" : ""
+                                    }`}
                                 value={schemename}
                                 onChange={(e) => setschemename(e.target.value)}
                             />
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.schemename}
+                                </div>
+                            )}
                         </div>
                         <div className="col-span-1">
                             <Label>Beneficiery</Label>
                             <input
                                 type="text"
                                 placeholder="Enter Beneficiery"
-                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.beneficieryname ? "border-red-500" : ""
+                                    }`}
                                 value={beneficieryname}
                                 onChange={(e) => setbeneficieryname(e.target.value)}
                             />
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.beneficieryname}
+                                </div>
+                            )}
                         </div>
                         <div className="col-span-1">
                             <Label>Applyed</Label>
                             <input
                                 type="text"
                                 placeholder="Applyed"
-                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.applyedat ? "border-red-500" : ""
+                                    }`}
                                 value={applyedat}
                                 onChange={(e) => setapplyedat(e.target.value)}
                             />
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.applyedat}
+                                </div>
+                            )}
                         </div>
                         <div className="col-span-1">
                             <Label>Link</Label>
                             <input
                                 type="text"
                                 placeholder="Link"
-                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.link ? "border-red-500" : ""
+                                    }`}
                                 value={link}
                                 onChange={(e) => setlink(e.target.value)}
                             />
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.link}
+                                </div>
+                            )}
                         </div>
 
                         <div className="col-span-1">
@@ -391,19 +500,37 @@ const Schemesdata: React.FC<Props> = ({
                             <Select
                                 isMulti
                                 options={docoptions}
-                                defaultValue={isEditMode ?
-                                    filterdocument
+                                className={`react-select-container ${error.documents ? "!border-red-500" : ""}`}
+                                classNamePrefix="react-select"
+                                defaultValue={isEditMode
+                                    ? filterdocument
                                         .filter(data => documentsedit.includes(data.id.toString()))
                                         .map(data => ({
-                                            label: data.document_name,  // Must match DocOption's label
-                                            value: data.id.toString()    // Must match DocOption's value type
+                                            label: data.document_name,
+                                            value: data.id.toString()
                                         }))
                                     : documents
                                 }
-
-                                onChange={handleChange}
-
+                                onChange={(selected) => {
+                                    handleChange(selected);
+                                    setErrors(prev => ({ ...prev, documents: undefined }));
+                                }}
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        borderColor: error.documents ? '#ef4444' : base.borderColor,
+                                        '&:hover': {
+                                            borderColor: error.documents ? '#ef4444' : base.borderColor
+                                        }
+                                    })
+                                }}
                             />
+
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.documents}
+                                </div>
+                            )}
                         </div>
 
                     </div>

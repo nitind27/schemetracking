@@ -16,13 +16,18 @@ import DefaultModal from '../example/ModalExample/DefaultModal';
 interface Props {
     serverData: Documents[];
 }
+type FormErrors = {
 
+    documents?: string;
+};
 const Documentsdata: React.FC<Props> = ({ serverData }) => {
     const [data, setData] = useState<Documents[]>(serverData || []);
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
-    const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen } = useToggleContext();
+    const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen, isvalidation, setisvalidation } = useToggleContext();
     const [loading, setLoading] = useState(false);
+    const [error, setErrors] = useState<FormErrors>({});
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -37,12 +42,35 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
     };
 
     useEffect(() => {
+
+        if (!isvalidation) {
+
+            setErrors({})
+        }
+    }, [isvalidation])
+
+    useEffect(() => {
         if (!isEditMode) {
             setInputValue("");
             setEditId(0);
         }
     }, [isEditMode]);
+
+    const validateInputs = () => {
+        const newErrors: FormErrors = {};
+        setisvalidation(true)
+        // Category validation
+
+        // Documents validation
+        if (!inputValue || inputValue.length === 0) {
+            newErrors.documents = "Document is required";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
     const handleSave = async () => {
+        if (!validateInputs()) return;
         setLoading(true);
         const apiUrl = editId ? `/api/documents` : '/api/documents';
         const method = editId ? 'PUT' : 'POST';
@@ -107,7 +135,7 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
                         Edit
                     </Button>
                     <span>
-                        <DefaultModal id={data.id} fetchData={fetchData} endpoint={"documents"} bodyname='id' />
+                        <DefaultModal id={data.id} fetchData={fetchData} endpoint={"documents"} bodyname='id' newstatus={data.status} />
                     </span>
                 </div>
             )
@@ -125,12 +153,17 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
                             <Label>Documents</Label>
                             <input
                                 type="text"
-                                placeholder="Enter category name"
-                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-
+                                placeholder="Enter Document"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.documents ? "border-red-500" : ""
+                                    }`}
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                             />
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.documents}
+                                </div>
+                            )}
                         </div>
                     </div>
                 }

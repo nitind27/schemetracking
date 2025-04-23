@@ -7,9 +7,9 @@ import { Suspense } from "react";
 import Loader from "@/common/Loader";
 
 export const metadata: Metadata = {
-  title: "Next.js Profile | TailAdmin - Next.js Dashboard Template",
+  title: "Scheme Monitoring & Tracking System",
   description:
-    "This is Next.js Profile page for TailAdmin - Next.js Tailwind CSS Admin Dashboard Template",
+    "Scheme Monitoring & Tracking System",
 };
 
 async function fetchMetrics() {

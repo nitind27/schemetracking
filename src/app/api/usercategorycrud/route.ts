@@ -5,7 +5,7 @@ import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 // Get all categories
 export async function GET() {
   try {
-    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM user_category');
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM user_category where status = "Active"');
     return NextResponse.json(rows);
   } catch (error) {
     console.error('Fetch error:', error);
@@ -67,5 +67,26 @@ export async function DELETE(request: Request) {
   } catch (error) {
     console.error('Deletion error:', error);
     return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });
+  }
+}
+
+
+// Update category status (activate/deactivate)
+export async function PATCH(request: Request) {
+  const { user_category_id, status } = await request.json();
+
+  if (!user_category_id || !status) {
+    return NextResponse.json({ error: 'Category ID and status are required' }, { status: 400 });
+  }
+
+  try {
+    await pool.query(
+      'UPDATE user_category SET status = ? WHERE user_category_id = ?',
+      [status, user_category_id]
+    );
+    return NextResponse.json({ message: `Category ${status === 'active' ? 'activated' : 'deactivated'}` });
+  } catch (error) {
+    console.error('Status update error:', error);
+    return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
   }
 }

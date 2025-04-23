@@ -1,6 +1,5 @@
 "use client";
 
-import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 
@@ -87,7 +86,7 @@ const AppHeader: React.FC = () => {
 
             <span className="text-white text-[12px]">
 
-              Scheme Tracking & Monitoring System
+            Scheme Monitoring & Tracking System
             </span>
 
           </Link>
@@ -113,7 +112,7 @@ const AppHeader: React.FC = () => {
           </button>
 
           <div className="hidden lg:block">
-            <h1 className="text-2xl font-semibold text-white ">Scheme Tracking & Monitoring System</h1>
+            <h1 className="text-2xl font-semibold text-white ">Scheme Monitoring & Tracking System</h1>
           </div>
         </div>
         <div
@@ -125,7 +124,7 @@ const AppHeader: React.FC = () => {
             {/* <ThemeToggleButton /> */}
             {/* <!-- Dark Mode Toggler --> */}
 
-            <NotificationDropdown />
+            {/* <NotificationDropdown /> */}
             {/* <!-- Notification Menu Area --> */}
           </div>
           {/* <!-- User Area --> */}

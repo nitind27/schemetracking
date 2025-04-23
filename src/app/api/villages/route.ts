@@ -11,7 +11,7 @@ interface Village {
 
 export async function GET() {
     try {
-        const [rows] = await pool.query<RowDataPacket[] & Village[]>(`SELECT * FROM village`);
+        const [rows] = await pool.query<RowDataPacket[] & Village[]>(`SELECT * FROM village where status = "Active"`);
 
         // 3. Type-safe mapping
         const safeVillages = (rows as Village[]).map(({ ...village }) => village);
@@ -25,3 +25,5 @@ export async function GET() {
         );
     }
 }
+
+

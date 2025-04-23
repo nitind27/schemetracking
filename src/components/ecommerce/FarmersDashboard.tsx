@@ -6,6 +6,7 @@ import { Column } from '../tables/tabletype';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import { Schemesdatas } from '../schemesdata/schemes';
 import { FarmdersType } from '../farmersdata/farmers';
+import UserDatamodel from '../example/ModalExample/UserDatamodel';
 
 interface AllFarmersData {
     users: UserCategory[];
@@ -14,8 +15,7 @@ interface AllFarmersData {
 }
 
 const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
-    const [data, setData] = useState<UserCategory[]>([]);
-    console.log("fadfs",data)
+
     const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
     const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,7 +25,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     useEffect(() => {
         if (farmersData) {
-            setData(farmersData.users);
+           
             setDataschems(farmersData.schemes);
             setDatafarmers(farmersData.farmers);
         }
@@ -52,13 +52,14 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         setIsModalOpen(true);
     };
 
-    const handleNotBenefitedClick = (farmer_id: string) => {
-        const notBenefited = datafarmers.filter((data) => data.farmer_id == Number(farmer_id)).map((data) => data)
+    // const handleNotBenefitedClick = (farmer_id: string) => {
 
-        setModalTitle('Non-Benefited Schemes');
-        setFilteredFarmers(notBenefited);
-        setIsModalOpen(true);
-    };
+    //     const notBenefited = datafarmers.filter((data) => data.farmer_id == Number(farmer_id)).map((data) => data)
+    //     setModalTitle('Non-Benefited Schemes');
+    //     setFilteredFarmers(notBenefited);
+    //     setIsModalOpen(true);
+
+    // };
     const handleNotBenefitedClickschemes = (farmer_id: string) => {
         const notBenefiteddata = dataschems.filter((data) => data.scheme_id != Number(farmer_id)).map((data) => data)
 
@@ -100,7 +101,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
             render: (allfarmersname) => (
                 <button
                     className="hover:underline cursor-pointer"
-                    onClick={()=>handleNotBenefitedClickschemes(allfarmersname.schemes)}
+                    onClick={() => handleNotBenefitedClickschemes(allfarmersname.schemes)}
                 >
                     {dataschems.length - dataschems.filter(farmer =>
                         farmer.scheme_id == Number(allfarmersname.schemes)
@@ -110,14 +111,18 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         },
         {
             key: 'Info',
-            label: 'Not Benefited',
+            label: 'Action',
             render: (allfarmersname) => (
-                <button
-                    onClick={() => handleNotBenefitedClick(allfarmersname.farmer_id.toString())}
-                    className="hover:underline cursor-pointer text-blue-700 font-semibold"
-                >
-                    Info
-                </button>
+                // <button
+                //     onClick={() => handleNotBenefitedClick(allfarmersname.farmer_id.toString())}
+                //     className="hover:underline cursor-pointer text-blue-700 font-semibold"
+                // >
+                //     Info
+                // </button>
+                <>
+                    <UserDatamodel farmersid={allfarmersname.farmer_id.toString()} datafarmers={datafarmers} />
+                </>
+
             )
         }
     ];
@@ -165,7 +170,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                                                 Shcemes
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Beneficiery
+                                                Beneficiery
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Applyed
