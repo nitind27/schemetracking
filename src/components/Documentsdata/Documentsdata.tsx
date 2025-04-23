@@ -151,7 +151,7 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
                 }
 
                 searchKey="document_name"
-                rowsPerPage={5}
+                rowsPerPage={10}
             />
         </div>
     );

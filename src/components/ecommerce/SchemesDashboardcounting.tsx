@@ -126,7 +126,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                 title="Scheme Beneficiaries"
                 filterOptions={[]}
                 searchKey="scheme_name"
-                rowsPerPage={5}
+                rowsPerPage={10}
             />
 
             {isModalOpen && (

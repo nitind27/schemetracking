@@ -141,7 +141,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 title="Scheme Beneficiaries"
                 filterOptions={[]}
                 searchKey="name"
-                rowsPerPage={5}
+                rowsPerPage={10}
             />
 
             {isModalOpen && (

@@ -151,7 +151,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
           </button>
         }
         searchKey="name"
-        rowsPerPage={5}
+        rowsPerPage={10}
       />
     </div>
   );

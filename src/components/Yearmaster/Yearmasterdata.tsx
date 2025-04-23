@@ -153,7 +153,7 @@ const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
                     </button>
                 }
                 searchKey="year"
-                rowsPerPage={5}
+                rowsPerPage={10}
             />
         </div>
     );

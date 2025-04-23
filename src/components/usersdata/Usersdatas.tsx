@@ -344,7 +344,7 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
           </button>
         }
         searchKey="username"
-        rowsPerPage={5}
+        rowsPerPage={10}
       />
     </div>
   );
