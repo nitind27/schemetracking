@@ -25,7 +25,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     useEffect(() => {
         if (farmersData) {
-           
+
             setDataschems(farmersData.schemes);
             setDatafarmers(farmersData.farmers);
         }
@@ -73,7 +73,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
             key: 'scheme_name',
             label: 'IFR holders Name',
             accessor: 'name',
-            render: (allfarmersname) => <span >{allfarmersname.name}</span>
+            render: (allfarmersname) => <span > <UserDatamodel farmersid={allfarmersname.farmer_id.toString()} datafarmers={datafarmers} farmername={allfarmersname.name} /></span>
         },
         {
             key: 'contactno',
@@ -109,22 +109,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 </button>
             )
         },
-        {
-            key: 'Info',
-            label: 'Action',
-            render: (allfarmersname) => (
-                // <button
-                //     onClick={() => handleNotBenefitedClick(allfarmersname.farmer_id.toString())}
-                //     className="hover:underline cursor-pointer text-blue-700 font-semibold"
-                // >
-                //     Info
-                // </button>
-                <>
-                    <UserDatamodel farmersid={allfarmersname.farmer_id.toString()} datafarmers={datafarmers} />
-                </>
 
-            )
-        }
     ];
 
     const handleclosemodel = () => {
@@ -167,6 +152,9 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Sr.No
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Shcemes
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -178,8 +166,11 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredschemes.length > 0 && filteredschemes.map((farmer) => (
+                                        {filteredschemes.length > 0 && filteredschemes.map((farmer, index) => (
                                             <tr key={farmer.scheme_id}>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {index + 1}
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {farmer.scheme_name}
                                                 </td>

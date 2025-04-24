@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import React from 'react';
 
 interface BreadcrumbItem {
@@ -17,14 +18,13 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ title, breadcrumbs }) => {
       <nav className="flex space-x-2 text-gray-600">
         {breadcrumbs.map((item, index) => (
           <React.Fragment key={index}>
-            <a 
-              href={item.href} 
-              className={`hover:text-blue-500 transition-colors ${
-                index === breadcrumbs.length - 1 ? 'text-blue-500 font-medium' : ''
-              }`}
+            <Link
+              href={item.href}
+              className={`hover:text-blue-500 transition-colors ${index === breadcrumbs.length - 1 ? 'text-blue-500 font-medium' : ''
+                }`}
             >
               {item.label}
-            </a>
+            </Link>
             {index < breadcrumbs.length - 1 && (
               <span className="text-gray-400">/</span>
             )}

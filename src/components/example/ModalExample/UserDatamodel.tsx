@@ -8,10 +8,11 @@ import { FarmdersType } from "@/components/farmersdata/farmers";
 
 interface DefaultModalProps {
   farmersid: string;
+  farmername: string;
   datafarmers: FarmdersType[];
 }
 
-export default function UserDatamodel({ farmersid, datafarmers }: DefaultModalProps) {
+export default function UserDatamodel({ farmersid, datafarmers, farmername }: DefaultModalProps) {
   const { isOpen, openModal, closeModal } = useModal();
 
   const farmer = datafarmers.find((data) => data.farmer_id === Number(farmersid));
@@ -21,9 +22,12 @@ export default function UserDatamodel({ farmersid, datafarmers }: DefaultModalPr
 
   return (
     <div>
-      <Button size="sm" onClick={openModal}>
-        Info
-      </Button>
+
+      <span className="cursor-pointer hover:text-blue-700 underline" onClick={openModal}>
+
+        {farmername}
+      </span>
+
 
       <Modal
         isOpen={isOpen}

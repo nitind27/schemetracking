@@ -57,7 +57,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         const notBenefited = datafarmers.filter(farmer =>
             !schemeIds.some(id => farmer.schemes?.includes(id))
         );
-        setModalTitle('Non-Benefited Farmers');
+        setModalTitle('Non-Benefited IFR Holders');
         setFilteredFarmers(notBenefited);
         setIsModalOpen(true);
     };
@@ -147,6 +147,9 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Sr.No
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 IFR holders
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -161,8 +164,11 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {paginatedFarmers.map((farmer) => (
+                                        {paginatedFarmers.map((farmer,index) => (
                                             <tr key={farmer.farmer_id}>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                {index + 1}
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {farmer.name}
                                                 </td>
@@ -200,7 +206,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                 >
                                     Next
                                 </button>
-                                
+
                             </div>
                         </div>
                     </div>
