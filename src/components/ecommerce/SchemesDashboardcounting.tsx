@@ -5,17 +5,24 @@ import { Column } from '../tables/tabletype';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import { Schemesdatas } from '../schemesdata/schemes';
 import { FarmdersType } from '../farmersdata/farmers';
+import SchemesDataModel from '../example/ModalExample/SchemesDataModel';
+import { Schemecategorytype } from '../Schemecategory/Schemecategory';
+import { Schemesubcategorytype } from '../Schemesubcategory/Schemesubcategory';
 
 interface AllFarmersData {
     users: UserCategory[];
     schemes: Schemesdatas[];
     farmers: FarmdersType[];
+    schemescrud: Schemecategorytype[];
+    schemessubcategory: Schemesubcategorytype[];
 }
 
 const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData }) => {
     // const [data, setData] = useState<UserCategory[]>([]);
     const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
     const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
+    const [dataSchemecategory, setDataSchemecategory] = useState<Schemecategorytype[]>([]);
+    const [dataSchemesubcategory, setDataSchemesubcategory] = useState<Schemesubcategorytype[]>([]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
@@ -29,6 +36,8 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
             // setData(farmersData.users);
             setDataschems(farmersData.schemes);
             setDatafarmers(farmersData.farmers);
+            setDataSchemecategory(farmersData.schemescrud)
+            setDataSchemesubcategory(farmersData.schemessubcategory)
         }
     }, [farmersData]);
 
@@ -81,7 +90,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
             key: 'scheme_name',
             label: 'Schemes Name',
             accessor: 'scheme_name',
-            render: (scheme) => <span>{scheme.scheme_name}</span>
+            render: (scheme) => <span> <SchemesDataModel schemeid={scheme.scheme_id} farmername={scheme.scheme_name} datascheme={dataschems} schemescrud={dataSchemecategory} schemessubcategory={dataSchemesubcategory}/></span>
         },
         {
             key: 'Benefited',
@@ -164,10 +173,10 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {paginatedFarmers.map((farmer,index) => (
+                                        {paginatedFarmers.map((farmer, index) => (
                                             <tr key={farmer.farmer_id}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                {index + 1}
+                                                    {index + 1}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {farmer.name}

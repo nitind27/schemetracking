@@ -22,12 +22,9 @@ export default function UserDatamodel({ farmersid, datafarmers, farmername }: De
 
   return (
     <div>
-
       <span className="cursor-pointer hover:text-blue-700 underline" onClick={openModal}>
-
         {farmername}
       </span>
-
 
       <Modal
         isOpen={isOpen}
@@ -35,23 +32,37 @@ export default function UserDatamodel({ farmersid, datafarmers, farmername }: De
         className="max-w-[600px] p-5 lg:p-10"
       >
         <h4 className="font-semibold text-gray-800 mb-4 text-xl dark:text-white">
-          Farmer Information
+          IFR holder
         </h4>
 
         {farmer ? (
-          <div className="max-h-[60vh] overflow-y-auto space-y-4">
-            {Object.entries(farmer)
-              .filter(([key]) => !excludedFields.includes(key))
-              .map(([key, value]) => (
-                <div key={key} className="flex justify-between border-b pb-1">
-                  <span className="capitalize font-medium text-gray-700 dark:text-white">
-                    {key.replace(/_/g, " ")}
-                  </span>
-                  <span className="text-gray-600 dark:text-gray-300">
-                    {value ? value : "-"}
-                  </span>
-                </div>
-              ))}
+          <div className="max-h-[60vh] overflow-y-auto">
+            <table className="min-w-full border text-left text-sm">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Sr.No</th>
+                  <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Field</th>
+                  <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(farmer)
+                  .filter(([key]) => !excludedFields.includes(key))
+                  .map(([key, value], index) => (
+                    <tr key={key}>
+                      <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
+                        {index + 1}
+                      </td>
+                      <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
+                        {key.replace(/_/g, " ") === "adivasi" ? "Type" : key.replace(/_/g, " ")}
+                      </td>
+                      <td className="px-4 py-2 border-b text-gray-600 dark:text-gray-300">
+                        {value ? value : "-"}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </div>
         ) : (
           <p className="text-sm text-gray-500 dark:text-gray-400">

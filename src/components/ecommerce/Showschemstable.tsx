@@ -6,6 +6,8 @@ import { UserCategory } from '../usercategory/userCategory';
 import { Schemesdatas } from '../schemesdata/schemes';
 import { FarmdersType } from '../farmersdata/farmers';
 import FarmersDashboard from './FarmersDashboard';
+import { Schemecategorytype } from '../Schemecategory/Schemecategory';
+import { Schemesubcategorytype } from '../Schemesubcategory/Schemesubcategory';
 
 
 
@@ -14,6 +16,8 @@ interface AllFarmersData {
     users: UserCategory[];
     schemes: Schemesdatas[];
     farmers: FarmdersType[];
+    schemescrud: Schemecategorytype[];
+    schemessubcategory: Schemesubcategorytype[];
 }
 
 const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {

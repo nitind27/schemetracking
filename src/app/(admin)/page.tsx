@@ -47,29 +47,37 @@ async function fetchFarmersData() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   try {
-    const [usersRes, schemesRes, farmersRes] = await Promise.all([
+    const [usersRes, schemesRes, farmersRes,schemescrudRes,schemessubcategoryRes] = await Promise.all([
       fetch(`${apiUrl}/api/usercategorycrud`),
       fetch(`${apiUrl}/api/schemescrud`),
-      fetch(`${apiUrl}/api/farmers`)
+      fetch(`${apiUrl}/api/farmers`),
+      fetch(`${apiUrl}/api/schemescrud`),
+      fetch(`${apiUrl}/api/schemessubcategory`)
     ]);
 
-    const [users, schemes, farmers] = await Promise.all([
+    const [users, schemes, farmers, schemescrud, schemessubcategory] = await Promise.all([
       usersRes.json(),
       schemesRes.json(),
-      farmersRes.json()
+      farmersRes.json(),
+      schemescrudRes.json(),
+      schemessubcategoryRes.json()
     ]);
 
     return {
       users,
       schemes,
-      farmers
+      farmers,
+      schemescrud,
+      schemessubcategory
     };
   } catch (error) {
     console.error('Error fetching farmers data:', error);
     return {
       users: [],
       schemes: [],
-      farmers: []
+      farmers: [],
+      schemescrud: [],
+      schemessubcategory: []
     };
   }
 }
