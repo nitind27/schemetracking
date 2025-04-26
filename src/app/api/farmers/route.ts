@@ -40,12 +40,12 @@ export async function POST(request: Request) {
     let connection;
     try {
        
-        const farmerDocDir = path.join(process.cwd(), 'tmp/uploads/farmersdocument');
+        const farmerDocDir = '/tmp/uploads/farmersdocument';
         if (!fs.existsSync(farmerDocDir)) {
             fs.mkdirSync(farmerDocDir, { recursive: true });
         }
 
-        const schemeDocDir = path.join(process.cwd(), 'tmp/uploads/schemedocument');
+        const schemeDocDir = '/tmp/uploads/schemedocument';
         if (!fs.existsSync(schemeDocDir)) {
             fs.mkdirSync(schemeDocDir, { recursive: true });
         }
