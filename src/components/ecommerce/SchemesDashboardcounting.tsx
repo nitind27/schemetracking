@@ -8,6 +8,8 @@ import { FarmdersType } from '../farmersdata/farmers';
 import SchemesDataModel from '../example/ModalExample/SchemesDataModel';
 import { Schemecategorytype } from '../Schemecategory/Schemecategory';
 import { Schemesubcategorytype } from '../Schemesubcategory/Schemesubcategory';
+import { Scheme_year } from '../Yearmaster/yearmaster';
+import { Documents } from '../Documentsdata/documents';
 
 interface AllFarmersData {
     users: UserCategory[];
@@ -15,12 +17,16 @@ interface AllFarmersData {
     farmers: FarmdersType[];
     schemescrud: Schemecategorytype[];
     schemessubcategory: Schemesubcategorytype[];
+    yearmaster: Scheme_year[];
+    documents: Documents[];
 }
 
 const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData }) => {
     // const [data, setData] = useState<UserCategory[]>([]);
     const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
+    const [dataschemsyear, setDataschemsyear] = useState<Scheme_year[]>([]);
     const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
+    const [datadocuments, setDocumentsdata] = useState<Documents[]>([]);
     const [dataSchemecategory, setDataSchemecategory] = useState<Schemecategorytype[]>([]);
     const [dataSchemesubcategory, setDataSchemesubcategory] = useState<Schemesubcategorytype[]>([]);
 
@@ -38,6 +44,8 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
             setDatafarmers(farmersData.farmers);
             setDataSchemecategory(farmersData.schemescrud)
             setDataSchemesubcategory(farmersData.schemessubcategory)
+            setDataschemsyear(farmersData.yearmaster)
+            setDocumentsdata(farmersData.documents)
         }
     }, [farmersData]);
 
@@ -90,7 +98,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
             key: 'scheme_name',
             label: 'Schemes Name',
             accessor: 'scheme_name',
-            render: (scheme) => <span> <SchemesDataModel schemeid={scheme.scheme_id} farmername={scheme.scheme_name} datascheme={dataschems} schemescrud={dataSchemecategory} schemessubcategory={dataSchemesubcategory}/></span>
+            render: (scheme) => <span> <SchemesDataModel schemeid={scheme.scheme_id} farmername={scheme.scheme_name} datascheme={dataschems} schemescrud={dataSchemecategory} schemessubcategory={dataSchemesubcategory} dataschemsyear={dataschemsyear} datadocuments={datadocuments} /></span>
         },
         {
             key: 'Benefited',

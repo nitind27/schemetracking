@@ -47,29 +47,29 @@ async function fetchFarmersData() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   try {
-    const [usersRes, schemesRes, farmersRes,schemescrudRes,schemessubcategoryRes] = await Promise.all([
+    // 1. Add yearmaster fetch here (6 fetches total)
+    const [usersRes, schemesRes, farmersRes, schemescrudRes, schemessubcategoryRes, yearmasterRes, documentsRes] = await Promise.all([
       fetch(`${apiUrl}/api/usercategorycrud`),
       fetch(`${apiUrl}/api/schemescrud`),
       fetch(`${apiUrl}/api/farmers`),
-      fetch(`${apiUrl}/api/schemescrud`),
-      fetch(`${apiUrl}/api/schemessubcategory`)
+      fetch(`${apiUrl}/api/schemescategory`),
+      fetch(`${apiUrl}/api/schemessubcategory`), // Assuming this is correct
+      fetch(`${apiUrl}/api/yearmaster`),
+      fetch(`${apiUrl}/api/documents`),
     ]);
 
-    const [users, schemes, farmers, schemescrud, schemessubcategory] = await Promise.all([
+    // 2. Keep 6 elements here to match
+    const [users, schemes, farmers, schemescrud, schemessubcategory, yearmaster, documents] = await Promise.all([
       usersRes.json(),
       schemesRes.json(),
       farmersRes.json(),
       schemescrudRes.json(),
-      schemessubcategoryRes.json()
+      schemessubcategoryRes.json(),
+      yearmasterRes.json(),
+      documentsRes.json()
     ]);
 
-    return {
-      users,
-      schemes,
-      farmers,
-      schemescrud,
-      schemessubcategory
-    };
+    return { users, schemes, farmers, schemescrud, schemessubcategory, yearmaster, documents };
   } catch (error) {
     console.error('Error fetching farmers data:', error);
     return {
@@ -77,10 +77,13 @@ async function fetchFarmersData() {
       schemes: [],
       farmers: [],
       schemescrud: [],
-      schemessubcategory: []
+      schemessubcategory: [],
+      yearmaster: [], // Added missing array
+      documents: [], // Added missing array
     };
   }
 }
+
 
 export default async function Ecommerce() {
   const metrics = await fetchMetrics();

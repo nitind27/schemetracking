@@ -8,6 +8,8 @@ import { FarmdersType } from '../farmersdata/farmers';
 import FarmersDashboard from './FarmersDashboard';
 import { Schemecategorytype } from '../Schemecategory/Schemecategory';
 import { Schemesubcategorytype } from '../Schemesubcategory/Schemesubcategory';
+import { Scheme_year } from '../Yearmaster/yearmaster';
+import { Documents } from '../Documentsdata/documents';
 
 
 
@@ -18,6 +20,8 @@ interface AllFarmersData {
     farmers: FarmdersType[];
     schemescrud: Schemecategorytype[];
     schemessubcategory: Schemesubcategorytype[];
+    yearmaster: Scheme_year[];
+    documents: Documents[];
 }
 
 const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
