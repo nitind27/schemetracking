@@ -39,47 +39,47 @@ export async function POST(request: Request) {
 
     let connection;
     try {
-        // Upload path for farmer documents
-        const farmerDocDir = 'tmp/uploads/farmersdocument';
-        if (!fs.existsSync(farmerDocDir)) {
-            fs.mkdirSync(farmerDocDir, { recursive: true });
+        // Define the base tmp path safely relative to project root
+        const tmpBasePath = path.join(process.cwd(), 'tmp', 'uploads');
+        const farmerDocDir = path.join(tmpBasePath, 'farmersdocument');
+        const schemeDocDir = path.join(tmpBasePath, 'schemedocument');
+
+        // Ensure directories exist
+        for (const dir of [farmerDocDir, schemeDocDir]) {
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
         }
 
-        // Upload path for scheme documents
-        const schemeDocDir = 'tmp/uploads/schemedocument';
-        if (!fs.existsSync(schemeDocDir)) {
-            fs.mkdirSync(schemeDocDir, { recursive: true });
-        }
-
-        // Save farmer document files
+        // Handle farmer documents
         const newFarmerDocNames: string[] = [];
         for (const file of files) {
             const buffer = Buffer.from(await file.arrayBuffer());
-            const fileName = file.name;
-            const filePath = path.join(farmerDocDir, fileName);
+            const originalFileName = file.name;
+           
+            const safeFileName = `${originalFileName}`;
+            const filePath = path.join(farmerDocDir, safeFileName);
 
             await fs.promises.writeFile(filePath, buffer);
-            newFarmerDocNames.push(fileName);
+            newFarmerDocNames.push(safeFileName);
         }
 
-        // Save scheme document files
+        // Handle scheme documents
         const newSchemeDocNames: string[] = [];
         for (const file of files2) {
             const buffer = Buffer.from(await file.arrayBuffer());
-            const fileName = file.name;
-            const filePath = path.join(schemeDocDir, fileName);
+            const originalFileName = file.name;
+         
+            const safeFileName = `${originalFileName}`;
+            const filePath = path.join(schemeDocDir, safeFileName);
 
             await fs.promises.writeFile(filePath, buffer);
-            newSchemeDocNames.push(fileName);
+            newSchemeDocNames.push(safeFileName);
         }
 
+        // Update database
         connection = await pool.getConnection();
 
-        // Get existing farmer documents
-
-        // Combine existing and new farmer documents
-
-        // Build update query
         const updateFields: string[] = [];
         const updateValues: string[] = [];
 
@@ -91,10 +91,6 @@ export async function POST(request: Request) {
             }
         }
 
-        // Optionally, update the 'documents' field with combined filenames
-        // updateFields.push('documents = ?');
-        // updateValues.push(updatedDocs.join('|'));
-
         if (updateFields.length > 0) {
             updateValues.push(farmerId);
             const updateQuery = `UPDATE farmers SET ${updateFields.join(', ')} WHERE farmer_id = ?`;
@@ -104,7 +100,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             message: 'Farmer data updated successfully',
             uploadedFarmerDocs: newFarmerDocNames,
-            uploadedSchemeDocs: newSchemeDocNames
+            uploadedSchemeDocs: newSchemeDocNames,
         });
 
     } catch (error) {
