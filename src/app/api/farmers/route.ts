@@ -40,13 +40,13 @@ export async function POST(request: Request) {
     let connection;
     try {
         // Upload path for farmer documents
-        const farmerDocDir = path.join(process.cwd(), 'tmp/uploads/farmersdocument');
+        const farmerDocDir = 'tmp/uploads/farmersdocument';
         if (!fs.existsSync(farmerDocDir)) {
             fs.mkdirSync(farmerDocDir, { recursive: true });
         }
 
         // Upload path for scheme documents
-        const schemeDocDir = path.join(process.cwd(), 'tmp/uploads/schemedocument');
+        const schemeDocDir = 'tmp/uploads/schemedocument';
         if (!fs.existsSync(schemeDocDir)) {
             fs.mkdirSync(schemeDocDir, { recursive: true });
         }
@@ -75,18 +75,9 @@ export async function POST(request: Request) {
 
         connection = await pool.getConnection();
 
-        // // Get existing farmer documents
-        // const [existing] = await connection.query<RowDataPacket[]>(
-        //     'SELECT documents FROM farmers WHERE farmer_id = ?',
-        //     [farmerId]
-        // );
-
-        // const existingDocs = existing[0]?.documents
-        //     ? existing[0].documents.split('|')
-        //     : [];
+        // Get existing farmer documents
 
         // Combine existing and new farmer documents
-        // const updatedDocs = [...existingDocs, ...newFarmerDocNames];
 
         // Build update query
         const updateFields: string[] = [];
