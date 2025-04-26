@@ -39,19 +39,17 @@ export async function POST(request: Request) {
 
     let connection;
     try {
-        // Upload path for farmer documents
-        const farmerDocDir = path.join(process.cwd(), 'public/uploads/farmersdocument');
+       
+        const farmerDocDir = path.join(process.cwd(), 'tmp/uploads/farmersdocument');
         if (!fs.existsSync(farmerDocDir)) {
             fs.mkdirSync(farmerDocDir, { recursive: true });
         }
 
-        // Upload path for scheme documents
-        const schemeDocDir = path.join(process.cwd(), 'public/uploads/schemedocument');
+        const schemeDocDir = path.join(process.cwd(), 'tmp/uploads/schemedocument');
         if (!fs.existsSync(schemeDocDir)) {
             fs.mkdirSync(schemeDocDir, { recursive: true });
         }
 
-        // Save farmer document files
         const newFarmerDocNames: string[] = [];
         for (const file of files) {
             const buffer = Buffer.from(await file.arrayBuffer());
@@ -62,7 +60,6 @@ export async function POST(request: Request) {
             newFarmerDocNames.push(fileName);
         }
 
-        // Save scheme document files
         const newSchemeDocNames: string[] = [];
         for (const file of files2) {
             const buffer = Buffer.from(await file.arrayBuffer());
@@ -75,20 +72,6 @@ export async function POST(request: Request) {
 
         connection = await pool.getConnection();
 
-        // Get existing farmer documents
-        // const [existing] = await connection.query<RowDataPacket[]>(
-        //     'SELECT documents FROM farmers WHERE farmer_id = ?',
-        //     [farmerId]
-        // );
-
-        // const existingDocs = existing[0]?.documents
-        //     ? existing[0].documents.split('|')
-        //     : [];
-
-        // Combine existing and new farmer documents
-        // const updatedDocs = [...existingDocs, ...newFarmerDocNames];
-
-        // Build update query
         const updateFields: string[] = [];
         const updateValues: string[] = [];
 
@@ -99,10 +82,6 @@ export async function POST(request: Request) {
                 updateValues.push(value.toString());
             }
         }
-
-        // Optionally, update the 'documents' field with combined filenames
-        // updateFields.push('documents = ?');
-        // updateValues.push(updatedDocs.join('|'));
 
         if (updateFields.length > 0) {
             updateValues.push(farmerId);
