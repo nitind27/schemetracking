@@ -17,7 +17,7 @@ interface DefaultModalProps {
     schemessubcategory: Schemesubcategorytype[];
 }
 
-export default function SchemesDataModel({ schemeid, datascheme, farmername, schemescrud, schemessubcategory }: DefaultModalProps) {
+export default function SchemesDataModel({ schemeid, datascheme, farmername }: DefaultModalProps) {
     const { isOpen, openModal, closeModal } = useModal();
 
     const farmer = datascheme.find((data) => data.scheme_id === Number(schemeid));
