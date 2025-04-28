@@ -122,16 +122,25 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         {
             key: 'NotBenefited',
             label: 'Not Benefited',
-            render: () => (
-                <button
-                    onClick={handleNotBenefitedClick}
-                    className="hover:underline cursor-pointer"
-                >
-                    {datafarmers.filter(farmer =>
-                        !schemeIds.some(id => farmer.schemes?.includes(id))
-                    ).length}
-                </button>
-            )
+            render: (scheme) => {
+                // Convert current scheme ID to string for consistent comparison
+                const currentSchemeId = scheme.scheme_id.toString();
+                
+                // Filter farmers who don't have the current scheme
+                const nonBenefitedCount = datafarmers.filter(farmer => {
+                    const farmerSchemes = farmer.schemes;  // Handle undefined schemes
+                    return !farmerSchemes.includes(currentSchemeId);
+                }).length;
+        
+                return (
+                    <button
+                        onClick={handleNotBenefitedClick}
+                        className="hover:underline cursor-pointer"
+                    >
+                        {nonBenefitedCount}
+                    </button>
+                );
+            }
         }
     ];
 
@@ -147,7 +156,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                 columns={columns}
                 title="Scheme Beneficiaries"
                 filterOptions={[]}
-                searchKey="scheme_name"
+                searchKey="beneficiery_name"
                 rowsPerPage={10}
             />
 
