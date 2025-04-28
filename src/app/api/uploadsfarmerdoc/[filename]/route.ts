@@ -14,14 +14,20 @@ export async function GET(
   try {
     // Await the params promise first
     const resolvedParams = await params;
-    
+
     // Security: Prevent directory traversal
     const safeFilename = path.basename(resolvedParams.filename);
-    const filePath = path.join('/tmp/uploads/farmersdocument', safeFilename);
-    
+    const filePath = path.join(
+      process.cwd(), // Use project root as base
+      'tmp',
+      'uploads',
+      'farmersdocument',
+      safeFilename
+    );
+
     // Read file from filesystem
     const fileBuffer = await readFile(filePath);
-    
+
     // Determine content type
     const extension = path.extname(safeFilename).toLowerCase();
     const contentType = {
@@ -38,7 +44,8 @@ export async function GET(
         'Cache-Control': 'public, max-age=31536000, immutable'
       }
     });
-  } catch {
+  } catch (error) {
+    console.log("fsadfadsf", error)
     return NextResponse.json(
       { error: 'File not found' },
       { status: 404 }

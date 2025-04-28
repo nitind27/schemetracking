@@ -17,8 +17,14 @@ export async function GET(
     
     // Security: Prevent directory traversal
     const safeFilename = path.basename(resolvedParams.filename);
-    const filePath = path.join('/tmp/uploads/schemedocument', safeFilename);
-    
+
+        const filePath = path.join(
+          process.cwd(), // Use project root as base
+          'tmp',
+          'uploads',
+          'schemedocument',
+          safeFilename
+        );
     // Read file from filesystem
     const fileBuffer = await readFile(filePath);
     

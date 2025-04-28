@@ -299,19 +299,18 @@ const Schemesdata: React.FC<Props> = ({
 
                 let docIds = [];
                 try {
-                    // Parse the string, replacing single quotes with double quotes for valid JSON
+
                     const parsed = JSON.parse(data.documents.replace(/'/g, '"'));
-                    // If parsed value is an array, use as is; if not, wrap in array
+
                     docIds = Array.isArray(parsed) ? parsed : [parsed];
                 } catch {
-                    // Fallback: split by comma, parse as integers, filter out NaN
+
                     docIds = data.documents
                         .split(',')
                         .map(part => parseInt(part.trim()))
                         .filter(num => !isNaN(num));
                 }
 
-                // Ensure docIds is always an array (extra safety)
                 if (!Array.isArray(docIds)) {
                     docIds = [docIds];
                 }
@@ -350,10 +349,9 @@ const Schemesdata: React.FC<Props> = ({
     ];
     const handleChange = (
         selected: MultiValue<DocOption>,
-        // _actionMeta: ActionMeta<DocOption>
+        
     ) => {
 
-        // Convert readonly array to regular array
         setdocuments(selected ? [...selected] : []);
     };
 
