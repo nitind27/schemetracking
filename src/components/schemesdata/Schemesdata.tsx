@@ -191,6 +191,7 @@ const Schemesdata: React.FC<Props> = ({
 
             // setInputValue(''); // Remove or use inputValue
             setEditId(null);
+            resetdata();
             fetchData();
 
         } catch (error) {
@@ -200,22 +201,29 @@ const Schemesdata: React.FC<Props> = ({
                 : 'Failed to create Schemes. Please try again.');
         }
         finally {
-            setLoading(false); // End loading
+            setLoading(false);
             setIsmodelopen(false);
         }
     };
+    const resetdata = () => {
 
+
+        setschemecategoryid(0)
+        setschemesubcategoryid(0)
+        setschemeyearid(0)
+        setschemename("")
+        setbeneficieryname("")
+        setapplyedat("")
+        setlink("")
+        setEditId(0);
+        setdocuments([])
+        setdocumentsedit("")
+
+    }
     useEffect(() => {
         if (!isEditMode) {
 
-            setschemecategoryid(0)
-            setschemesubcategoryid(0)
-            setschemeyearid(0)
-            setschemename("")
-            setbeneficieryname("")
-            setapplyedat("")
-            setlink("")
-            setEditId(0);
+            resetdata()
         }
     }, [isEditMode]);
     const handleEdit = (item: Schemesdatas) => {

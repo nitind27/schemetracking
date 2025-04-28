@@ -57,9 +57,14 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
 
     const alldata = datafarmers.filter(farmer => farmer.schemes?.trim() !== "");
 
-    const matches = dataschems.filter(scheme =>
-        alldata.some(farmer => farmer.schemes?.includes(scheme.scheme_id.toString()))
+    // const matches = dataschems.filter(scheme => 
+    //     alldata.some(farmer => farmer.schemes?.includes(scheme.scheme_id.toString()))
+    // );
+    const matches = dataschems.filter(scheme => 
+   
+        alldata.some(farmer => farmer.schemes && scheme)
     );
+    
 
     const handleBenefitedClick = (schemeId: string) => {
         const benefitedFarmers = datafarmers.filter(farmer =>
