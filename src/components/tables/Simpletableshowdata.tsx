@@ -182,7 +182,7 @@ export function Simpletableshowdata<T extends object>({
           Showing {(page - 1) * rowsPerPage + 1} - {Math.min(page * rowsPerPage, filteredData.length)} of {filteredData.length}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 whitespace-nowrap w-full">
           <button
             className="px-4 py-2 border rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
             disabled={page === 1}

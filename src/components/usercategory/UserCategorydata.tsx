@@ -126,7 +126,7 @@ const UserCategorydata: React.FC<Props> = ({ serverData }) => {
       key: 'actions',
       label: 'Actions',
       render: (data) => (
-        <div className="flex gap-2">
+        <div className="flex gap-2 whitespace-nowrap w-full">
           <Button size="sm" onClick={() => handleEdit(data)}>Edit</Button>
           <span>
             <DefaultModal id={data.user_category_id} fetchData={fetchData} endpoint={"usercategorycrud"} bodyname='user_category_id' newstatus={data.status} />
@@ -179,7 +179,7 @@ const UserCategorydata: React.FC<Props> = ({ serverData }) => {
           </button>
         }
         searchKey="category_name"
-        rowsPerPage={10}
+        
       />
     </div>
   );

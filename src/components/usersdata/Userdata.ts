@@ -7,7 +7,10 @@ export interface UserData {
     contact_no: string;
     address: string;
     taluka_id: number;
+    taluka_name: string;
     village_id: number;
+    village_name: string;
+    user_category_name: string;
     status: string;
   }
   

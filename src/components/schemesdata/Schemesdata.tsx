@@ -77,7 +77,7 @@ const Schemesdata: React.FC<Props> = ({
     const [documentsedit, setdocumentsedit] = useState("");
     const [loading, setLoading] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
-
+console.log("fasdsfdadsaf",initialdata)
     // Use the DocOption type here
     const docoptions: DocOption[] = filterdocument.map(doc => ({
         label: doc.document_name,
@@ -251,20 +251,20 @@ const Schemesdata: React.FC<Props> = ({
             key: 'scheme_category_id',
             label: 'Category',
             accessor: 'scheme_category_id',
-            render: (data) => <span>{filtercategory.filter((datacat) => datacat.scheme_category_id == data.scheme_category_id).map((datamap) => datamap.name)}</span>
+            render: (data) => <span>{data.category_name}</span>
         },
         {
             key: 'scheme_sub_category_id',
             label: 'SubCategory',
             accessor: 'scheme_sub_category_id',
 
-            render: (data) => <span>{filtersubcategory.filter((datacat) => datacat.scheme_sub_category_id == data.scheme_sub_category_id).map((datamap) => datamap.name)}</span>
+            render: (data) => <span>{data.sub_category_name}</span>
         },
         {
             key: 'scheme_year_id',
             label: 'Year',
             accessor: 'scheme_year_id',
-            render: (data) => <span>{filteryear.filter((datayear) => datayear.scheme_year_id == data.scheme_year_id).map((datamap) => datamap.year)}</span>
+            render: (data) => <span>{data.scheme_year}</span>
         },
         {
             key: 'scheme_name',
@@ -336,7 +336,7 @@ const Schemesdata: React.FC<Props> = ({
             key: 'actions',
             label: 'Actions',
             render: (data) => (
-                <div className="flex gap-2">
+                <div className="flex gap-2 whitespace-nowrap w-full">
                     <Button size="sm" onClick={() => handleEdit(data)}>
                         Edit
                     </Button>

@@ -10,6 +10,8 @@ import { Schemecategorytype } from '../Schemecategory/Schemecategory';
 import { Schemesubcategorytype } from '../Schemesubcategory/Schemesubcategory';
 import { Scheme_year } from '../Yearmaster/yearmaster';
 import { Documents } from '../Documentsdata/documents';
+import { Taluka } from '../Taluka/Taluka';
+import { Village } from '../Village/village';
 
 
 
@@ -22,6 +24,9 @@ interface AllFarmersData {
     schemessubcategory: Schemesubcategorytype[];
     yearmaster: Scheme_year[];
     documents: Documents[];
+    taluka: Taluka[];
+    villages: Village[];
+
 }
 
 const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {

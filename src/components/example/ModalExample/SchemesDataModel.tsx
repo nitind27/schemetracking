@@ -45,24 +45,22 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
         const subcategory = dataschemsyear.find(sub => sub.scheme_year_id == id);
         return subcategory?.year || id.toString();
     };
-
-    const getDocuments = (ids: number | number[]) => {
-        const idArray = Array.isArray(ids) ? ids : [ids];
-        
-        // Get all found IDs from the dataset
-        const foundIds = datadocuments
-            .filter(sub => idArray.includes(sub.id))
-            .map(sub => sub.id);
-    
-        // Combine found IDs with missing IDs
-        const allIds = [
-            ...foundIds,
-            ...idArray.filter(id => !foundIds.includes(id))
-        ];
-    
-        return allIds.join(', ');
+    const getDocuments = (docValue: string | number) => {
+        if (typeof docValue === "string" && docValue.includes(",")) {
+            const ids = docValue.split(",").map(id => Number(id.trim()));
+            const documentNames = ids.map(id => {
+                const doc = datadocuments.find(sub => sub.id === id);
+                return doc?.document_name || id.toString();
+            });
+            return documentNames.join(", ");
+        } else {
+            const id = typeof docValue === "string" ? Number(docValue) : docValue;
+            const doc = datadocuments.find(sub => sub.id === id);
+            return doc?.document_name || id.toString();
+        }
     };
     
+
     return (
         <div>
             <span className="cursor-pointer hover:text-blue-700 underline" onClick={openModal}>
@@ -79,43 +77,50 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
                 </h4>
 
                 {farmer ? (
-                    <div className="max-h-[60vh] overflow-y-auto space-y-4">
-                        {Object.entries(farmer)
-                            .filter(([key]) => !excludedFields.includes(key))
-                            .map(([key, value]) => {
-                                // Convert IDs to names for specific fields
-                                let displayValue: React.ReactNode = value || "-";
+                    <div className="max-h-[60vh] overflow-y-auto">
+                        <table className="min-w-full border text-left text-sm">
+                            <thead>
+                                <tr>
+                                    <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Sr.No</th>
+                                    <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Field</th>
+                                    <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Object.entries(farmer)
+                                    .filter(([key]) => !excludedFields.includes(key))
+                                    .map(([key, value], index) => {
+                                        let displayValue: React.ReactNode = value || "-";
 
-                                if (key == "scheme_year_id") {
-                                    displayValue = getSchemeyear(value);
-                                }
-                                if (key == "scheme_category_id") {
-                                    displayValue = getCategoryName(value);
-                                }
+                                        // Handle all special cases in one place
+                                     if (key === "scheme_year_id") {
+                                            displayValue = getSchemeyear(value);
+                                        } else if (key === "scheme_category_id") {
+                                            displayValue = getCategoryName(value);
+                                        } else if (key === "scheme_sub_category_id") {
+                                            displayValue = getSubcategoryName(value);
+                                        } else if (key === "documents") {
+                                            displayValue = getDocuments(value);
+                                        }
 
-                                if (key == "scheme_sub_category_id") {
-                                    displayValue = getSubcategoryName(value);
-                                }
-                                if (key == "documents") {
-                                    displayValue = getDocuments(value);
-                                }
-
-                                return (
-                                    <div key={key} className="flex justify-between border-b pb-1">
-                                        <span className="capitalize font-medium text-gray-700 dark:text-white">
-                                            {key.replace(/_/g, " ") === "adivasi"
-                                                ? "Type"
-                                                : key.replace(/_/g, " ")
-                                            }
-
-                                        </span>
-                                        <span className="text-gray-600 dark:text-gray-300">
-                                            {displayValue}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                                        return (
+                                            <tr key={key}>
+                                                <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
+                                                    {index + 1}
+                                                </td>
+                                                <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
+                                                    {key.replace(/_/g, " ") === "adivasi" ? "Type" : key.replace(/_/g, " ")}
+                                                </td>
+                                                <td className="px-4 py-2 border-b text-gray-600 dark:text-gray-300">
+                                                    {displayValue}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                            </tbody>
+                        </table>
                     </div>
+
                 ) : (
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         No data found for this farmer.

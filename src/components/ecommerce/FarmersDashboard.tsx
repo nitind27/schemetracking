@@ -7,11 +7,15 @@ import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import { Schemesdatas } from '../schemesdata/schemes';
 import { FarmdersType } from '../farmersdata/farmers';
 import UserDatamodel from '../example/ModalExample/UserDatamodel';
+import { Taluka } from '../Taluka/Taluka';
+import { Village } from '../Village/village';
 
 interface AllFarmersData {
     users: UserCategory[];
     schemes: Schemesdatas[];
     farmers: FarmdersType[];
+    taluka: Taluka[];
+    villages: Village[];
 }
 
 const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
@@ -22,12 +26,16 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const [modalTitle, setModalTitle] = useState('');
     const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
     const [filteredschemes, setFilteredschemes] = useState<Schemesdatas[]>([]);
+    const [datataluka, setdatataluka] = useState<Taluka[]>([]);
+    const [datavillage, setdatavillages] = useState<Village[]>([]);
 
     useEffect(() => {
         if (farmersData) {
 
             setDataschems(farmersData.schemes);
             setDatafarmers(farmersData.farmers);
+            setdatataluka(farmersData.taluka);
+            setdatavillages(farmersData.villages);
         }
     }, [farmersData]);
 
@@ -73,7 +81,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
             key: 'scheme_name',
             label: 'IFR holders Name',
             accessor: 'name',
-            render: (allfarmersname) => <span > <UserDatamodel farmersid={allfarmersname.farmer_id.toString()} datafarmers={datafarmers} farmername={allfarmersname.name} /></span>
+            render: (allfarmersname) => <span > <UserDatamodel farmersid={allfarmersname.farmer_id.toString()} datafarmers={datafarmers} farmername={allfarmersname.name} datavillage={datavillage} datataluka={datataluka} /></span>
         },
         {
             key: 'contactno',
@@ -131,7 +139,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 title="Scheme Beneficiaries"
                 filterOptions={[]}
                 searchKey="name"
-                rowsPerPage={10}
+
             />
 
             {isModalOpen && (
@@ -155,10 +163,12 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                                                 Sr.No
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                
+
                                                 Schemes
+
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+
                                                 Beneficiery
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

@@ -5,21 +5,35 @@ import { Modal } from "../../ui/modal";
 import Button from "../../ui/button/Button";
 import { useModal } from "@/hooks/useModal";
 import { FarmdersType } from "@/components/farmersdata/farmers";
+import { Taluka } from "@/components/Taluka/Taluka";
+import { Village } from "@/components/Village/village";
 
 interface DefaultModalProps {
   farmersid: string;
   farmername: string;
   datafarmers: FarmdersType[];
+  datavillage: Village[];
+  datataluka: Taluka[];
 }
 
-export default function UserDatamodel({ farmersid, datafarmers, farmername }: DefaultModalProps) {
+export default function UserDatamodel({ farmersid, datafarmers, farmername, datavillage, datataluka }: DefaultModalProps) {
   const { isOpen, openModal, closeModal } = useModal();
 
   const farmer = datafarmers.find((data) => data.farmer_id === Number(farmersid));
 
   // Fields to exclude
-  const excludedFields = ["farmer_id", "created_at", "updated_at"];
+  const excludedFields = ["farmer_id", "created_at", "updated_at", "schemes","kisan_id","documents"];
 
+
+  const getvillage = (id: string) => {
+    const subcategory = datavillage.find(sub => sub.taluka_id == id);
+    return subcategory?.name || id.toString();
+  };
+
+  const gettaluka = (id: number) => {
+    const subcategory = datataluka.find(sub => sub.taluka_id == id);
+    return subcategory?.name || id.toString();
+  };
   return (
     <div>
       <span className="cursor-pointer hover:text-blue-700 underline" onClick={openModal}>
@@ -48,19 +62,33 @@ export default function UserDatamodel({ farmersid, datafarmers, farmername }: De
               <tbody>
                 {Object.entries(farmer)
                   .filter(([key]) => !excludedFields.includes(key))
-                  .map(([key, value], index) => (
-                    <tr key={key}>
-                      <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
-                        {index + 1}
-                      </td>
-                      <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
-                        {key.replace(/_/g, " ") === "adivasi" ? "Type" : key.replace(/_/g, " ")}
-                      </td>
-                      <td className="px-4 py-2 border-b text-gray-600 dark:text-gray-300">
-                        {value ? value : "-"}
-                      </td>
-                    </tr>
-                  ))}
+                  .map(([key, value], index) => {
+                    let displayValue: React.ReactNode = value || "-";
+
+                    if (key == "taluka_id") {
+                      displayValue = gettaluka(value);
+                    }
+                    if (key == "village_id") {
+                      displayValue = getvillage(value);
+                    }
+                    return (
+
+
+                      <tr key={key}>
+                        <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
+                          {index + 1}
+                   
+                        </td>
+                        <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
+                          {key.replace(/_/g, " ") === "adivasi" ? "Type" : key.replace(/_/g, " ")}
+
+                        </td>
+                        <td className="px-4 py-2 border-b text-gray-600 dark:text-gray-300">
+                         {displayValue}
+                        </td>
+                      </tr>
+                    )
+                  })}
               </tbody>
             </table>
           </div>

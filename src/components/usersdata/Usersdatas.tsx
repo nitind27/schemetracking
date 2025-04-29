@@ -202,7 +202,7 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
       key: 'user_category_id',
       label: 'User Category',
       accessor: 'user_category_id',
-      render: (data) => <span>{datausercategorycrud.filter((pac) => pac.user_category_id == data.user_category_id).map((data) => data.category_name)}</span>
+      render: (data) => <span>{data.user_category_name}</span>
     },
     {
       key: 'username',
@@ -232,13 +232,13 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
       key: 'taluka_id',
       label: 'Taluka',
       accessor: 'taluka_id',
-      render: (data) => <span>{datataluka.filter((datatlk) => datatlk.taluka_id == data.taluka_id).map((datamap) => datamap.name)}</span>
+      render: (data) => <span>{data.taluka_name}</span>
     },
     {
       key: 'village_id',
       label: 'Village',
       accessor: 'village_id',
-      render: (data) => <span>{datavillage.filter((datavlg) => datavlg.village_id == data.village_id).map((datamap) => datamap.name)}</span>
+      render: (data) => <span>{data.village_name}</span>
     },
     {
       key: 'status',
@@ -251,7 +251,7 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
       key: 'actions',
       label: 'Actions',
       render: (data) => (
-        <div className="flex gap-2">
+        <div className="flex gap-2 whitespace-nowrap w-full">
           <Button size="sm" onClick={() => handleEdit(data)}>
             Edit
           </Button>
@@ -447,7 +447,7 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
           </button>
         }
         searchKey="username"
-        rowsPerPage={10}
+        // 
       />
     </div>
   );

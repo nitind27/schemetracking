@@ -24,20 +24,18 @@ export async function GET() {
   try {
     connection = await pool.getConnection();
     const [rows] = await connection.query<User[]>(`
-      SELECT 
-        user_id,
-        name,
-        user_category_id,
-        username,
-        password,
-        contact_no,
-        address,
-        taluka_id,
-        village_id,
-        status,
-        created_at,
-        updated_at 
+     SELECT 
+        users.*,
+        user_category.category_name AS user_category_name,
+        taluka.name AS taluka_name,
+        village.name AS village_name
       FROM users
+      LEFT JOIN user_category 
+        ON users.user_category_id = user_category.user_category_id
+      LEFT JOIN taluka 
+        ON users.taluka_id = taluka.taluka_id
+      LEFT JOIN village 
+        ON users.village_id = village.village_id
     `);
 
     // Type-safe mapping

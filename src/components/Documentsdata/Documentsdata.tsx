@@ -130,7 +130,7 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
             key: 'actions',
             label: 'Actions',
             render: (data) => (
-                <div className="flex gap-2">
+                <div className="flex gap-2 whitespace-nowrap w-full">
                     <Button size="sm" onClick={() => handleEdit(data)}>
                         Edit
                     </Button>
@@ -184,7 +184,7 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
                 }
 
                 searchKey="document_name"
-                rowsPerPage={10}
+                
             />
         </div>
     );
