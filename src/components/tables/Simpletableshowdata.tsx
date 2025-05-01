@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from "react";
 import DataTable from "react-data-table-component";
 import { Column, FilterOption } from "./tabletype";
-import FormInModal from "../example/ModalExample/FormInModal";
 
 type Props<T> = {
   data: T[];
@@ -22,10 +21,7 @@ export function Simpletableshowdata<T extends object>({
   columns,
   filterOptions = [],
   filterKey,
-  classname,
-  title,
-  submitbutton,
-  inputfiled,
+ 
 }: Props<T>) {
   const [filter, setFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -97,14 +93,7 @@ export function Simpletableshowdata<T extends object>({
         />
       </div>
 
-      <div className="w-full md:w-auto">
-          <FormInModal 
-            inputfiled={inputfiled} 
-            title={title} 
-            submitbutton={submitbutton} 
-            classname={classname} 
-          />
-        </div>
+     
     </div>
   );
 
