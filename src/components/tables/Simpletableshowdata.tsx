@@ -2,13 +2,31 @@
 
 import React, { useState, useMemo } from "react";
 import DataTable from "react-data-table-component";
-import { Column, FilterOption } from "./tabletype";
+
+type FilterOption = {
+  label: string;
+  value: string;
+};
+
+type FilterGroup = {
+  label: string;
+  options: FilterOption[];
+  onChange?: (value: string) => void;
+};
+
+type Column<T> = {
+  key: string;
+  label: string;
+  accessor?: keyof T;
+  render?: (item: T) => React.ReactNode;
+  sortable?: boolean;
+  width?: string;
+};
 
 type Props<T> = {
   data: T[];
   columns: Column<T>[];
-  filterOptions?: FilterOption[];
-  filterKey?: keyof T;
+  filterOptions?: FilterGroup[];
   inputfiled?: React.ReactNode;
   submitbutton?: React.ReactNode;
   title?: string;
@@ -20,10 +38,12 @@ export function Simpletableshowdata<T extends object>({
   data,
   columns,
   filterOptions = [],
-  filterKey,
- 
+  searchKey,
+  inputfiled,
+  submitbutton,
+  classname,
 }: Props<T>) {
-  const [filter, setFilter] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
 
   const reactColumns = useMemo(() => {
@@ -40,7 +60,8 @@ export function Simpletableshowdata<T extends object>({
         cell: col.render
           ? (row: T) => col.render?.(row)
           : (row: T) => (col.accessor ? String(row[col.accessor]) : ""),
-        sortable: true,
+        sortable: col.sortable !== false,
+        width: col.width,
       })),
     ];
   }, [columns]);
@@ -48,15 +69,26 @@ export function Simpletableshowdata<T extends object>({
   const filteredData = useMemo(() => {
     let tempData = [...data];
 
-    // Filter by dropdown value
-    if (filter && filterKey) {
-      tempData = tempData.filter(
-        (row) => String(row[filterKey]) === String(filter)
-      );
+    // Apply multiple filters
+    if (filterOptions.length > 0) {
+      tempData = tempData.filter((row) => {
+        return Object.entries(filters).every(([key, value]) => {
+          if (!value) return true;
+          return String(row[key as keyof T]) === String(value);
+        });
+      });
     }
 
-    // Global search across all keys
-    if (search) {
+    // Column-specific search
+    if (search && searchKey) {
+      tempData = tempData.filter((row) =>
+        String(row[searchKey as keyof T])
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      );
+    }
+    // Global search
+    else if (search) {
       tempData = tempData.filter((row) =>
         Object.values(row).some((value) =>
           String(value).toLowerCase().includes(search.toLowerCase())
@@ -65,44 +97,67 @@ export function Simpletableshowdata<T extends object>({
     }
 
     return tempData;
-  }, [data, filter, filterKey, search]);
+  }, [data, filters, search, searchKey, filterOptions]);
+
+  const handleFilterChange = (filterKey: string, value: string) => {
+    setFilters((prev) => ({ ...prev, [filterKey]: value }));
+  };
 
   const SubHeaderComponent = (
-    <div className="flex flex-col md:flex-row gap-4 mb-6">
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row gap-4">
         <div className="flex flex-col md:flex-row gap-2 flex-1">
-        {filterOptions.length > 0 && filterKey && (
-          <select
-            className="border rounded px-3 py-2"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
-            <option value="">All</option>
-            {filterOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          {filterOptions.map((group, index) => (
+            <select
+              key={`${group.label}-${index}`}
+              className="border rounded px-3 py-2 min-w-[150px]"
+              value={filters[group.label] || ""}
+              onChange={(e) => {
+                group.onChange?.(e.target.value);
+                handleFilterChange(group.label, e.target.value);
+              }}
+            >
+              <option value="">All {group.label}</option>
+              {group.options.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          ))}
+
+          <input
+            type="text"
+            placeholder="Search..."
+            className="border rounded px-3 py-2 w-full md:w-auto flex-1"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        {submitbutton && (
+          <div className="flex items-center">
+            {submitbutton}
+          </div>
         )}
-        <input
-          type="text"
-          placeholder="Search..."
-          className="border rounded px-3 py-2 w-full"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
       </div>
 
-     
+      {inputfiled && (
+        <div className="mt-4">
+          {inputfiled}
+        </div>
+      )}
     </div>
   );
 
   return (
-    <div className="p-4  rounded-lg w-full border">
+    <div className={`p-4 rounded-lg border ${classname}`}>
       <DataTable
         columns={reactColumns}
         data={filteredData}
         pagination
+        paginationPerPage={10}
+        paginationRowsPerPageOptions={[10, 25, 50, 100]}
         highlightOnHover
         responsive
         striped
@@ -110,18 +165,29 @@ export function Simpletableshowdata<T extends object>({
         subHeader
         subHeaderComponent={SubHeaderComponent}
         customStyles={{
-          rows: {
-            style: {
-              minHeight: "48px",
-            },
-          },
           headCells: {
             style: {
               fontWeight: "600",
               fontSize: "14px",
+              backgroundColor: "#f9fafb",
+            },
+          },
+          cells: {
+            style: {
+              padding: "12px 8px",
+            },
+          },
+          pagination: {
+            style: {
+              borderTop: "1px solid #e5e7eb",
             },
           },
         }}
+        noDataComponent={
+          <div className="py-8 text-center text-gray-500">
+            No data available
+          </div>
+        }
       />
     </div>
   );

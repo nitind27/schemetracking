@@ -1,14 +1,8 @@
 "use client";
 
-import {  useState } from 'react';
-
-import Label from "../form/Label";
+import { useEffect, useState, useMemo } from 'react';
 
 import { Column } from "../tables/tabletype";
-// import Button from "../ui/button/Button";
-
-import React from 'react';
-
 import { FarmdersType } from './farmers';
 import { Village } from '../Village/village';
 import { Taluka } from '../Taluka/Taluka';
@@ -28,130 +22,186 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
   datataluka,
   dataschems,
 }) => {
+  const [filters, setFilters] = useState({
+    talukaId: null as string | null,
+    villageId: null as string | null,
+    categoryName: null as string | null
+  });
 
-  // const [datavillage, setDatavillage] = useState<Village[]>([]);
-  // const [datataluka, setDatataluka] = useState<Taluka[]>([]);
-  // const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
-  const [inputValue, setInputValue] = useState('');
-  
+  const [selectedTaluka, setSelectedTaluka] = useState<string>('');
+  const [selectedVillage, setSelectedVillage] = useState<string>('');
+
+  useEffect(() => {
+    setFilters({
+      talukaId: sessionStorage.getItem('taluka_id'),
+      villageId: sessionStorage.getItem('village_id'),
+      categoryName: sessionStorage.getItem('category_name')
+    });
+  }, []);
+
+  const talukaOptions = useMemo(() =>
+    datataluka.map((taluka) => ({
+      label: taluka.name,
+      value: taluka.taluka_id.toString()
+    })),
+    [datataluka]
+  );
+
+  const villageOptions = useMemo(() =>
+    selectedTaluka
+      ? datavillage
+        .filter(village => village.taluka_id == selectedTaluka)
+        .map(village => ({
+          label: village.name,
+          value: village.village_id.toString()
+        }))
+      : [],
+    [datavillage, selectedTaluka]
+  );
+
+  const filteredFarmers = useMemo(() => {
+    let result = data;
+
+    // Apply admin filters from session
+    if (filters.categoryName !== "Admin") {
+      result = result.filter(f =>
+        f.taluka_id === filters.talukaId &&
+        f.village_id === filters.villageId
+      );
+    }
+
+    // Apply UI filters
+    if (selectedTaluka) {
+      result = result.filter(f => f.taluka_id === selectedTaluka);
+    }
+    if (selectedVillage) {
+      result = result.filter(f => f.village_id === selectedVillage);
+    }
+
+    return result;
+  }, [data, filters, selectedTaluka, selectedVillage]);
 
   const columns: Column<FarmdersType>[] = [
     {
       key: 'category_name',
       label: 'Name',
       accessor: 'name',
-      render: (data) => <span>{data.name}</span>
+      render: (item) => <span>{item.name}</span>
     },
-
-
     {
       key: 'adivasi',
       label: 'Adivasi',
       accessor: 'adivasi',
-      render: (data) => <span>{data.adivasi}</span>
+      render: (item) => <span>{item.adivasi}</span>
     },
     {
       key: 'village_id',
       label: 'Village',
       accessor: 'village_id',
-      render: (data) => <span>{datavillage.filter((datas) => datas.village_id == Number(data.village_id)).map((data) => data.name)}</span>
+      render: (item) => (
+        <span>
+          {datavillage.find(v => v.village_id === Number(item.village_id))?.name}
+        </span>
+      )
     },
     {
       key: 'taluka_id',
       label: 'Taluka',
       accessor: 'taluka_id',
-      render: (data) => <span>{datataluka.filter((datas) => datas.taluka_id == Number(data.taluka_id)).map((data) => data.name)}</span>
+      render: (item) => (
+        <span>
+          {datataluka.find(t => t.taluka_id === Number(item.taluka_id))?.name}
+        </span>
+      )
     },
     {
       key: 'gat_no',
       label: 'Gat No',
       accessor: 'gat_no',
-      render: (data) => <span>{data.gat_no}</span>
+      render: (item) => <span>{item.gat_no}</span>
     },
     {
       key: 'vanksetra',
       label: 'Vanksetra',
       accessor: 'vanksetra',
-      render: (data) => <span>{data.vanksetra}</span>
+      render: (item) => <span>{item.vanksetra}</span>
     },
     {
       key: 'nivas_seti',
       label: 'Nivas Seti',
       accessor: 'nivas_seti',
-      render: (data) => <span>{data.nivas_seti}</span>
+      render: (item) => <span>{item.nivas_seti}</span>
     },
     {
       key: 'aadhaar_no',
       label: 'Aadhaar No',
       accessor: 'aadhaar_no',
-      render: (data) => <span>{data.aadhaar_no}</span>
+      render: (item) => <span>{item.aadhaar_no}</span>
     },
     {
       key: 'contact_no',
       label: 'Contact No',
       accessor: 'contact_no',
-      render: (data) => <span>{data.contact_no}</span>
+      render: (item) => <span>{item.contact_no}</span>
     },
     {
       key: 'email',
       label: 'Email',
       accessor: 'email',
-      render: (data) => <span>{data.email}</span>
+      render: (item) => <span>{item.email}</span>
     },
     {
       key: 'kisan_id',
       label: 'Kisan Id',
       accessor: 'kisan_id',
-      render: (data) => <span>{data.kisan_id}</span>
+      render: (item) => <span>{item.kisan_id}</span>
     },
     {
       key: 'documents',
       label: 'Documents',
       accessor: 'documents',
-      render: (data) => <span>{data.documents}</span>
+      render: (item) => <span>{item.documents}</span>
     },
     {
       key: 'schemes',
       label: 'Schemes',
       accessor: 'schemes',
-      render: (data) => <span>{dataschems.filter((datas) => datas.scheme_id == Number(data.schemes)).map((data) => data.scheme_name)}</span>
+      render: (item) => (
+        <span>
+          {dataschems.find(s => s.scheme_id === Number(item.schemes))?.scheme_name}
+        </span>
+      )
     },
-
   ];
 
   return (
     <div className="">
-   
       <Simpletableshowdata
-        data={data}
+        data={filteredFarmers}
         inputfiled={
-          <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
-            <div className="col-span-1">
-              <Label>User Category</Label>
-              <input
-                type="text"
-                placeholder="Enter category name"
-                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden  dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-              />
-            </div>
-          </div>
+          []
         }
-
         columns={columns}
         title="User Category"
-        filterOptions={[]}
-        // filterKey="role"
+        filterOptions={[
+          {
+            label: "Taluka",
+            options: talukaOptions,
+            onChange: (value) => {
+              setSelectedTaluka(value);
+              setSelectedVillage('');
+            }
+          },
+          {
+            label: "Village",
+            options: villageOptions,
+            onChange: (value) => setSelectedVillage(value)
+          }
+        ]}
         submitbutton={
-
-          <button type='button' className='bg-blue-700 text-white py-2 p-2 rounded'>
-            {'Save Changes'}
-          </button>
+          []
         }
-        searchKey="name"
-        
+
       />
     </div>
   );

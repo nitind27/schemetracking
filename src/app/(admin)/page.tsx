@@ -30,16 +30,16 @@ async function fetchMetrics() {
     ]);
 
     return {
-      farmers: farmers.length,
-      schemes: schemes.length,
-      users: users.length
+      farmers,
+      schemes,
+      users
     };
   } catch (error) {
     console.error('Error fetching metrics:', error);
     return {
-      farmers: 0,
-      schemes: 0,
-      users: 0
+      farmers: [],
+      schemes: [],
+      users: []
     };
   }
 }
@@ -74,7 +74,7 @@ async function fetchFarmersData() {
       villagesRes.json()
     ]);
 
-    return { users, schemes, farmers, schemescrud, schemessubcategory, yearmaster, documents,taluka,villages };
+    return { users, schemes, farmers, schemescrud, schemessubcategory, yearmaster, documents, taluka, villages };
   } catch (error) {
     console.error('Error fetching farmers data:', error);
     return {
@@ -101,8 +101,7 @@ export default async function Ecommerce() {
       <div className="col-span-12 space-y-6 xl:col-span-7 p-5">
         {/* <Loader /> */}
         <Suspense fallback={<Loader />}>
-        {/* <DownloadButtons /> */}
-        
+          {/* <DownloadButtons /> */}
           <EcommerceMetrics metrics={metrics} />
           <Showschemstable farmersData={farmersData} />
         </Suspense>

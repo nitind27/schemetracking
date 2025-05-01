@@ -28,7 +28,7 @@ type NavItem = {
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
-const navItems: NavItem[] = [
+const allNavItems: NavItem[] = [
   {
     icon: <RxDashboard />,
     name: "Dashboard",
@@ -65,10 +65,20 @@ const navItems: NavItem[] = [
     name: "IFR holders",
     path: "/farmerspage",
   },
-
-
-
 ];
+const dashboardOnly: NavItem[] = [
+  {
+    icon: <RxDashboard />,
+    name: "Dashboard",
+    path: "/",
+  },
+  {
+    icon: <GiFarmer  />,
+    name: "IFR holders",
+    path: "/farmerspage",
+  },
+];
+
 
 const othersItems: NavItem[] = [
 
@@ -82,12 +92,15 @@ const AppSidebar: React.FC = () => {
   // const currentUser = sessionStorage?.getItem('userName');
   const router = usePathname();
   const [storedValue, setStoredValue] = useState<string | null>(null);
+  const [storedValuecategory_name, setStoredValuecategory_name] = useState<string | null>(null);
+  const navItems: NavItem[] = storedValuecategory_name === "Admin" ? allNavItems : dashboardOnly;
 
-  // const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const value = sessionStorage.getItem('userName');
+    const category_name = sessionStorage.getItem('category_name');
     setStoredValue(value);
+    setStoredValuecategory_name(category_name);
   }, []);
 
 
@@ -155,7 +168,7 @@ const AppSidebar: React.FC = () => {
           ) : (
             nav.path && (
               <>
-
+          
                 <Link
                   href={nav.path}
                   className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"

@@ -4,7 +4,6 @@ import ThemeTogglerTwo from "@/components/common/ThemeTogglerTwo";
 
 import { ThemeProvider } from "@/context/ThemeContext";
 
-import Link from "next/link";
 import React from "react";
 
 export default function AuthLayout({
@@ -22,14 +21,14 @@ export default function AuthLayout({
               {/* <!-- ===== Common Grid Shape Start ===== --> */}
               <GridShape />
               <div className="flex flex-col items-center max-w-xs">
-                <Link href="/" className="block mb-4">
+              
                   <img
                     width={500}
                     height={50}
-                    src="./images/logo/maharasstralogo.png"
+                    src="./images/logo/maharashtraShasan.png"
                     alt="Logo"
                   />
-                </Link>
+               
                 <p className="text-center text-gray-400 dark:text-white/60">
                  
                 </p>

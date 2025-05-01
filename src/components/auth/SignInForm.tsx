@@ -43,9 +43,13 @@ export default function SignInForm() {
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
+      
       // ✅ Store name in session storage
       if (data.user.name) {
         sessionStorage.setItem('userName', data.user.name);
+        sessionStorage.setItem('category_name', data.user.category_name);
+        sessionStorage.setItem('village_id', data.user.village_id);
+        sessionStorage.setItem('taluka_id', data.user.taluka_id);
       }
 
       toast.success('Login successful!');
@@ -143,7 +147,7 @@ export default function SignInForm() {
             </div>
           </form>
 
-          <div className="mt-5">
+          {/* <div className="mt-5">
             <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
               Don&apos;t have an account? {""}
               <Link
@@ -153,7 +157,7 @@ export default function SignInForm() {
                 Sign Up
               </Link>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

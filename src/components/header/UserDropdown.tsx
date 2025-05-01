@@ -1,11 +1,14 @@
 "use client";
 import Image from "next/image";
-import Link from "next/link";
+
 import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-
+import { toast } from "react-toastify";
+import { useRouter } from 'next/navigation';
 export default function UserDropdown() {
+  const router = useRouter();
+
   const [isOpen, setIsOpen] = useState(false);
 
   function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
@@ -16,6 +19,30 @@ export default function UserDropdown() {
   function closeDropdown() {
     setIsOpen(false);
   }
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+
+      // Clear client-side storage
+      sessionStorage.removeItem('userName');
+      sessionStorage.removeItem('category_name');
+      sessionStorage.removeItem('village_id');
+      sessionStorage.removeItem('taluka_id');
+
+      toast.success('Logged out successfully!');
+      router.push('/signin');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Logout failed. Please try again.');
+    }
+  };
   return (
     <div className="relative">
       <button
@@ -92,7 +119,7 @@ export default function UserDropdown() {
               Edit profile
             </DropdownItem>
           </li>
-         
+
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
@@ -119,9 +146,9 @@ export default function UserDropdown() {
             </DropdownItem>
           </li>
         </ul>
-        <Link
-          href="/signin"
-          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+        <span
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 cursor-pointer"
         >
           <svg
             className="fill-gray-500 group-hover:fill-gray-700 dark:group-hover:fill-gray-300"
@@ -139,7 +166,7 @@ export default function UserDropdown() {
             />
           </svg>
           Sign out
-        </Link>
+        </span>
       </Dropdown>
     </div>
   );

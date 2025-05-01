@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { serialize } from 'cookie'; // npm install cookie
 
 // Reuse or define this interface if not already present
 interface User {
@@ -10,6 +11,7 @@ interface User {
   password: string;
   contact_no: string;
   address: string;
+  category_name: string;
   taluka_id: number;
   village_id: number;
   status: string;
@@ -29,12 +31,13 @@ export async function POST(req: Request) {
     }
 
     const connection = await pool.getConnection();
-
     const [users] = await connection.query(
-      'SELECT * FROM users WHERE username = ?',
+      `SELECT users.*, user_category.category_name 
+       FROM users 
+       INNER JOIN user_category ON users.user_category_id = user_category.user_category_id  
+       WHERE users.username = ?`,
       [username]
     );
-
     connection.release();
 
     if (!Array.isArray(users) || users.length === 0) {
@@ -45,7 +48,7 @@ export async function POST(req: Request) {
     }
 
     const user = users[0] as User;
-
+    console.log("fasdfsadfsda", user)
     if (password !== user.password) {
       return NextResponse.json(
         { message: 'Invalid credentials' },
@@ -53,12 +56,22 @@ export async function POST(req: Request) {
       );
     }
 
-    const { ...userData } = user;
-
-    return NextResponse.json({
-      message: 'Login successful',
-      user: userData
+    // Set a cookie with user info (e.g., user id)
+    const cookie = serialize('auth_token', String(user.user_id), {
+      httpOnly: true,
+      path: '/',
+      maxAge: 60 * 60 * 24, // 1 day
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
     });
+
+    const response = NextResponse.json({
+      message: 'Login successful',
+      user: { name: user.name, user_id: user.user_id, category_name: user.category_name, taluka_id: user.taluka_id, village_id: user.village_id }
+    });
+    response.headers.set('Set-Cookie', cookie);
+
+    return response;
 
   } catch (error) {
     console.error('Login error:', error);
