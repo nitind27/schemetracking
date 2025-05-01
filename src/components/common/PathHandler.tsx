@@ -1,55 +1,59 @@
-// "use client"
-// import Loader from '@/common/Loader';
+"use client";
+import { usePathname } from 'next/navigation';
+import React, {
+  useEffect,
+  useState,
+  ReactNode,
 
-// import { usePathname } from 'next/navigation';
-// import React, { useEffect, useState } from 'react';
- 
+  isValidElement,
+} from 'react';
 
-// const PathHandler = ({ children }: any) => {
-//     const router = usePathname();
-    
-//     const [loading, setLoading] = useState(false);
+import Loader from '@/common/Loader';
 
-//     const handleItemClick = (path: any) => {
-     
-//             setLoading(true);
-//             localStorage.setItem("currentPath", path);
-        
-//     };
-
-//     useEffect(() => {
-//         const handleRouteChange = () => {
-//             setLoading(false);
-//         };
-
-//         if (router) {
-//             handleRouteChange();
-//         }
-
-//         return () => {
-//             // Cleanup if needed
-//         };
-//     }, [router]);
-
-//     return (
-//         <div>
-//             {loading && <div><Loader /></div>}
-//             {React.Children.map(children, child =>
-//                 React.cloneElement(child, { onClick: handleItemClick })
-//             )}
-//         </div>
-//     );
-// };
-
-// export default PathHandler;
-import React from 'react'
-
-const PathHandler = () => {
-  return (
-    <div>
-      
-    </div>
-  )
+interface PathHandlerProps {
+  children: ReactNode;
 }
 
-export default PathHandler
+interface ClickableChildProps {
+  onClick?: () => void;
+}
+
+const PathHandler: React.FC<PathHandlerProps> = ({ children }) => {
+  const router = usePathname();
+  const [loading, setLoading] = useState(false);
+
+  const handleItemClick = (path: string) => {
+    setLoading(true);
+    localStorage.setItem("currentPath", path);
+  };
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setLoading(false);
+    };
+
+    if (router) {
+      handleRouteChange();
+    }
+
+    return () => {
+      // Cleanup if needed
+    };
+  }, [router]);
+
+  return (
+    <div>
+      {loading && <div><Loader /></div>}
+      {React.Children.map(children, (child) => {
+        if (isValidElement<ClickableChildProps>(child)) {
+          return React.cloneElement(child, {
+            onClick: () => handleItemClick(router),
+          });
+        }
+        return child;
+      })}
+    </div>
+  );
+};
+
+export default PathHandler;

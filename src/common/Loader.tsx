@@ -4,10 +4,9 @@ import React from "react";
 
 const Loader = () => {
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/50 backdrop-blur-sm">
+    <div className="fixed top-0 left-0 w-full h-full z-[9999] bg-white/75 dark:bg-gray-900/70 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
 
-
-      <div className="w-16 h-16 border-4 border-t-transparent border-blue-500 rounded-full animate-spin" />
     </div>
   );
 };
