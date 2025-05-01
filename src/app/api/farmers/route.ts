@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import type { RowDataPacket } from 'mysql2';
+// import type { RowDataPacket } from 'mysql2';
 import fs from 'fs';
 import path from 'path';
 
@@ -19,24 +19,24 @@ export async function OPTIONS() {
   });
 }
 
-// ✅ GET handler
-export async function GET() {
-  let connection;
-  try {
-    connection = await pool.getConnection();
-    const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM farmers where status = "Active"');
-    const safeUsers = rows.map(user => ({ ...user }));
-    return NextResponse.json(safeUsers, { headers: corsHeaders });
-  } catch (error) {
-    console.error('Database query failed:', error);
-    return NextResponse.json(
-      { message: 'Failed to fetch farmers' },
-      { status: 500, headers: corsHeaders }
-    );
-  } finally {
-    if (connection) connection.release();
-  }
-}
+// // ✅ GET handler
+// export async function GET() {
+//   let connection;
+//   try {
+//     connection = await pool.getConnection();
+//     const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM farmers where status = "Active"');
+//     const safeUsers = rows.map(user => ({ ...user }));
+//     return NextResponse.json(safeUsers, { headers: corsHeaders });
+//   } catch (error) {
+//     console.error('Database query failed:', error);
+//     return NextResponse.json(
+//       { message: 'Failed to fetch farmers' },
+//       { status: 500, headers: corsHeaders }
+//     );
+//   } finally {
+//     if (connection) connection.release();
+//   }
+// }
 
 // ✅ POST handler
 export async function POST(request: Request) {
