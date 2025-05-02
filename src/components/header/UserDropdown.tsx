@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { toast } from "react-toastify";
@@ -10,7 +10,7 @@ export default function UserDropdown() {
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
-
+  const [storedValue, setStoredValue] = useState<string | null>(null);
   function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
     e.stopPropagation();
     setIsOpen((prev) => !prev);
@@ -43,6 +43,14 @@ export default function UserDropdown() {
       toast.error('Logout failed. Please try again.');
     }
   };
+  useEffect(() => {
+    const value = sessionStorage.getItem('userName');
+    if (value) {
+      const initials = value.split(' ').map(part => part[0]).join('.');
+      setStoredValue(initials);
+    }
+  }, []);
+
   return (
     <div className="relative">
       <button
@@ -58,7 +66,7 @@ export default function UserDropdown() {
           />
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">WeClocks</span>
+        <span className="block mr-1 font-medium text-theme-sm">{storedValue}</span>
 
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
@@ -86,10 +94,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            Weclocks
+            Nandurbar
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            Weclocks Technology pvt. ltd
+            Government of Maharashtra
           </span>
         </div>
 
