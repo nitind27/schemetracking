@@ -69,7 +69,8 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
 
   const filteredFarmers = useMemo(() => {
     let result = data;
-    if (!selectedTaluka && !selectedVillage && !filters.talukaId && !filters.villageId) {
+    console.log("selectedTalukadasds", selectedTaluka)
+    if (selectedTaluka == '0' && selectedVillage == "0" && filters.talukaId == "0" && filters.villageId == "0") {
       return result;
     }
 
