@@ -11,12 +11,14 @@ type FilterOption = {
 type FilterGroup = {
   label: string;
   options: FilterOption[];
+  value?:string;
   onChange?: (value: string) => void;
 };
 
 type Column<T> = {
   key: string;
   label: string;
+  
   accessor?: keyof T;
   render?: (item: T) => React.ReactNode;
   sortable?: boolean;
@@ -111,7 +113,7 @@ export function Simpletableshowdata<T extends object>({
             <select
               key={`${group.label}-${index}`}
               className="border rounded px-3 py-2 min-w-[150px]"
-              value={filters[group.label] || ""}
+              value={group.value || ""}
               onChange={(e) => {
                 group.onChange?.(e.target.value);
                 handleFilterChange(group.label, e.target.value);

@@ -32,11 +32,19 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
   const [selectedVillage, setSelectedVillage] = useState<string>('');
 
   useEffect(() => {
+    const talukaId = sessionStorage.getItem('taluka_id');
+    const villageId = sessionStorage.getItem('village_id');
+    const categoryName = sessionStorage.getItem('category_name');
+
     setFilters({
-      talukaId: sessionStorage.getItem('taluka_id'),
-      villageId: sessionStorage.getItem('village_id'),
-      categoryName: sessionStorage.getItem('category_name')
+      talukaId,
+      villageId,
+      categoryName,
     });
+
+    // Also set UI filters
+    setSelectedTaluka(talukaId || '');
+    setSelectedVillage(villageId || '');
   }, []);
 
   const talukaOptions = useMemo(() =>
@@ -61,29 +69,31 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
 
   const filteredFarmers = useMemo(() => {
     let result = data;
+    if (!selectedTaluka && !selectedVillage && !filters.talukaId && !filters.villageId) {
+      return result;
+    }
 
-    // Apply admin filters from session
-    if (filters.categoryName !== "Admin") {
+    if (selectedTaluka.length < 0 && selectedVillage.length < 0) {
       result = result.filter(f =>
-        f.taluka_id === filters.talukaId &&
-        f.village_id === filters.villageId
+        f.taluka_id == filters.talukaId &&
+        f.village_id == filters.villageId
       );
     }
-
-    // Apply UI filters
+    // Apply UI filters (these override session filters if changed)
     if (selectedTaluka) {
-      result = result.filter(f => f.taluka_id === selectedTaluka);
+      result = result.filter(f => f.taluka_id == selectedTaluka);
     }
     if (selectedVillage) {
-      result = result.filter(f => f.village_id === selectedVillage);
+      result = result.filter(f => f.village_id == selectedVillage);
     }
 
     return result;
   }, [data, filters, selectedTaluka, selectedVillage]);
 
+
   const columns: Column<FarmdersType>[] = [
     {
-      key: 'category_name',
+      key: 'name',
       label: 'Name',
       accessor: 'name',
       render: (item) => <span>{item.name}</span>
@@ -177,6 +187,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
   return (
     <div className="">
       <Simpletableshowdata
+        key={JSON.stringify(filteredFarmers)}
         data={filteredFarmers}
         inputfiled={
           []
@@ -186,7 +197,9 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
         filterOptions={[
           {
             label: "Taluka",
+
             options: talukaOptions,
+            value: selectedTaluka,
             onChange: (value) => {
               setSelectedTaluka(value);
               setSelectedVillage('');
@@ -195,6 +208,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
           {
             label: "Village",
             options: villageOptions,
+            value: selectedVillage,
             onChange: (value) => setSelectedVillage(value)
           }
         ]}
