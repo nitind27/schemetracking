@@ -28,7 +28,7 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
     const farmer = datascheme.find((data) => data.scheme_id === Number(schemeid));
 
     // Fields to exclude
-    const excludedFields = ["scheme_id", "created_at", "updated_at"];
+    const excludedFields = ["scheme_id", "created_at", "updated_at", "category_name", 'sub_category_name', "scheme_year"];
 
     const getCategoryName = (id: number) => {
         const category = schemescrud.find(cat => cat.scheme_category_id == id);
@@ -110,7 +110,7 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
                                                    
                                                 </td>
                                                 <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
-                                                  
+
                                                     {key === "scheme_category_id"
                                                         ? "Scheme Category"
                                                         : key === "scheme_sub_category_id"
