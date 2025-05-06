@@ -44,20 +44,19 @@ async function fetchMetrics() {
 }
 
 async function fetchFarmersData() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
+  
   try {
     // 1. Add yearmaster fetch here (6 fetches total)
     const [usersRes, schemesRes, farmersRes, schemescrudRes, schemessubcategoryRes, yearmasterRes, documentsRes, talukaRes, villagesRes] = await Promise.all([
-      fetch(`${apiUrl}/api/usercategorycrud`),
-      fetch(`${apiUrl}/api/schemescrud`),
-      fetch(`${apiUrl}/api/farmers`),
-      fetch(`${apiUrl}/api/schemescategory`),
-      fetch(`${apiUrl}/api/schemessubcategory`), // Assuming this is correct
-      fetch(`${apiUrl}/api/yearmaster`),
-      fetch(`${apiUrl}/api/documents`),
-      fetch(`${apiUrl}/api/taluka`),
-      fetch(`${apiUrl}/api/villages`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/usercategorycrud`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescrud`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmers`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescategory`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemessubcategory`), // Assuming this is correct
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/yearmaster`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/taluka`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/villages`),
     ]);
 
     // 2. Keep 6 elements here to match
