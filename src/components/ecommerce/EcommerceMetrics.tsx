@@ -39,6 +39,9 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
     schemes: metrics?.schemes.length ?? 0,
     users: metrics?.users.length ?? 0
   };
+  console.log("farmers",counts.farmers)
+  console.log("schemes",counts.schemes)
+  console.log("users",counts.users)
 
   const metricsConfig = [
     {
