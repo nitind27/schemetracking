@@ -14,13 +14,12 @@ export const metadata: Metadata = {
 };
 
 async function fetchMetrics() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
+  
   try {
     const [farmersRes, schemesRes, usersRes] = await Promise.all([
-      fetch(`${apiUrl}/api/farmers`),
-      fetch(`https://fra.weclocks.online/api/schemescrud`),
-      fetch(`${apiUrl}/api/users`)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmers`, { cache: 'no-store' }),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescrud`, { cache: 'no-store' }),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, { cache: 'no-store' })
     ]);
 
     const [farmers, schemes, users] = await Promise.all([
