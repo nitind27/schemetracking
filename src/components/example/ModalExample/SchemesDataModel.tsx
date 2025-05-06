@@ -28,7 +28,7 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
     const farmer = datascheme.find((data) => data.scheme_id === Number(schemeid));
 
     // Fields to exclude
-    const excludedFields = ["scheme_id", "created_at", "updated_at"];
+    const excludedFields = ["scheme_id", "created_at", "updated_at", "category_name", 'sub_category_name', "scheme_year"];
 
     const getCategoryName = (id: number) => {
         const category = schemescrud.find(cat => cat.scheme_category_id == id);
@@ -59,7 +59,7 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
             return doc?.document_name || id.toString();
         }
     };
-    
+
 
     return (
         <div>
@@ -93,7 +93,7 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
                                         let displayValue: React.ReactNode = value || "-";
 
                                         // Handle all special cases in one place
-                                     if (key === "scheme_year_id") {
+                                        if (key === "scheme_year_id") {
                                             displayValue = getSchemeyear(value);
                                         } else if (key === "scheme_category_id") {
                                             displayValue = getCategoryName(value);
@@ -107,9 +107,18 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
                                             <tr key={key}>
                                                 <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
                                                     {index + 1}
+                                                   
                                                 </td>
                                                 <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
-                                                    {key.replace(/_/g, " ") === "adivasi" ? "Type" : key.replace(/_/g, " ")}
+
+                                                    {key === "scheme_category_id"
+                                                        ? "Scheme Category"
+                                                        : key === "scheme_sub_category_id"
+                                                            ? "Scheme Sub Category"
+                                                            : key === "scheme_year_id"
+                                                                ? "Scheme Year"
+                                                                : key.replace(/_/g, " ")}
+
                                                 </td>
                                                 <td className="px-4 py-2 border-b text-gray-600 dark:text-gray-300">
                                                     {displayValue}

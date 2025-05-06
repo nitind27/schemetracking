@@ -22,7 +22,7 @@ export default function UserDatamodel({ farmersid, datafarmers, farmername, data
   const farmer = datafarmers.find((data) => data.farmer_id === Number(farmersid));
 
   // Fields to exclude
-  const excludedFields = ["farmer_id", "created_at", "updated_at", "schemes","kisan_id","documents"];
+  const excludedFields = ["farmer_id", "created_at", "updated_at", "schemes", "kisan_id", "documents"];
 
 
   const getvillage = (id: string) => {
@@ -34,6 +34,7 @@ export default function UserDatamodel({ farmersid, datafarmers, farmername, data
     const subcategory = datataluka.find(sub => sub.taluka_id == id);
     return subcategory?.name || id.toString();
   };
+
   return (
     <div>
       <span className="cursor-pointer hover:text-blue-700 underline" onClick={openModal}>
@@ -77,14 +78,20 @@ export default function UserDatamodel({ farmersid, datafarmers, farmername, data
                       <tr key={key}>
                         <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
                           {index + 1}
-                   
+                          
                         </td>
                         <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
-                          {key.replace(/_/g, " ") === "adivasi" ? "Type" : key.replace(/_/g, " ")}
+                          {key === "adivasi"
+                            ? "Type"
+                            : key === "village_id"
+                              ? "Village"
+                              : key === "taluka_id"
+                                ? "Taluka"
+                                : key.replace(/_/g, " ")}
 
                         </td>
                         <td className="px-4 py-2 border-b text-gray-600 dark:text-gray-300">
-                         {displayValue}
+                          {displayValue}
                         </td>
                       </tr>
                     )

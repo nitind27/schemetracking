@@ -24,6 +24,7 @@ const AppHeader: React.FC = () => {
   };
   const inputRef = useRef<HTMLInputElement>(null);
 
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
@@ -84,9 +85,9 @@ const AppHeader: React.FC = () => {
 
           <Link href="/" className="lg:hidden">
 
-            <span className="text-white text-[12px]">
+            <span className="text-white text-[12px] whitespace-nowrap">
 
-            Scheme Monitoring & Tracking System
+              Scheme Monitoring & Tracking System - Nandurbar
             </span>
 
           </Link>
@@ -112,7 +113,7 @@ const AppHeader: React.FC = () => {
           </button>
 
           <div className="hidden lg:block">
-            <h1 className="text-2xl font-semibold text-white ">Scheme Monitoring & Tracking System</h1>
+            <h1 className="text-2xl font-semibold text-white whitespace-nowrap">Scheme Monitoring & Tracking System - Nandurbar </h1>
           </div>
         </div>
         <div
