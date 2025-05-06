@@ -19,7 +19,7 @@ async function fetchMetrics() {
   try {
     const [farmersRes, schemesRes, usersRes] = await Promise.all([
       fetch(`${apiUrl}/api/farmers`),
-      fetch(`${apiUrl}/api/schemescrud`),
+      fetch(`https://fra.weclocks.online/api/schemescrud`),
       fetch(`${apiUrl}/api/users`)
     ]);
 
