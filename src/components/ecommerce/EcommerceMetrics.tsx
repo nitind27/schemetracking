@@ -25,7 +25,7 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
     setFilters({
       talukaId: sessionStorage.getItem('taluka_id'),
       villageId: sessionStorage.getItem('village_id'),
-      categoryName: sessionStorage.getItem('category_name')
+      categoryName: sessionStorage.getItem('category_id')
     });
   }, []);
 
@@ -35,7 +35,7 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
   ) || [];
 
   const counts = {
-    farmers: filters.categoryName === "Admin" || filters.categoryName === "PO " || filters.categoryName === "DO "
+    farmers: filters.categoryName === "Admin" || filters.categoryName === "8" || filters.categoryName === "4" || filters.categoryName === "32"
       ? metrics?.farmers.length ?? 0
       : filteredFarmers.length,
     schemes: metrics?.schemes.length ?? 0,
@@ -63,12 +63,12 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
       label: "System Users",
       value: counts.users,
       href: "/users",
-      show: filters.categoryName === "Admin" || filters.categoryName === "PO " || filters.categoryName === "DO "
+      show: filters.categoryName === "Admin" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4"
     }
   ];
 
   return (
-    <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "Admin" || filters.categoryName === "PO " || filters.categoryName === "DO " ? "sm:grid-cols-3" : "sm:grid-cols-2"
+    <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "Admin" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-3" : "sm:grid-cols-2"
       }`}>
       {metricsConfig.map((metric, index) => metric.show && (
         <MetricCard key={index} {...metric} />

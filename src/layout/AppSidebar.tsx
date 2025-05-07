@@ -103,14 +103,14 @@ const AppSidebar: React.FC = () => {
   const [storedValuecategory_name, setStoredValuecategory_name] = useState<string | null>(null);
   const navItems: NavItem[] = storedValuecategory_name === "Admin"
     ? allNavItems
-    : (storedValuecategory_name === "PO " || storedValuecategory_name === "DO ")
+    : (storedValuecategory_name === "8" || storedValuecategory_name === "32" || storedValuecategory_name === "4")
       ? dopodashboard
       : dashboardOnly;
 
 
   useEffect(() => {
     const value = sessionStorage.getItem('userName');
-    const category_name = sessionStorage.getItem('category_name');
+    const category_name = sessionStorage.getItem('category_id');
     setStoredValue(value);
     setStoredValuecategory_name(category_name);
   }, []);

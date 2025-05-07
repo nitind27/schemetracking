@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 
     const response = NextResponse.json({
       message: 'Login successful',
-      user: { name: user.name, user_id: user.user_id, category_name: user.category_name, taluka_id: user.taluka_id, village_id: user.village_id }
+      user: { name: user.name, user_id: user.user_id, category_name: user.category_name, taluka_id: user.taluka_id, village_id: user.village_id,category_id:user.user_category_id }
     });
     response.headers.set('Set-Cookie', cookie);
 

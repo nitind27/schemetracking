@@ -33,6 +33,7 @@ export default function UserDropdown() {
       // Clear client-side storage
       sessionStorage.removeItem('userName');
       sessionStorage.removeItem('category_name');
+      sessionStorage.removeItem('category_id');
       sessionStorage.removeItem('village_id');
       sessionStorage.removeItem('taluka_id');
 
@@ -46,10 +47,14 @@ export default function UserDropdown() {
   useEffect(() => {
     const value = sessionStorage.getItem('userName');
     if (value) {
-      const initials = value.split(' ').map(part => part[0]).join('.');
-      setStoredValue(initials);
+        // Remove special characters and get the part after the last special character
+        const cleanedValue = value.replace(/[^a-zA-Z0-9\s]/g, ''); // Remove special characters
+        const parts = cleanedValue.split(' ');
+        const initials = parts.map(part => part[0]).join('.'); // Get initials
+        setStoredValue(initials);
     }
-  }, []);
+}, []);
+
 
   return (
     <div className="relative">

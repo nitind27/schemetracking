@@ -56,7 +56,7 @@ const MetricCard = ({ taluka_id, name, farmers }: {
     useEffect(() => {
         setFilters({
 
-            categoryName: sessionStorage.getItem('category_name')
+            categoryName: sessionStorage.getItem('category_id')
         });
     }, []);
 
@@ -67,7 +67,7 @@ const MetricCard = ({ taluka_id, name, farmers }: {
     }
     console.log("filters.categoryName",filters.categoryName)
     return (
-        <>{ (filters.categoryName === "PO " || filters.categoryName === "DO ") && 
+        <>{ (filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4") && 
 
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow" onClick={() => handleclick(taluka_id)}>
                 <Link href={"/farmerspage"}>

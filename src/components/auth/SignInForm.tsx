@@ -48,6 +48,7 @@ export default function SignInForm() {
       if (data.user.name) {
         sessionStorage.setItem('userName', data.user.name);
         sessionStorage.setItem('category_name', data.user.category_name);
+        sessionStorage.setItem('category_id', data.user.category_id);
         sessionStorage.setItem('village_id', data.user.village_id);
         sessionStorage.setItem('taluka_id', data.user.taluka_id);
       }

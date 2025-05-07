@@ -97,7 +97,7 @@ export default async function Ecommerce() {
 
   return (
     <div className="grid grid-cols-6 gap-4 md:gap-6">
-      <div className="col-span-12 space-y-6 xl:col-span-7 p-5">
+      <div className="col-span-12 space-y-6 xl:col-span-7 ">
         {/* <Loader /> */}
         <Suspense fallback={<Loader />}>
           {/* <DownloadButtons /> */}
