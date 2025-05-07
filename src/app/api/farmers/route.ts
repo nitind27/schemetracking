@@ -24,17 +24,19 @@ export async function GET() {
     }
 }
 
-// POST handler (new)
+
 export async function POST(request: Request) {
     const formData = await request.formData();
     const farmerId = formData.get('farmer_id') as string;
     const files = formData.getAll('files') as File[];
     const files2 = formData.getAll('files2') as File[];
+    const files3 = formData.getAll('files3') as File[];
+    const files4 = formData.getAll('files4') as File[];
 
     const updatableFields = [
         'name', 'adivasi', 'village_id', 'taluka_id', 'gat_no',
         'vanksetra', 'nivas_seti', 'aadhaar_no', 'contact_no',
-        'email', 'kisan_id', 'schemes', 'documents','update_record'
+        'email', 'kisan_id', 'schemes', 'documents', 'update_record', 'gender', 'dob','profile_photo','aadhaar_photo'
     ];
 
     let connection;
@@ -43,9 +45,11 @@ export async function POST(request: Request) {
         const tmpBasePath = path.join(process.cwd(), 'tmp', 'uploads');
         const farmerDocDir = path.join(tmpBasePath, 'farmersdocument');
         const schemeDocDir = path.join(tmpBasePath, 'schemedocument');
+        const aadhaarDocDir = path.join(tmpBasePath, 'uploadaadhaar');
+        const profileDocDir = path.join(tmpBasePath, 'uploadsprofile');
 
         // Ensure directories exist
-        for (const dir of [farmerDocDir, schemeDocDir]) {
+        for (const dir of [farmerDocDir, schemeDocDir, aadhaarDocDir, profileDocDir]) {
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
             }
@@ -56,7 +60,7 @@ export async function POST(request: Request) {
         for (const file of files) {
             const buffer = Buffer.from(await file.arrayBuffer());
             const originalFileName = file.name;
-           
+
             const safeFileName = `${originalFileName}`;
             const filePath = path.join(farmerDocDir, safeFileName);
 
@@ -69,7 +73,7 @@ export async function POST(request: Request) {
         for (const file of files2) {
             const buffer = Buffer.from(await file.arrayBuffer());
             const originalFileName = file.name;
-         
+
             const safeFileName = `${originalFileName}`;
             const filePath = path.join(schemeDocDir, safeFileName);
 
@@ -77,11 +81,37 @@ export async function POST(request: Request) {
             newSchemeDocNames.push(safeFileName);
         }
 
+        // Handle Aadhaar documents
+        const newAadhaarDocNames: string[] = [];
+        for (const file of files3) {
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const originalFileName = file.name;
+
+            const safeFileName = `${originalFileName}`;
+            const filePath = path.join(aadhaarDocDir, safeFileName);
+
+            await fs.promises.writeFile(filePath, buffer);
+            newAadhaarDocNames.push(safeFileName);
+        }
+
+        // Handle profile documents
+        const newProfileDocNames: string[] = [];
+        for (const file of files4) {
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const originalFileName = file.name;
+
+            const safeFileName = `${originalFileName}`;
+            const filePath = path.join(profileDocDir, safeFileName);
+
+            await fs.promises.writeFile(filePath, buffer);
+            newProfileDocNames.push(safeFileName);
+        }
+
         // Update database
         connection = await pool.getConnection();
 
         const updateFields: string[] = [];
-        const updateValues: string[] = [];
+        const updateValues: (string | number)[] = [];
 
         for (const field of updatableFields) {
             const value = formData.get(field);
@@ -101,6 +131,8 @@ export async function POST(request: Request) {
             message: 'Farmer data updated successfully',
             uploadedFarmerDocs: newFarmerDocNames,
             uploadedSchemeDocs: newSchemeDocNames,
+            uploadedAadhaarDocs: newAadhaarDocNames,
+            uploadedProfileDocs: newProfileDocNames,
         });
 
     } catch (error) {
@@ -110,3 +142,4 @@ export async function POST(request: Request) {
         if (connection) connection.release();
     }
 }
+
