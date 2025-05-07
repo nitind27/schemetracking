@@ -65,8 +65,9 @@ const MetricCard = ({ taluka_id, name, farmers }: {
         sessionStorage.setItem('taluka_id', talukaid.toString());
         sessionStorage.setItem('village_id', "");
     }
+    console.log("filters.categoryName",filters.categoryName)
     return (
-        <>{ (filters.categoryName === "PO ") && 
+        <>{ (filters.categoryName === "PO " || filters.categoryName === "DO ") && 
 
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow" onClick={() => handleclick(taluka_id)}>
                 <Link href={"/farmerspage"}>
