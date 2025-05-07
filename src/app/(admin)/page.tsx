@@ -5,6 +5,7 @@ import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import Showschemstable from "@/components/ecommerce/Showschemstable";
 import { Suspense } from "react";
 import Loader from "@/common/Loader";
+import DoTalukadata from "@/components/Do/Talukawisedata/DoTalukadata";
 // import { DownloadButtons } from "@/components/ecommerce/DownloadButtons";
 
 export const metadata: Metadata = {
@@ -101,6 +102,7 @@ export default async function Ecommerce() {
         <Suspense fallback={<Loader />}>
           {/* <DownloadButtons /> */}
           <EcommerceMetrics metrics={metrics} />
+          <DoTalukadata farmersData={farmersData}/>
           <Showschemstable farmersData={farmersData} />
         </Suspense>
       </div>

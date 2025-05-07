@@ -29,16 +29,19 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
     });
   }, []);
 
-  const filteredFarmers = metrics?.farmers.filter(f => 
-    f.taluka_id === filters.talukaId && 
+  const filteredFarmers = metrics?.farmers.filter(f =>
+    f.taluka_id === filters.talukaId &&
     f.village_id === filters.villageId
   ) || [];
 
   const counts = {
-    farmers: filters.categoryName === "Admin" ? metrics?.farmers.length ?? 0 : filteredFarmers.length,
+    farmers: filters.categoryName === "Admin" || filters.categoryName === "PO " || filters.categoryName === "DO "
+      ? metrics?.farmers.length ?? 0
+      : filteredFarmers.length,
     schemes: metrics?.schemes.length ?? 0,
     users: metrics?.users.length ?? 0
   };
+
 
   const metricsConfig = [
     {
@@ -60,14 +63,13 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
       label: "System Users",
       value: counts.users,
       href: "/users",
-      show: filters.categoryName === "Admin"
+      show: filters.categoryName === "Admin" || filters.categoryName === "PO " || filters.categoryName === "DO "
     }
   ];
 
   return (
-    <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${
-      filters.categoryName === "Admin" ? "sm:grid-cols-3" : "sm:grid-cols-2"
-    }`}>
+    <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "Admin" || filters.categoryName === "PO " || filters.categoryName === "DO " ? "sm:grid-cols-3" : "sm:grid-cols-2"
+      }`}>
       {metricsConfig.map((metric, index) => metric.show && (
         <MetricCard key={index} {...metric} />
       ))}
@@ -75,11 +77,11 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
   );
 };
 
-const MetricCard = ({ icon, label, value, href }: { 
-  icon: React.ReactNode; 
-  label: string; 
-  value: number; 
-  href: string 
+const MetricCard = ({ icon, label, value, href }: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  href: string
 }) => (
   <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow">
     <Link href={href}>

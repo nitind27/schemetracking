@@ -7,7 +7,7 @@ import { useSidebar } from "../context/SidebarContext";
 import { RxDashboard } from "react-icons/rx";
 import { TbCategoryPlus } from "react-icons/tb"
 import { FaEdit } from "react-icons/fa";
-import { IoDocumentOutline  } from "react-icons/io5";
+import { IoDocumentOutline } from "react-icons/io5";
 import { CiCalendar } from "react-icons/ci";
 import { CiUser } from "react-icons/ci";
 import { GiFarmer } from "react-icons/gi";
@@ -46,12 +46,12 @@ const allNavItems: NavItem[] = [
     path: "/schemespage",
   },
   {
-    icon: <IoDocumentOutline   />,
+    icon: <IoDocumentOutline />,
     name: "Documents",
     path: "/documents",
   },
   {
-    icon: <CiCalendar  />,
+    icon: <CiCalendar />,
     name: "Year",
     path: "/yearmaster",
   },
@@ -61,7 +61,7 @@ const allNavItems: NavItem[] = [
     path: "/users",
   },
   {
-    icon: <GiFarmer  />,
+    icon: <GiFarmer />,
     name: "IFR holders",
     path: "/farmerspage",
   },
@@ -73,10 +73,18 @@ const dashboardOnly: NavItem[] = [
     path: "/",
   },
   {
-    icon: <GiFarmer  />,
+    icon: <GiFarmer />,
     name: "IFR holders",
     path: "/farmerspage",
   },
+];
+const dopodashboard: NavItem[] = [
+  {
+    icon: <RxDashboard />,
+    name: "Dashboard",
+    path: "/",
+  },
+
 ];
 
 
@@ -93,7 +101,11 @@ const AppSidebar: React.FC = () => {
   const router = usePathname();
   const [storedValue, setStoredValue] = useState<string | null>(null);
   const [storedValuecategory_name, setStoredValuecategory_name] = useState<string | null>(null);
-  const navItems: NavItem[] = storedValuecategory_name === "Admin" ? allNavItems : dashboardOnly;
+  const navItems: NavItem[] = storedValuecategory_name === "Admin"
+    ? allNavItems
+    : (storedValuecategory_name === "PO " || storedValuecategory_name === "DO ")
+      ? dopodashboard
+      : dashboardOnly;
 
 
   useEffect(() => {
@@ -168,7 +180,7 @@ const AppSidebar: React.FC = () => {
           ) : (
             nav.path && (
               <>
-          
+
                 <Link
                   href={nav.path}
                   className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"

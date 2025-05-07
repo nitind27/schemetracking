@@ -72,20 +72,22 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
     }
   }, [isvalidation])
 
+  const reset = () => {
+    setUsercategory(Number(""))
 
+    setName("")
+    setContact("")
+    setUsername("")
+    setPassword("")
+    setaddress("")
+    setTaluka(Number(""))
+    setVillage(Number(""))
+    setEditId(0);
+  }
 
   useEffect(() => {
     if (!isEditMode) {
-      setUsercategory(Number(""))
-
-      setName("")
-      setContact("")
-      setUsername("")
-      setPassword("")
-      setaddress("")
-      setTaluka(Number(""))
-      setVillage(Number(""))
-      setEditId(0);
+      reset()
     }
   }, [isEditMode]);
 
@@ -158,9 +160,9 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
         : 'Users created successfully!');
 
 
+        reset()
       setEditId(null);
       fetchData();
-
     } catch (error) {
       console.error('Error saving Users:', error);
       toast.error(editId
@@ -447,7 +449,7 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
           </button>
         }
         searchKey="username"
-        // 
+      // 
       />
     </div>
   );
