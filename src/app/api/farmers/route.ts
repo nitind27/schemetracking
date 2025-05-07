@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
         // Handle Aadhaar documents
         const newAadhaarDocNames: string[] = [];
-        for (const file of files3) {
+        for (const file of files4) {
             const buffer = Buffer.from(await file.arrayBuffer());
             const originalFileName = file.name;
 
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
 
         // Handle profile documents
         const newProfileDocNames: string[] = [];
-        for (const file of files4) {
+        for (const file of files3) {
             const buffer = Buffer.from(await file.arrayBuffer());
             const originalFileName = file.name;
 
