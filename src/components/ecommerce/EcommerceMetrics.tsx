@@ -35,7 +35,7 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
   ) || [];
 
   const counts = {
-    farmers: filters.categoryName === "Admin" || filters.categoryName === "8" || filters.categoryName === "4" || filters.categoryName === "32"
+    farmers: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "4" || filters.categoryName === "32"
       ? metrics?.farmers.length ?? 0
       : filteredFarmers.length,
     schemes: metrics?.schemes.length ?? 0,
@@ -63,12 +63,12 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
       label: "System Users",
       value: counts.users,
       href: "/users",
-      show: filters.categoryName === "Admin" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4"
+      show: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4"
     }
   ];
 
   return (
-    <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "Admin" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-3" : "sm:grid-cols-2"
+    <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-3" : "sm:grid-cols-2"
       }`}>
       {metricsConfig.map((metric, index) => metric.show && (
         <MetricCard key={index} {...metric} />
