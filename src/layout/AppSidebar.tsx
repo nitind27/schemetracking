@@ -103,7 +103,7 @@ const AppSidebar: React.FC = () => {
   const [storedValuecategory_name, setStoredValuecategory_name] = useState<string | null>(null);
   const navItems: NavItem[] = storedValuecategory_name === "1"
     ? allNavItems
-    : (storedValuecategory_name === "8" || storedValuecategory_name === "32" || storedValuecategory_name === "4")
+    : (storedValuecategory_name === "8" || storedValuecategory_name === "33" || storedValuecategory_name === "32" || storedValuecategory_name === "4")
       ? dopodashboard
       : dashboardOnly;
 

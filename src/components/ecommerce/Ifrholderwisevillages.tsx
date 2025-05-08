@@ -75,7 +75,7 @@ const Ifrholderwisevillages = ({
         },
         {
             key: "ifrs_holders",
-            label: "Ifrs holders",
+            label: "Ifr holders",
             accessor: "taluka_id", // Not used, but required by your table type
             render: (village) => {
                 // Count matching farmers for this village
@@ -148,133 +148,128 @@ const Ifrholderwisevillages = ({
                         </div>
                         <div className="p-4">
                             <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200 ">
+                                <table className="min-w-full border border-gray-400">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Sr.No
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Name
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Type
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Village
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Taluka
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Gat_No
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Vanksetra
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Nivas Seti
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Aadhaar No
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Contact No
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Email
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Kisan Id
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Documents
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Schemes
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Dob
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Gender
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-400">
                                                 Action
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    <tbody className="bg-white">
                                         {paginatedData.map((farmer, index) => (
                                             <tr key={farmer.farmer_id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {(currentPage - 1) * itemsPerPage + index + 1}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.name}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.adivasi}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmersData.villages.find(v => v.village_id === Number(farmer.village_id))?.name}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmersData.taluka.find(v => v.taluka_id === Number(farmer.taluka_id))?.name}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.gat_no}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.vanksetra}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.nivas_seti}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.aadhaar_no}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.contact_no}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.email}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.kisan_id}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {/* {farmer.documents} */}
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {getDocuments(farmer.documents)}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.schemes}
                                                     {farmersData.schemes.find(s => s.scheme_id === Number(farmer.schemes))?.scheme_name}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.dob}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-6 py-4 whitespace-nowrap border border-gray-400">
                                                     {farmer.genger}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap flex gap-4">
+                                                <td className="px-6 py-4 whitespace-nowrap flex gap-4 border border-gray-400">
                                                     <span className="text-green-600 cursor-pointer">
-
                                                         <FaCheck />
                                                     </span>
                                                     <span className="text-red-600 font-bold cursor-pointer">
                                                         <RiCloseLargeLine />
                                                     </span>
                                                 </td>
-
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
-
                             </div>
+
                         </div>
                         {/* Pagination controls */}
                         <div className="flex items-center justify-between mt-4 p-5">
