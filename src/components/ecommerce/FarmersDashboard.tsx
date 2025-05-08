@@ -127,7 +127,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     }
 
     return (
-        <div>
+        <div className='bg-white'>
             <Simpletableshowdata
                 data={allfarmersname}
                 inputfiled={

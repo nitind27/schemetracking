@@ -145,7 +145,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
     ];
 
     return (
-        <div>
+        <div className='bg-white'>
             <Simpletableshowdata
                 data={matches}
                 inputfiled={
