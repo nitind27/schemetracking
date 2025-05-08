@@ -47,17 +47,17 @@ export default function UserDatamodel({ farmersid, datafarmers, farmername, data
         className="max-w-[600px] p-5 lg:p-10"
       >
         <h4 className="font-semibold text-gray-800 mb-4 text-xl dark:text-white">
-          Scheme Info
+          IFR holder
         </h4>
 
         {farmer ? (
           <div className="max-h-[60vh] overflow-y-auto">
-            <table className="min-w-full border text-left text-sm">
+            <table className="min-w-full border text-left text-sm ">
               <thead>
                 <tr>
-                  <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Sr.No</th>
-                  <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Field</th>
-                  <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Value</th>
+                  <th className="px-4 py-2 border border-gray-300 font-semibold text-gray-700 dark:text-white">Sr.No</th>
+                  <th className="px-4 py-2 border border-gray-300 font-semibold text-gray-700 dark:text-white">Field</th>
+                  <th className="px-4 py-2 border border-gray-300 font-semibold text-gray-700 dark:text-white">Value</th>
                 </tr>
               </thead>
               <tbody>
@@ -76,11 +76,10 @@ export default function UserDatamodel({ farmersid, datafarmers, farmername, data
 
 
                       <tr key={key}>
-                        <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
+                        <td className="px-4 py-2 border border-gray-300 capitalize font-medium text-gray-700 dark:text-white">
                           {index + 1}
-                          
                         </td>
-                        <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
+                        <td className="px-4 py-2 border border-gray-300 capitalize font-medium text-gray-700 dark:text-white">
                           {key === "adivasi"
                             ? "Type"
                             : key === "village_id"
@@ -90,7 +89,7 @@ export default function UserDatamodel({ farmersid, datafarmers, farmername, data
                                 : key.replace(/_/g, " ")}
 
                         </td>
-                        <td className="px-4 py-2 border-b text-gray-600 dark:text-gray-300">
+                        <td className="px-4 py-2 border border-gray-300 text-gray-600 dark:text-gray-300">
                           {displayValue}
                         </td>
                       </tr>

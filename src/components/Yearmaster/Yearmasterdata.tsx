@@ -5,12 +5,13 @@ import { useEffect, useState } from 'react';
 import Label from "../form/Label";
 import { ReusableTable } from "../tables/BasicTableOne";
 import { Column } from "../tables/tabletype";
-import Button from "../ui/button/Button";
+
 import { Scheme_year } from './yearmaster';
 import { toast } from 'react-toastify';
 import React from 'react';
 import { useToggleContext } from '@/context/ToggleContext';
 import DefaultModal from '../example/ModalExample/DefaultModal';
+import { FaEdit } from 'react-icons/fa';
 
 
 interface Props {
@@ -24,10 +25,10 @@ const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
     const [data, setData] = useState<Scheme_year[]>(serverData || []);
     const [inputValue, setInputValue] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
-    const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen,isvalidation,setisvalidation } = useToggleContext();
+    const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen, isvalidation, setisvalidation } = useToggleContext();
     const [loading, setLoading] = useState(false);
-        const [error, setErrors] = useState<FormErrors>({});
-    
+    const [error, setErrors] = useState<FormErrors>({});
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -42,7 +43,7 @@ const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
         }
     };
 
-   useEffect(() => {
+    useEffect(() => {
 
         if (!isvalidation) {
 
@@ -78,7 +79,7 @@ const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    scheme_year_id:editId,
+                    scheme_year_id: editId,
                     year: inputValue
                 })
             });
@@ -133,11 +134,15 @@ const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
             label: 'Actions',
             render: (data) => (
                 <div className="flex gap-2 whitespace-nowrap w-full">
-                    <Button size="sm" onClick={() => handleEdit(data)}>
-                        Edit
-                    </Button>
+                    <span
+                        onClick={() => handleEdit(data)}
+                        className="cursor-pointer text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                    >
+                        <FaEdit className="inline-block align-middle text-lg" />
+                    </span>
+
                     <span>
-                        <DefaultModal id={data.scheme_year_id} fetchData={fetchData} endpoint={"yearmaster"} bodyname='scheme_year_id' newstatus ={data.status}/>
+                        <DefaultModal id={data.scheme_year_id} fetchData={fetchData} endpoint={"yearmaster"} bodyname='scheme_year_id' newstatus={data.status} />
                     </span>
                 </div>
             )
@@ -157,11 +162,11 @@ const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
                                 type="text"
                                 placeholder="Enter Year"
                                 className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.years ? "border-red-500" : ""
-                                }`}
+                                    }`}
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                             />
-                             {error && (
+                            {error && (
                                 <div className="text-red-500 text-sm mt-1 pl-1">
                                     {error.years}
                                 </div>
@@ -185,7 +190,7 @@ const Yearmasterdata: React.FC<Props> = ({ serverData }) => {
                     </button>
                 }
                 searchKey="year"
-                
+
             />
         </div>
     );

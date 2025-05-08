@@ -13,6 +13,9 @@ export interface FarmdersType {
     kisan_id: string;
     documents: string;
     schemes: string;
+    genger: string;
+    dob: string;
+    profile_photo: string;
     status: string;
     
   }

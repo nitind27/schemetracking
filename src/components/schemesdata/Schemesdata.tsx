@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Label from "../form/Label";
 import { ReusableTable } from "../tables/BasicTableOne";
 import { Column } from "../tables/tabletype";
-import Button from "../ui/button/Button";
+
 import Select from 'react-select';
 import { toast } from 'react-toastify';
 import React from 'react';
@@ -337,10 +337,14 @@ const Schemesdata: React.FC<Props> = ({
             key: 'actions',
             label: 'Actions',
             render: (data) => (
-                <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleEdit(data)}>
-                        <FaEdit />
-                    </Button>
+                <div className="flex gap-2 whitespace-nowrap w-full">
+                    <span
+                        onClick={() => handleEdit(data)}
+                        className="cursor-pointer text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                    >
+                        <FaEdit className="inline-block align-middle text-lg" />
+                    </span>
+
                     <span>
                         <DefaultModal id={data.scheme_id} fetchData={fetchData} endpoint={"schemescrud"} bodyname={"scheme_id"} newstatus={data.status} />
                     </span>

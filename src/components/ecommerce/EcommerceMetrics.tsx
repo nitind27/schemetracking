@@ -33,11 +33,18 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
     f.taluka_id === filters.talukaId &&
     f.village_id === filters.villageId
   ) || [];
+  const filteredFarmersbdo = metrics?.farmers.filter(f =>
+    f.taluka_id === filters.talukaId
+  ) || [];
 
   const counts = {
     farmers: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "4" || filters.categoryName === "32"
       ? metrics?.farmers.length ?? 0
-      : filteredFarmers.length,
+      :
+      filters.categoryName === "33" ?
+        filteredFarmersbdo.length
+        :
+        filteredFarmers.length,
     schemes: metrics?.schemes.length ?? 0,
     users: metrics?.users.length ?? 0
   };
@@ -48,7 +55,7 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
       icon: <GroupIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
       label: "IFR holders",
       value: counts.farmers,
-      href: "/farmerspage",
+      href: filters.categoryName === "33" ? "/ifrholderwisevillages" : "/farmerspage",
       show: true
     },
     {

@@ -5,8 +5,7 @@ import { Modal } from "../../ui/modal";
 import Button from "../../ui/button/Button";
 import { useModal } from "@/hooks/useModal";
 import { toast } from "react-toastify";
-import { FaEdit } from "react-icons/fa";
-
+import { MdDelete } from "react-icons/md";
 interface DefaultModalProps {
   id: number;
   fetchData: () => void;
@@ -42,9 +41,12 @@ export default function DefaultModal({ id, fetchData, endpoint, bodyname, newsta
 
   return (
     <div>
-      <Button size="sm" onClick={openModal}>
-       <FaEdit />
-      </Button>
+      <span
+        onClick={openModal}
+        className="cursor-pointer text-red-600 hover:text-red-800 transition-colors duration-200"
+      >
+        <MdDelete className="inline-block align-middle text-lg" />
+      </span>
 
       <Modal
         isOpen={isOpen}

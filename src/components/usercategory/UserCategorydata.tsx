@@ -6,10 +6,11 @@ import { useToggleContext } from '@/context/ToggleContext';
 import Label from "../form/Label";
 import { ReusableTable } from "../tables/BasicTableOne";
 import { Column } from "../tables/tabletype";
-import Button from "../ui/button/Button";
+
 import { UserCategory } from './userCategory';
 import DefaultModal from '../example/ModalExample/DefaultModal';
 import Loader from '@/common/Loader';
+import { FaEdit } from 'react-icons/fa';
 
 interface Props {
   serverData: UserCategory[];
@@ -127,7 +128,13 @@ const UserCategorydata: React.FC<Props> = ({ serverData }) => {
       label: 'Actions',
       render: (data) => (
         <div className="flex gap-2 whitespace-nowrap w-full">
-          <Button size="sm" onClick={() => handleEdit(data)}>Edit</Button>
+          <span
+            onClick={() => handleEdit(data)}
+            className="cursor-pointer text-blue-600 hover:text-blue-800 transition-colors duration-200"
+          >
+            <FaEdit className="inline-block align-middle text-lg" />
+          </span>
+
           <span>
             <DefaultModal id={data.user_category_id} fetchData={fetchData} endpoint={"usercategorycrud"} bodyname='user_category_id' newstatus={data.status} />
           </span>
@@ -179,7 +186,7 @@ const UserCategorydata: React.FC<Props> = ({ serverData }) => {
           </button>
         }
         searchKey="category_name"
-        
+
       />
     </div>
   );

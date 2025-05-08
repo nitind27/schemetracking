@@ -73,17 +73,17 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
                 className="max-w-[600px] p-5 lg:p-10"
             >
                 <h4 className="font-semibold text-gray-800 mb-4 text-xl dark:text-white">
-                    IFR holder
+                    Scheme Info
                 </h4>
 
                 {farmer ? (
                     <div className="max-h-[60vh] overflow-y-auto">
-                        <table className="min-w-full border text-left text-sm">
+                        <table className="min-w-full border border-gray-300 border-collapse text-left text-sm">
                             <thead>
                                 <tr>
-                                    <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Sr.No</th>
-                                    <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Field</th>
-                                    <th className="px-4 py-2 border-b font-semibold text-gray-700 dark:text-white">Value</th>
+                                    <th className="px-4 py-2 border border-gray-300 font-semibold text-gray-700 dark:text-white">Sr.No</th>
+                                    <th className="px-4 py-2 border border-gray-300 font-semibold text-gray-700 dark:text-white">Field</th>
+                                    <th className="px-4 py-2 border border-gray-300 font-semibold text-gray-700 dark:text-white">Value</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -92,7 +92,6 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
                                     .map(([key, value], index) => {
                                         let displayValue: React.ReactNode = value || "-";
 
-                                        // Handle all special cases in one place
                                         if (key === "scheme_year_id") {
                                             displayValue = getSchemeyear(value);
                                         } else if (key === "scheme_category_id") {
@@ -105,12 +104,10 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
 
                                         return (
                                             <tr key={key}>
-                                                <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
+                                                <td className="px-4 py-2 border border-gray-300 capitalize font-medium text-gray-700 dark:text-white">
                                                     {index + 1}
-                                                   
                                                 </td>
-                                                <td className="px-4 py-2 border-b capitalize font-medium text-gray-700 dark:text-white">
-
+                                                <td className="px-4 py-2 border border-gray-300 capitalize font-medium text-gray-700 dark:text-white">
                                                     {key === "scheme_category_id"
                                                         ? "Scheme Category"
                                                         : key === "scheme_sub_category_id"
@@ -118,9 +115,8 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
                                                             : key === "scheme_year_id"
                                                                 ? "Scheme Year"
                                                                 : key.replace(/_/g, " ")}
-
                                                 </td>
-                                                <td className="px-4 py-2 border-b text-gray-600 dark:text-gray-300">
+                                                <td className="px-4 py-2 border border-gray-300 text-gray-600 dark:text-gray-300">
                                                     {displayValue}
                                                 </td>
                                             </tr>
@@ -128,6 +124,7 @@ export default function SchemesDataModel({ schemeid, datascheme, farmername, sch
                                     })}
                             </tbody>
                         </table>
+
                     </div>
 
                 ) : (

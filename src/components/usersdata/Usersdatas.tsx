@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import Label from "../form/Label";
 import { ReusableTable } from "../tables/BasicTableOne";
 import { Column } from "../tables/tabletype";
-import Button from "../ui/button/Button";
+
 
 import { toast } from 'react-toastify';
 
@@ -15,6 +15,7 @@ import { UserCategory } from '../usercategory/userCategory';
 import { Taluka } from '../Taluka/Taluka';
 import { Village } from '../Village/village';
 import DefaultModal from '../example/ModalExample/DefaultModal';
+import { FaEdit } from 'react-icons/fa';
 
 type Props = {
   users: UserData[];
@@ -160,7 +161,7 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
         : 'Users created successfully!');
 
 
-        reset()
+      reset()
       setEditId(null);
       fetchData();
     } catch (error) {
@@ -254,9 +255,12 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
       label: 'Actions',
       render: (data) => (
         <div className="flex gap-2 whitespace-nowrap w-full">
-          <Button size="sm" onClick={() => handleEdit(data)}>
-            Edit
-          </Button>
+          <span
+            onClick={() => handleEdit(data)}
+            className="cursor-pointer text-blue-600 hover:text-blue-800 transition-colors duration-200"
+          >
+            <FaEdit className="inline-block align-middle text-lg" />
+          </span>
 
 
           <span>
