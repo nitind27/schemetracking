@@ -13,6 +13,7 @@ import { MultiValue } from 'react-select';
 import { useToggleContext } from '@/context/ToggleContext';
 import Loader from '@/common/Loader';
 import DefaultModal from '../example/ModalExample/DefaultModal';
+import { FaEdit } from 'react-icons/fa';
 
 // Define a more specific type for document options
 interface DocOption {
@@ -77,7 +78,7 @@ const Schemesdata: React.FC<Props> = ({
     const [documentsedit, setdocumentsedit] = useState("");
     const [loading, setLoading] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
-console.log("fasdsfdadsaf",initialdata)
+    console.log("fasdsfdadsaf", initialdata)
     // Use the DocOption type here
     const docoptions: DocOption[] = filterdocument.map(doc => ({
         label: doc.document_name,
@@ -336,9 +337,9 @@ console.log("fasdsfdadsaf",initialdata)
             key: 'actions',
             label: 'Actions',
             render: (data) => (
-                <div className="flex gap-2 whitespace-nowrap w-full">
+                <div className="flex gap-2">
                     <Button size="sm" onClick={() => handleEdit(data)}>
-                        Edit
+                        <FaEdit />
                     </Button>
                     <span>
                         <DefaultModal id={data.scheme_id} fetchData={fetchData} endpoint={"schemescrud"} bodyname={"scheme_id"} newstatus={data.status} />
@@ -349,7 +350,7 @@ console.log("fasdsfdadsaf",initialdata)
     ];
     const handleChange = (
         selected: MultiValue<DocOption>,
-        
+
     ) => {
 
         setdocuments(selected ? [...selected] : []);

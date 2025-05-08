@@ -155,12 +155,10 @@ export function Simpletableshowdata<T extends object>({
 
   return (
     <div className={`p-4 rounded-lg border ${classname}`}>
-      <DataTable
+    <DataTable
         columns={reactColumns}
         data={filteredData}
         pagination
-        paginationPerPage={10}
-        paginationRowsPerPageOptions={[10, 25, 50, 100]}
         highlightOnHover
         responsive
         striped
@@ -168,29 +166,24 @@ export function Simpletableshowdata<T extends object>({
         subHeader
         subHeaderComponent={SubHeaderComponent}
         customStyles={{
+          rows: {
+            style: {
+              minHeight: "48px",
+            },
+          },
           headCells: {
             style: {
               fontWeight: "600",
               fontSize: "14px",
-              backgroundColor: "#f9fafb",
+              border: "1px solid #ddd", // Add border to header cells
             },
           },
           cells: {
             style: {
-              padding: "12px 8px",
-            },
-          },
-          pagination: {
-            style: {
-              borderTop: "1px solid #e5e7eb",
+              border: "1px solid #ddd", // Add border to body cells
             },
           },
         }}
-        noDataComponent={
-          <div className="py-8 text-center text-gray-500">
-            No data available
-          </div>
-        }
       />
     </div>
   );

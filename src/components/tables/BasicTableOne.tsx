@@ -73,7 +73,7 @@ export function ReusableTable<T extends object>({
 
   const SubHeaderComponent = (
     <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-2 flex-1">
+      <div className="flex flex-col md:flex-row gap-2 flex-1">
         {filterOptions.length > 0 && filterKey && (
           <select
             className="border rounded px-3 py-2"
@@ -91,20 +91,20 @@ export function ReusableTable<T extends object>({
         <input
           type="text"
           placeholder="Search..."
-      className="rounded border border-gray-200 bg-gray-100 px-3 py-2 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow md:w-auto flex-1"
+          className="rounded border border-gray-200 bg-gray-100 px-3 py-2 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow md:w-auto flex-1"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
       <div className="w-full md:w-auto">
-          <FormInModal 
-            inputfiled={inputfiled} 
-            title={title} 
-            submitbutton={submitbutton} 
-            classname={classname} 
-          />
-        </div>
+        <FormInModal
+          inputfiled={inputfiled}
+          title={title}
+          submitbutton={submitbutton}
+          classname={classname}
+        />
+      </div>
     </div>
   );
 
@@ -130,10 +130,17 @@ export function ReusableTable<T extends object>({
             style: {
               fontWeight: "600",
               fontSize: "14px",
+              border: "1px solid #ddd", // Add border to header cells
+            },
+          },
+          cells: {
+            style: {
+              border: "1px solid #ddd", // Add border to body cells
             },
           },
         }}
       />
+
     </div>
   );
 }

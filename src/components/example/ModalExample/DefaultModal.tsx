@@ -5,6 +5,7 @@ import { Modal } from "../../ui/modal";
 import Button from "../../ui/button/Button";
 import { useModal } from "@/hooks/useModal";
 import { toast } from "react-toastify";
+import { FaEdit } from "react-icons/fa";
 
 interface DefaultModalProps {
   id: number;
@@ -42,7 +43,7 @@ export default function DefaultModal({ id, fetchData, endpoint, bodyname, newsta
   return (
     <div>
       <Button size="sm" onClick={openModal}>
-        Delete
+       <FaEdit />
       </Button>
 
       <Modal

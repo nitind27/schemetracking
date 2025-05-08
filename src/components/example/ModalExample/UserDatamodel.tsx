@@ -47,7 +47,7 @@ export default function UserDatamodel({ farmersid, datafarmers, farmername, data
         className="max-w-[600px] p-5 lg:p-10"
       >
         <h4 className="font-semibold text-gray-800 mb-4 text-xl dark:text-white">
-          IFR holder
+          Scheme Info
         </h4>
 
         {farmer ? (
