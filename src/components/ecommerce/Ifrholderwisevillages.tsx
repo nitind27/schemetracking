@@ -136,7 +136,7 @@ const Ifrholderwisevillages = ({
 
             {isModalOpen && (
                 <div className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-4 z-99999">
-                    <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl max-h-[90vh] overflow-auto">
+                    <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl max-h-[100vh] overflow-auto">
                         <div className="flex justify-between items-center p-4 border-b">
                             <h3 className="text-lg font-semibold">{modalTitle}</h3>
                             <button

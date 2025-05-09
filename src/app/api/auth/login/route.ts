@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     }
 
     const user = users[0] as User;
-    console.log("fasdfsadfsda", user)
+   
     if (password !== user.password) {
       return NextResponse.json(
         { message: 'Invalid credentials' },
