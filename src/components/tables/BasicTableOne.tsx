@@ -29,12 +29,15 @@ export function ReusableTable<T extends object>({
 }: Props<T>) {
   const [filter, setFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
+  // Make sure to include perPage and currentPage in the dependency array!
   const reactColumns = useMemo(() => {
     return [
       {
         name: "SR No.",
-        cell: (_row: T, index: number) => index + 1,
+        cell: (_row: T, index: number) => (perPage * (currentPage - 1)) + index + 1,
         width: "80px",
       },
       ...columns.map((col) => ({
@@ -47,7 +50,7 @@ export function ReusableTable<T extends object>({
         sortable: true,
       })),
     ];
-  }, [columns]);
+  }, [columns, perPage, currentPage]); // <-- Add perPage and currentPage here
 
   const filteredData = useMemo(() => {
     let tempData = [...data];
@@ -91,7 +94,7 @@ export function ReusableTable<T extends object>({
         <input
           type="text"
           placeholder="Search..."
-         className="rounded border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow md:w-auto flex-1"
+          className="rounded border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow md:w-auto flex-1"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -114,6 +117,13 @@ export function ReusableTable<T extends object>({
         columns={reactColumns}
         data={filteredData}
         pagination
+        paginationPerPage={perPage}
+        paginationDefaultPage={currentPage}
+        onChangePage={page => setCurrentPage(page)}
+        onChangeRowsPerPage={newPerPage => {
+          setPerPage(newPerPage);
+          setCurrentPage(1); // Reset to first page when page size changes
+        }}
         highlightOnHover
         responsive
         striped
@@ -140,7 +150,6 @@ export function ReusableTable<T extends object>({
           },
         }}
       />
-
     </div>
   );
 }

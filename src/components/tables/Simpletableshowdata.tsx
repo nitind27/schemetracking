@@ -18,7 +18,6 @@ type FilterGroup = {
 type Column<T> = {
   key: string;
   label: string;
-  
   accessor?: keyof T;
   render?: (item: T) => React.ReactNode;
   sortable?: boolean;
@@ -47,12 +46,14 @@ export function Simpletableshowdata<T extends object>({
 }: Props<T>) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
   const reactColumns = useMemo(() => {
     return [
       {
         name: "SR No.",
-        cell: (_row: T, index: number) => index + 1,
+        cell: (_row: T, index: number) => (perPage * (currentPage - 1)) + index + 1,
         width: "80px",
       },
       ...columns.map((col) => ({
@@ -66,7 +67,7 @@ export function Simpletableshowdata<T extends object>({
         width: col.width,
       })),
     ];
-  }, [columns]);
+  }, [columns, perPage, currentPage]);
 
   const filteredData = useMemo(() => {
     let tempData = [...data];
@@ -131,8 +132,7 @@ export function Simpletableshowdata<T extends object>({
           <input
             type="text"
             placeholder="Search..."
-      
-             className="rounded border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow md:w-auto flex-1"
+            className="rounded border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow md:w-auto flex-1"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -155,7 +155,7 @@ export function Simpletableshowdata<T extends object>({
 
   return (
     <div className={`p-4 rounded-lg border ${classname}`}>
-    <DataTable
+      <DataTable
         columns={reactColumns}
         data={filteredData}
         pagination
@@ -165,6 +165,13 @@ export function Simpletableshowdata<T extends object>({
         persistTableHead
         subHeader
         subHeaderComponent={SubHeaderComponent}
+        paginationPerPage={perPage}
+        paginationDefaultPage={currentPage}
+        onChangePage={page => setCurrentPage(page)}
+        onChangeRowsPerPage={newPerPage => {
+          setPerPage(newPerPage);
+          setCurrentPage(1);
+        }}
         customStyles={{
           rows: {
             style: {
@@ -175,12 +182,12 @@ export function Simpletableshowdata<T extends object>({
             style: {
               fontWeight: "600",
               fontSize: "14px",
-              border: "1px solid #ddd", // Add border to header cells
+              border: "1px solid #ddd",
             },
           },
           cells: {
             style: {
-              border: "1px solid #ddd", // Add border to body cells
+              border: "1px solid #ddd",
             },
           },
         }}
