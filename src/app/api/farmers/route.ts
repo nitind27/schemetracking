@@ -36,26 +36,24 @@ export async function POST(request: Request) {
     const updatableFields = [
         'name', 'adivasi', 'village_id', 'taluka_id', 'gat_no',
         'vanksetra', 'nivas_seti', 'aadhaar_no', 'contact_no',
-        'email', 'kisan_id', 'schemes', 'documents', 'update_record', 'gender', 'dob','profile_photo','aadhaar_photo','compartment_number'
+        'email', 'kisan_id', 'schemes', 'documents', 'update_record', 'gender', 'dob', 'profile_photo', 'aadhaar_photo', 'compartment_number'
     ];
 
     let connection;
     try {
-        // Define the base tmp path safely relative to project root
+       
         const tmpBasePath = path.join(process.cwd(), 'tmp', 'uploads');
         const farmerDocDir = path.join(tmpBasePath, 'farmersdocument');
         const schemeDocDir = path.join(tmpBasePath, 'schemedocument');
         const aadhaarDocDir = path.join(tmpBasePath, 'uploadaadhaar');
         const profileDocDir = path.join(tmpBasePath, 'uploadsprofile');
 
-        // Ensure directories exist
         for (const dir of [farmerDocDir, schemeDocDir, aadhaarDocDir, profileDocDir]) {
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
             }
         }
 
-        // Handle farmer documents
         const newFarmerDocNames: string[] = [];
         for (const file of files) {
             const buffer = Buffer.from(await file.arrayBuffer());
@@ -68,7 +66,6 @@ export async function POST(request: Request) {
             newFarmerDocNames.push(safeFileName);
         }
 
-        // Handle scheme documents
         const newSchemeDocNames: string[] = [];
         for (const file of files2) {
             const buffer = Buffer.from(await file.arrayBuffer());
@@ -81,7 +78,6 @@ export async function POST(request: Request) {
             newSchemeDocNames.push(safeFileName);
         }
 
-        // Handle Aadhaar documents
         const newAadhaarDocNames: string[] = [];
         for (const file of files4) {
             const buffer = Buffer.from(await file.arrayBuffer());
@@ -94,7 +90,6 @@ export async function POST(request: Request) {
             newAadhaarDocNames.push(safeFileName);
         }
 
-        // Handle profile documents
         const newProfileDocNames: string[] = [];
         for (const file of files3) {
             const buffer = Buffer.from(await file.arrayBuffer());
@@ -106,8 +101,6 @@ export async function POST(request: Request) {
             await fs.promises.writeFile(filePath, buffer);
             newProfileDocNames.push(safeFileName);
         }
-
-        // Update database
         connection = await pool.getConnection();
 
         const updateFields: string[] = [];
