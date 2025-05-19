@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const updatableFields = [
         'name', 'adivasi', 'village_id', 'taluka_id', 'gat_no',
         'vanksetra', 'nivas_seti', 'aadhaar_no', 'contact_no',
-        'email', 'kisan_id', 'schemes', 'documents', 'update_record', 'gender', 'dob', 'profile_photo', 'aadhaar_photo', 'compartment_number'
+        'email', 'kisan_id', 'schemes', 'documents', 'update_record', 'gender', 'dob', 'profile_photo', 'aadhaar_photo', 'compartment_number','schedule_j'
     ];
 
     let connection;
