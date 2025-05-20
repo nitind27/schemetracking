@@ -60,7 +60,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
       ? datavillage
         .filter(village => village.taluka_id == selectedTaluka)
         .map(village => ({
-          label: village.name,
+          label: village.marathi_name,
           value: village.village_id.toString()
         }))
       : [],

@@ -25,6 +25,7 @@ export async function GET() {
 }
 
 
+
 export async function POST(request: Request) {
     const formData = await request.formData();
     const farmerId = formData.get('farmer_id') as string;
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     const updatableFields = [
         'name', 'adivasi', 'village_id', 'taluka_id', 'gat_no',
         'vanksetra', 'nivas_seti', 'aadhaar_no', 'contact_no',
-        'email', 'kisan_id', 'schemes', 'documents', 'update_record', 'gender', 'dob', 'profile_photo', 'aadhaar_photo', 'compartment_number','schedule_j'
+        'email', 'kisan_id', 'schemes', 'documents', 'update_record', 'gender', 'dob', 'profile_photo', 'aadhaar_photo', 'compartment_number','schedule_j','gis'
     ];
 
     let connection;
