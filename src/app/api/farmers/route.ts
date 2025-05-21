@@ -33,23 +33,28 @@ export async function POST(request: Request) {
     const files2 = formData.getAll('files2') as File[];
     const files3 = formData.getAll('files3') as File[];
     const files4 = formData.getAll('files4') as File[];
+    const files5 = formData.getAll('files5') as File[];
+
 
     const updatableFields = [
         'name', 'adivasi', 'village_id', 'taluka_id', 'gat_no',
         'vanksetra', 'nivas_seti', 'aadhaar_no', 'contact_no',
-        'email', 'kisan_id', 'schemes', 'documents', 'update_record', 'gender', 'dob', 'profile_photo', 'aadhaar_photo', 'compartment_number','schedule_j','gis'
+        'email', 'kisan_id', 'schemes', 'documents', 'update_record', 'gender', 'dob', 'profile_photo', 'aadhaar_photo', 'compartment_number', 'schedule_j', 'gis', 'geo_photo'
     ];
 
     let connection;
     try {
-       
+
         const tmpBasePath = path.join(process.cwd(), 'tmp', 'uploads');
         const farmerDocDir = path.join(tmpBasePath, 'farmersdocument');
         const schemeDocDir = path.join(tmpBasePath, 'schemedocument');
         const aadhaarDocDir = path.join(tmpBasePath, 'uploadaadhaar');
         const profileDocDir = path.join(tmpBasePath, 'uploadsprofile');
+        const geophotoDir = path.join(tmpBasePath, 'geophotos');
 
-        for (const dir of [farmerDocDir, schemeDocDir, aadhaarDocDir, profileDocDir]) {
+
+
+        for (const dir of [farmerDocDir, schemeDocDir, aadhaarDocDir, profileDocDir, geophotoDir]) {
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
             }
@@ -102,6 +107,19 @@ export async function POST(request: Request) {
             await fs.promises.writeFile(filePath, buffer);
             newProfileDocNames.push(safeFileName);
         }
+
+        const geophotos: string[] = [];
+        for (const file of files5) {
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const originalFileName = file.name;
+
+            const safeFileName = `${originalFileName}`;
+            const filePath = path.join(geophotoDir, safeFileName);
+
+            await fs.promises.writeFile(filePath, buffer);
+            geophotos.push(safeFileName);
+        }
+
         connection = await pool.getConnection();
 
         const updateFields: string[] = [];
@@ -127,6 +145,7 @@ export async function POST(request: Request) {
             uploadedSchemeDocs: newSchemeDocNames,
             uploadedAadhaarDocs: newAadhaarDocNames,
             uploadedProfileDocs: newProfileDocNames,
+            geophotos1: geophotos,
         });
 
     } catch (error) {
