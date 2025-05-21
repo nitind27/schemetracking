@@ -8,6 +8,7 @@ import { Village } from '../Village/village';
 import { Taluka } from '../Taluka/Taluka';
 import { Schemesdatas } from '../schemesdata/schemes';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
+import Ifrsmaplocations from './Ifrsmaplocations';
 
 interface FarmersdataProps {
   data: FarmdersType[];
@@ -180,6 +181,29 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
           {dataschems.find(s => s.scheme_id === Number(item.schemes))?.scheme_name}
         </span>
       )
+    },
+    {
+      key: 'location',
+      label: 'Location',
+
+      render: (item) => {
+        const coordinates = item.gis
+          ?.split('|')
+          .map((pair) => {
+            const [lat, lng] = pair.split('-').map(Number);
+            return { lat, lng };
+          });
+
+        return (
+          <>
+       
+            {coordinates && coordinates.length > 0 && (
+              <Ifrsmaplocations coordinates={coordinates} />
+            )}
+          </>
+        );
+      }
+
     },
   ];
 

@@ -8,6 +8,7 @@ import { ToastContainer } from 'react-toastify';
 import { ToggleProvider } from '@/context/ToggleContext';
 import GlobleLoader from '@/components/common/GlobleLoader';
 import { Metadata } from 'next';
+import GoogleMapProvider from '@/components/farmersdata/GoogleMapProvider';
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -27,25 +28,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-     
+
       <body className={`${outfit.className} dark:bg-gray-900`}>
         <ThemeProvider>
 
           <ToggleProvider>
+            <GoogleMapProvider>
+              <SidebarProvider><GlobleLoader />{children}<ToastContainer
+                position="top-right"
 
-            <SidebarProvider><GlobleLoader />{children}<ToastContainer
-              position="top-right"
-
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop={true}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              style={{ zIndex: 99999, position: 'fixed' }}
-            /></SidebarProvider>
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop={true}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                style={{ zIndex: 99999, position: 'fixed' }}
+              /></SidebarProvider>
+            </GoogleMapProvider>
           </ToggleProvider>
         </ThemeProvider>
       </body>
