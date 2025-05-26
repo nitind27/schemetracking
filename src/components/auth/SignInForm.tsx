@@ -43,7 +43,7 @@ export default function SignInForm() {
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
-      
+
       // ✅ Store name in session storage
       if (data.user.name) {
         sessionStorage.setItem('userName', data.user.name);
@@ -134,6 +134,7 @@ export default function SignInForm() {
                   Forgot password?
                 </Link>
               </div>
+             
 
               <div>
                 <Button
@@ -144,6 +145,16 @@ export default function SignInForm() {
                 >
                   {isSubmitting ? 'Signing in...' : 'Sign in'}
                 </Button>
+              </div>
+               <div className="text-center">
+                <Link
+                  href="/privacy_policy"
+                  target="_blank"
+                  className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400 cursor-pointer "
+                >
+
+                  Privacy Policy
+                </Link>
               </div>
             </div>
           </form>
