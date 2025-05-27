@@ -5,7 +5,7 @@ const PrivacyPolicy = () => (
     <div className="max-w-4xl mx-auto bg-gray-50 rounded-xl shadow-lg p-8">
       <h1 className="text-3xl font-bold mb-2 text-blue-700 text-center">Privacy Policy</h1>
       <h2 className="text-xl font-semibold mb-2">PRIVACY NOTICE</h2>
-      <p className="text-sm text-gray-500 mb-6">Last updated March 01, 2022</p>
+      <p className="text-sm text-gray-500 mb-6">Last updated May 01, 2025</p>
 
       <p className="mb-4">
         This privacy notice for <span className="font-semibold">WeClocks Technology Private Limited</span> (doing business as WeClocks Technology) (
@@ -21,7 +21,7 @@ const PrivacyPolicy = () => (
 
       <ul className="list-disc ml-6 mb-4">
         <li>Visit our website at <a href="https://fra.weclocks.online/" className="text-blue-600 underline">https://fra.weclocks.online/</a>, or any website of ours that links to this privacy notice</li>
-        <li>Download and use our mobile application (Birsa App), or any other application of ours that links to this privacy notice</li>
+        <li>Download and use our mobile application (Scheme Saturation Tracking System - Nandurbar App), or any other application of ours that links to this privacy notice</li>
         <li>Engage with us in other related ways, including any sales, marketing, or events</li>
       </ul>
       <p className="mb-4">

@@ -150,7 +150,7 @@ export default function SignInForm() {
                 <Link
                   href="/privacy_policy"
                   target="_blank"
-                  className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400 cursor-pointer "
+                  className="text-sm underline text-brand-500 hover:text-brand-600 dark:text-brand-400 cursor-pointer "
                 >
 
                   Privacy Policy
