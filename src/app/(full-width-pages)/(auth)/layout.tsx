@@ -21,12 +21,12 @@ export default function AuthLayout({
               {/* <!-- ===== Common Grid Shape Start ===== --> */}
               <GridShape />
               <div className="flex flex-col items-center max-w-xs">
-                <div className="text-white text-[25px]">
+                <div className="text-white text-[30px]">
                   SSTS-NDB
                 </div>
-                <div className="text-white text-[25px] whitespace-nowrap">
+                <div className="text-white text-[30px] md:whitespace-nowrap">
 
-                  (Scheme Saturation Tracking System)
+                  (Scheme Saturation Tracking System - Nandurbar)
                 </div>
 
                 <img
