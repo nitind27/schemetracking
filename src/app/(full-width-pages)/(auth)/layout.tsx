@@ -15,22 +15,29 @@ export default function AuthLayout({
     <div className="relative p-6 bg-white z-1 dark:bg-gray-900 sm:p-0">
       <ThemeProvider>
         <div className="relative flex lg:flex-row w-full h-screen justify-center flex-col  dark:bg-gray-900 sm:p-0">
-        
+
           <div className="lg:w-1/2 w-full h-full bg-brand-950 dark:bg-white/5 lg:grid items-center hidden">
             <div className="relative items-center justify-center  flex z-1">
               {/* <!-- ===== Common Grid Shape Start ===== --> */}
               <GridShape />
               <div className="flex flex-col items-center max-w-xs">
-              
-                  <img
-                    width={500}
-                    height={50}
-                    src="./images/logo/maharashtraShasan.png"
-                    alt="Logo"
-                  />
-               
+                <div className="text-white text-[25px]">
+                  SSTS-NDB
+                </div>
+                <div className="text-white text-[25px] whitespace-nowrap">
+
+                  (Scheme Saturation Tracking System)
+                </div>
+
+                <img
+                  width={500}
+                  height={50}
+                  src="./images/logo/maharashtraShasan.png"
+                  alt="Logo"
+                />
+
                 <p className="text-center text-gray-400 dark:text-white/60">
-                 
+
                 </p>
               </div>
             </div>
