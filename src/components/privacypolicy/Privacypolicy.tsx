@@ -20,7 +20,7 @@ const PrivacyPolicy = () => (
       </p>
 
       <ul className="list-disc ml-6 mb-4">
-        <li>Visit our website at <a href="https://itdpdeori.org.in/" className="text-blue-600 underline">https://itdpdeori.org.in/</a>, or any website of ours that links to this privacy notice</li>
+        <li>Visit our website at <a href="https://fra.weclocks.online/" className="text-blue-600 underline">https://fra.weclocks.online/</a>, or any website of ours that links to this privacy notice</li>
         <li>Download and use our mobile application (Birsa App), or any other application of ours that links to this privacy notice</li>
         <li>Engage with us in other related ways, including any sales, marketing, or events</li>
       </ul>
@@ -72,7 +72,7 @@ const PrivacyPolicy = () => (
         <li>DO CALIFORNIA RESIDENTS HAVE SPECIFIC PRIVACY RIGHTS?</li>
         <li>DO WE MAKE UPDATES TO THIS NOTICE?</li>
         <li>HOW CAN YOU CONTACT US ABOUT THIS NOTICE?</li>
-        <li>HOW CAN YOU REVIEW, UPDATE, OR DELETE THE DATA WE COLLECT FROM YOU?</li>
+
       </ol>
 
       <h3 className="text-xl font-semibold mt-6 mb-2 text-blue-600">1. WHAT INFORMATION DO WE COLLECT?</h3>
