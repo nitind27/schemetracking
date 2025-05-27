@@ -20,7 +20,7 @@ const PrivacyPolicy = () => (
       </p>
 
       <ul className="list-disc ml-6 mb-4">
-        <li>Visit our website at <a href="https://fra.weclocks.online/" className="text-blue-600 underline">https://fra.weclocks.online/</a>, or any website of ours that links to this privacy notice</li>
+        <li>Visit our website at <a href="https://fra.weclocks.online/privacy_policy/" className="text-blue-600 underline">https://fra.weclocks.online/privacy_policy/</a>, or any website of ours that links to this privacy notice</li>
         <li>Download and use our mobile application (Scheme Saturation Tracking System - Nandurbar App), or any other application of ours that links to this privacy notice</li>
         <li>Engage with us in other related ways, including any sales, marketing, or events</li>
       </ul>
