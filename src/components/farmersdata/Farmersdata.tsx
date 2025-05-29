@@ -26,7 +26,8 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
   const [filters, setFilters] = useState({
     talukaId: null as string | null,
     villageId: null as string | null,
-    categoryName: null as string | null
+    categoryName: null as string | null,
+    aadhaarwith: null as string | null
   });
 
   const [selectedTaluka, setSelectedTaluka] = useState<string>('');
@@ -36,11 +37,14 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
     const talukaId = sessionStorage.getItem('taluka_id');
     const villageId = sessionStorage.getItem('village_id');
     const categoryName = sessionStorage.getItem('category_name');
+    const aadhaarwith = sessionStorage.getItem('aadharcount');
+
 
     setFilters({
       talukaId,
       villageId,
       categoryName,
+      aadhaarwith
     });
 
     // Also set UI filters
@@ -69,26 +73,62 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
   );
 
   const filteredFarmers = useMemo(() => {
+
     let result = data;
-    if (selectedTaluka == '0' && selectedVillage == "0" && filters.talukaId == "0" && filters.villageId == "0") {
+
+    if (
+      selectedTaluka === '0' &&
+      selectedVillage === '0' &&
+      filters.talukaId === '0' &&
+      filters.villageId === '0'
+    ) {
       return result;
     }
-    if (selectedTaluka.length < 0 && selectedVillage.length < 0) {
-      result = result.filter(f =>
-        f.taluka_id == filters.talukaId &&
-        f.village_id == filters.villageId
+
+
+    if (!selectedTaluka && !selectedVillage) {
+      result = result.filter(
+        (f) =>
+          f.taluka_id === filters.talukaId &&
+          f.village_id === filters.villageId
       );
     }
-    // Apply UI filters (these override session filters if changed)
-    if (selectedTaluka) {
-      result = result.filter(f => f.taluka_id == selectedTaluka);
+    if (selectedTaluka && filters.aadhaarwith == '0') {
+      result = result.filter(
+        (f) =>
+          f.taluka_id == selectedTaluka
+      );
+
+    }
+    // Apply UI filters (override session filters if changed)
+    if (selectedTaluka && filters.aadhaarwith != '1' &&  filters.aadhaarwith != '0') {
+      result = result.filter(
+        (f) =>
+          f.taluka_id === selectedTaluka &&
+          (f.aadhaar_no == '')
+      );
+
+    }
+
+    if (selectedTaluka && filters.aadhaarwith == '1') {
+      result = result.filter(
+        (f) =>
+          f.taluka_id === selectedTaluka &&
+          (f.aadhaar_no != '')
+      );
+
     }
     if (selectedVillage) {
-      result = result.filter(f => f.village_id == selectedVillage);
+      result = result.filter(
+        (f) =>
+          f.village_id === selectedVillage &&
+          (filters.aadhaarwith !== '1' || f.aadhaar_no !== '')
+      );
     }
 
     return result;
   }, [data, filters, selectedTaluka, selectedVillage]);
+
 
 
   const columns: Column<FarmdersType>[] = [
@@ -196,7 +236,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
 
         return (
           <>
-       
+
             {coordinates && coordinates.length > 0 && (
               <Ifrsmaplocations coordinates={coordinates} />
             )}

@@ -6,6 +6,9 @@ import Showschemstable from "@/components/ecommerce/Showschemstable";
 import { Suspense } from "react";
 import Loader from "@/common/Loader";
 import DoTalukadata from "@/components/Do/Talukawisedata/DoTalukadata";
+
+import Titiledata from "@/components/common/Titiledata";
+import { SchemeSaturation } from "@/components/ecommerce/SchemeSaturation";
 // import { DownloadButtons } from "@/components/ecommerce/DownloadButtons";
 
 export const metadata: Metadata = {
@@ -15,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 async function fetchMetrics() {
-  
+
   try {
     const [farmersRes, schemesRes, usersRes] = await Promise.all([
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmers`, { cache: 'no-store' }),
@@ -45,19 +48,19 @@ async function fetchMetrics() {
 }
 
 async function fetchFarmersData() {
-  
+
   try {
     // 1. Add yearmaster fetch here (6 fetches total)
     const [usersRes, schemesRes, farmersRes, schemescrudRes, schemessubcategoryRes, yearmasterRes, documentsRes, talukaRes, villagesRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/usercategorycrud`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescrud`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmers`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescategory`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemessubcategory`), // Assuming this is correct
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/yearmaster`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/taluka`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/villages`),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/usercategorycrud`),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescrud`),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmers`),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescategory`),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemessubcategory`), // Assuming this is correct
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/yearmaster`),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/taluka`),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/villages`),
     ]);
 
     // 2. Keep 6 elements here to match
@@ -102,7 +105,11 @@ export default async function Ecommerce() {
         <Suspense fallback={<Loader />}>
           {/* <DownloadButtons /> */}
           <EcommerceMetrics metrics={metrics} />
-          <DoTalukadata farmersData={farmersData}/>
+          <Titiledata title="Taluka wise Addhar & not aadhar IFR holders" />
+
+          <DoTalukadata farmersData={farmersData} />
+          <Titiledata title="Scheme Saturation" />
+          <SchemeSaturation metrics={metrics} />
           <Showschemstable farmersData={farmersData} />
         </Suspense>
       </div>

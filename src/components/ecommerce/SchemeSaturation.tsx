@@ -1,0 +1,127 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { BoxIconLine, GroupIcon, UserIcon } from "@/icons";
+import Link from "next/link";
+import PathHandler from "../common/PathHandler";
+import { FarmdersType } from "../farmersdata/farmers";
+import { Schemesdatas } from "../schemesdata/schemes";
+import { UserData } from "../usersdata/Userdata";
+
+interface Metrics {
+    farmers: FarmdersType[];
+    schemes: Schemesdatas[];
+    users: UserData[];
+}
+
+export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
+    const [filters, setFilters] = useState({
+        talukaId: null as string | null,
+        villageId: null as string | null,
+        categoryName: null as string | null
+    });
+
+    useEffect(() => {
+        setFilters({
+            talukaId: sessionStorage.getItem('taluka_id'),
+            villageId: sessionStorage.getItem('village_id'),
+            categoryName: sessionStorage.getItem('category_id')
+        });
+    }, []);
+
+    // const filteredFarmers = metrics?.farmers.filter(f =>
+    //     f.taluka_id === filters.talukaId &&
+    //     f.village_id === filters.villageId
+    // ) || [];
+    // const filteredFarmersbdo = metrics?.farmers.filter(f =>
+    //     f.taluka_id === filters.talukaId
+    // ) || [];
+    const filteredapplied = metrics?.farmers.filter(f =>
+        f.schemes != ""
+    ) || [];
+    const filterednotapplied = metrics?.farmers.filter(f =>
+        f.schemes == ""
+    ) || [];
+    const filteredrecevied = metrics?.farmers.filter(f => {
+        // Make sure f.schemes exists and is an array
+        const schemes = Array.isArray(f.schemes) ? f.schemes : [];
+        // Get last scheme (or undefined if empty)
+        const lastScheme = schemes[schemes.length - 1];
+        // Check if lastScheme is 'received'
+        return lastScheme === 'received';
+    }) || [];
+    const counts = {
+
+
+
+        farmers: filteredapplied.length ?? 0,
+
+        schemes: filterednotapplied.length ?? 0,
+        users: filteredrecevied.length ?? 0
+    };
+
+
+    const metricsConfig = [
+        {
+            icon: <GroupIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
+            label: "Applied",
+            value: counts.farmers,
+            href: filters.categoryName === "33" ? "/ifrholderwisevillages" : "/farmerspage",
+            show: true,
+            bgcolor: "bg-red-600"
+        },
+        {
+            icon: <BoxIconLine className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
+            label: "Not Applied",
+            value: counts.schemes,
+            href: "/schemespage",
+            show: true,
+            bgcolor: "bg-green-600"
+        },
+        {
+            icon: <UserIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
+            label: "Benefited",
+            value: counts.users,
+            href: "/users",
+            show: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4",
+            bgcolor: "bg-blue-600"
+        }
+    ];
+
+    return (
+        <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-3" : "sm:grid-cols-2"
+            }`}>
+            {metricsConfig.map((metric, index) => metric.show && (
+                <MetricCard key={index} {...metric} />
+            ))}
+        </div>
+    );
+};
+
+const MetricCard = ({ icon, label, value, href, bgcolor }: {
+    icon: React.ReactNode;
+    label: string;
+    value: number;
+    href: string;
+    bgcolor: React.ReactNode;
+}) => (
+    <div className={`rounded-xl border border-gray-200 ${bgcolor}  p-4 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow text-white`}>
+        <Link href={href}>
+            <PathHandler>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 bg-gray-50 rounded-lg dark:bg-gray-800">
+                        {icon}
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-white dark:text-gray-400">
+                            {label}
+                        </span>
+                        <h4 className="text-lg font-semibold text-white dark:text-white/90">
+                            {value}
+                        </h4>
+                    </div>
+                </div>
+            </PathHandler>
+        </Link>
+    </div>
+);

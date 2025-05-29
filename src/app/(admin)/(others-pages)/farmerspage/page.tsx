@@ -43,6 +43,7 @@ const Page = async () => {
     <div className="grid grid-cols-6 gap-4 md:gap-6">
       <div className="col-span-12 space-y-6 xl:col-span-7">
         <Breadcrumbs title="IFR holders" breadcrumbs={breadcrumbItems} />
+        
         <Farmersdata
           data={farmers}
           datavillage={villages}
