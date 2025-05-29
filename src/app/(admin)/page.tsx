@@ -7,7 +7,7 @@ import { Suspense } from "react";
 import Loader from "@/common/Loader";
 import DoTalukadata from "@/components/Do/Talukawisedata/DoTalukadata";
 
-import Titiledata from "@/components/common/Titiledata";
+
 import { SchemeSaturation } from "@/components/ecommerce/SchemeSaturation";
 // import { DownloadButtons } from "@/components/ecommerce/DownloadButtons";
 
@@ -105,10 +105,9 @@ export default async function Ecommerce() {
         <Suspense fallback={<Loader />}>
           {/* <DownloadButtons /> */}
           <EcommerceMetrics metrics={metrics} />
-          <Titiledata title="Taluka wise Addhar & not aadhar IFR holders" />
-
+      
           <DoTalukadata farmersData={farmersData} />
-          <Titiledata title="Scheme Saturation" />
+     
           <SchemeSaturation metrics={metrics} />
           <Showschemstable farmersData={farmersData} />
         </Suspense>

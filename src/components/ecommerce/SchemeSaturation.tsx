@@ -7,6 +7,7 @@ import PathHandler from "../common/PathHandler";
 import { FarmdersType } from "../farmersdata/farmers";
 import { Schemesdatas } from "../schemesdata/schemes";
 import { UserData } from "../usersdata/Userdata";
+import Titiledata from "../common/Titiledata";
 
 interface Metrics {
     farmers: FarmdersType[];
@@ -66,7 +67,7 @@ export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
             icon: <GroupIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
             label: "Applied",
             value: counts.farmers,
-            href: filters.categoryName === "33" ? "/ifrholderwisevillages" : "/farmerspage",
+            href: "/",
             show: true,
             bgcolor: "bg-red-600"
         },
@@ -74,7 +75,7 @@ export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
             icon: <BoxIconLine className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
             label: "Not Applied",
             value: counts.schemes,
-            href: "/schemespage",
+            href: "/",
             show: true,
             bgcolor: "bg-green-600"
         },
@@ -82,19 +83,22 @@ export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
             icon: <UserIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
             label: "Benefited",
             value: counts.users,
-            href: "/users",
+            href: "/",
             show: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4",
             bgcolor: "bg-blue-600"
         }
     ];
-
+    if (!["8", "32", "4"].includes(filters.categoryName ?? "")) return null;
     return (
-        <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-3" : "sm:grid-cols-2"
-            }`}>
-            {metricsConfig.map((metric, index) => metric.show && (
-                <MetricCard key={index} {...metric} />
-            ))}
-        </div>
+        <>
+            <Titiledata title="Scheme Saturation" />
+            <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-3" : "sm:grid-cols-2"
+                }`}>
+                {metricsConfig.map((metric, index) => metric.show && (
+                    <MetricCard key={index} {...metric} />
+                ))}
+            </div>
+        </>
     );
 };
 
@@ -105,23 +109,26 @@ const MetricCard = ({ icon, label, value, href, bgcolor }: {
     href: string;
     bgcolor: React.ReactNode;
 }) => (
-    <div className={`rounded-xl border border-gray-200 ${bgcolor}  p-4 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow text-white`}>
-        <Link href={href}>
-            <PathHandler>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-gray-50 rounded-lg dark:bg-gray-800">
-                        {icon}
+    <>
+
+        <div className={`rounded-xl border border-gray-200 ${bgcolor}  p-4 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow text-white`}>
+            <Link href={href}>
+                <PathHandler>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-8 h-8 bg-gray-50 rounded-lg dark:bg-gray-800">
+                            {icon}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-medium text-white dark:text-gray-400">
+                                {label}
+                            </span>
+                            <h4 className="text-lg font-semibold text-white dark:text-white/90">
+                                {value}
+                            </h4>
+                        </div>
                     </div>
-                    <div className="flex flex-col">
-                        <span className="text-sm font-medium text-white dark:text-gray-400">
-                            {label}
-                        </span>
-                        <h4 className="text-lg font-semibold text-white dark:text-white/90">
-                            {value}
-                        </h4>
-                    </div>
-                </div>
-            </PathHandler>
-        </Link>
-    </div>
+                </PathHandler>
+            </Link>
+        </div>
+    </>
 );

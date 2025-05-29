@@ -1,6 +1,7 @@
 "use client";
 
 import PathHandler from '@/components/common/PathHandler';
+import Titiledata from '@/components/common/Titiledata';
 import { Documents } from '@/components/Documentsdata/documents';
 import { FarmdersType } from '@/components/farmersdata/farmers';
 import { Schemecategorytype } from '@/components/Schemecategory/Schemecategory';
@@ -28,15 +29,20 @@ interface AllFarmersData {
 
 const DoTalukadata = ({ farmersData }: { farmersData: AllFarmersData }) => {
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-            {farmersData.taluka.map((metric, index) => (
-                <MetricCard
-                    key={index}
-                    {...metric}
-                    farmers={farmersData.farmers}
-                />
-            ))}
-        </div>
+        <>
+            <Titiledata title="Taluka wise Addhar & not aadhar IFR holders" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+
+                {farmersData.taluka.map((metric, index) => (
+                    <MetricCard
+                        key={index}
+                        {...metric}
+                        farmers={farmersData.farmers}
+                    />
+                ))}
+            </div>
+        </>
     );
 };
 
@@ -84,42 +90,46 @@ const MetricCard = ({
     if (!["8", "32", "4"].includes(filters.categoryName ?? "")) return null;
 
     return (
-        <div
+        <>
 
-            className="rounded-xl border border-gray-200 bg-white shadow-md p-5 hover:shadow-lg transition-shadow cursor-pointer"
-        >
-           
-            <div onClick={() => handleClick(taluka_id)}>
 
-                <Link href="/farmerspage">
-                    <PathHandler>
-                        <div className="flex flex-col space-y-2">
-                            <div className="text-sm text-gray-600">{name}</div>
-                            <div className="text-2xl font-bold text-gray-800">{farmersCount}</div>
-                        </div>
-                    </PathHandler>
-                </Link>
-            </div>
-            <div className="mt-4 pt-3 border-t border-gray-300 flex justify-between text-xs text-gray-600">
-                <div className="text-center" onClick={() => handleClickaadhar(taluka_id)}>
+            <div
+
+                className="rounded-xl border border-gray-200 bg-white shadow-md p-5 hover:shadow-lg transition-shadow cursor-pointer"
+            >
+
+                <div onClick={() => handleClick(taluka_id)}>
+
                     <Link href="/farmerspage">
                         <PathHandler>
-
-                            <div className="font-medium text-green-600">With Aadhar</div>
-                            <div>{aadharCount}</div>
+                            <div className="flex flex-col space-y-2">
+                                <div className="text-sm text-gray-600">{name}</div>
+                                <div className="text-2xl font-bold text-gray-800">{farmersCount}</div>
+                            </div>
                         </PathHandler>
                     </Link>
                 </div>
-                <div className="text-center" onClick={() => handleClickaadharwithout(taluka_id)}>
-                    <Link href="/farmerspage">
-                        <PathHandler>
-                            <div className="font-medium text-red-600">No Aadhar</div>
-                            <div>{withoutAadharCount}</div>
-                        </PathHandler>
-                    </Link>
+                <div className="mt-4 pt-3 border-t border-gray-300 flex justify-between text-xs text-gray-600">
+                    <div className="text-center" onClick={() => handleClickaadhar(taluka_id)}>
+                        <Link href="/farmerspage">
+                            <PathHandler>
+
+                                <div className="font-medium text-green-600">With Aadhar</div>
+                                <div>{aadharCount}</div>
+                            </PathHandler>
+                        </Link>
+                    </div>
+                    <div className="text-center" onClick={() => handleClickaadharwithout(taluka_id)}>
+                        <Link href="/farmerspage">
+                            <PathHandler>
+                                <div className="font-medium text-red-600">No Aadhar</div>
+                                <div>{withoutAadharCount}</div>
+                            </PathHandler>
+                        </Link>
+                    </div>
                 </div>
-            </div>
-        </div >
+            </div >
+        </>
     );
 };
 
