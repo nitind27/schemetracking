@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BoxIconLine, GroupIcon, UserIcon } from "@/icons";
+
 import Link from "next/link";
 import PathHandler from "../common/PathHandler";
 import { FarmdersType } from "../farmersdata/farmers";
