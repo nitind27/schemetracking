@@ -9,7 +9,6 @@ import DoTalukadata from "@/components/Do/Talukawisedata/DoTalukadata";
 
 
 import { SchemeSaturation } from "@/components/ecommerce/SchemeSaturation";
-// import { DownloadButtons } from "@/components/ecommerce/DownloadButtons";
 
 export const metadata: Metadata = {
   title: "Scheme Monitoring & Tracking System",
@@ -104,6 +103,7 @@ export default async function Ecommerce() {
         {/* <Loader /> */}
         <Suspense fallback={<Loader />}>
           {/* <DownloadButtons /> */}
+    
           <EcommerceMetrics metrics={metrics} />
       
           <DoTalukadata farmersData={farmersData} />

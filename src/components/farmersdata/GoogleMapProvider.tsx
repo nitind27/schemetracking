@@ -12,3 +12,4 @@ const GoogleMapProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default GoogleMapProvider;
+
