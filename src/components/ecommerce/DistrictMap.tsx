@@ -13,7 +13,7 @@ const DistrictMap = () => {
     { name: 'Akrani', lat: 21.8242, lng: 74.2208 },
     { name: 'Dhadgaon', lat: 21.8222, lng: 74.2233 }
   ];
-  const alertdata = (v: any) => {
+  const alertdata = (v: string) => {
     alert(v)
   }
   return (
