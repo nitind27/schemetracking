@@ -66,7 +66,7 @@ export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
         {
             icon: <GroupIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
             label: "Applied",
-            value: counts.farmers,
+            value: counts.farmers, 
             href: "/",
             show: true,
             bgcolor: "bg-red-600"

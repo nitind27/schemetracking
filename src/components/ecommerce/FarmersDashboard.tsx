@@ -44,8 +44,12 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         return Number(id);
     });
 
+    // const allfarmersname = datafarmers.filter(data => {
+    //     const farmerScheme = String(data.schemes).replace("1:", "");
+    //     return schemeIdss.includes(Number(farmerScheme));
+    // });
     const allfarmersname = datafarmers.filter(data => {
-        const farmerScheme = String(data.schemes).replace("1:", "");
+        const farmerScheme = String(data.schemes) != "";
         return schemeIdss.includes(Number(farmerScheme));
     });
 
