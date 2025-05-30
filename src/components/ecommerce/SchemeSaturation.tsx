@@ -8,7 +8,9 @@ import { FarmdersType } from "../farmersdata/farmers";
 import { Schemesdatas } from "../schemesdata/schemes";
 import { UserData } from "../usersdata/Userdata";
 import Titiledata from "../common/Titiledata";
-
+import { VscGitStashApply } from "react-icons/vsc";
+import { FaNairaSign } from "react-icons/fa6";
+import { FaHandHoldingUsd } from "react-icons/fa";
 interface Metrics {
     farmers: FarmdersType[];
     schemes: Schemesdatas[];
@@ -64,7 +66,7 @@ export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
 
     const metricsConfig = [
         {
-            icon: <GroupIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
+            icon:<VscGitStashApply size={20}/>,
             label: "Applied",
             value: counts.farmers, 
             href: "/",
@@ -72,7 +74,7 @@ export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
             bgcolor: "bg-red-600"
         },
         {
-            icon: <BoxIconLine className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
+            icon: <FaNairaSign size={20}/>,
             label: "Not Applied",
             value: counts.schemes,
             href: "/",
@@ -80,7 +82,7 @@ export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
             bgcolor: "bg-green-600"
         },
         {
-            icon: <UserIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
+            icon: <FaHandHoldingUsd size={20}/>,
             label: "Benefited",
             value: counts.users,
             href: "/",
@@ -115,7 +117,7 @@ const MetricCard = ({ icon, label, value, href, bgcolor }: {
             <Link href={href}>
                 <PathHandler>
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-8 h-8 bg-gray-50 rounded-lg dark:bg-gray-800">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg dark:bg-gray-800">
                             {icon}
                         </div>
                         <div className="flex flex-col">
