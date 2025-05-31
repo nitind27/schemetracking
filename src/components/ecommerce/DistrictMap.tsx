@@ -82,7 +82,8 @@ const DistrictMarker: React.FC<DistrictMarkerProps> = ({
 };
 
 const DistrictMap: React.FC = () => {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);4
+  console.log("openIndex",openIndex)
 
   return (
     <div style={{ height: '100vh', width: '100%' }}>
