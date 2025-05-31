@@ -82,7 +82,7 @@ const DistrictMarker: React.FC<DistrictMarkerProps> = ({
 };
 
 const DistrictMap: React.FC = () => {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);4
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   console.log("openIndex",openIndex)
 
   return (
