@@ -59,18 +59,23 @@ const DistrictMarker: React.FC<DistrictMarkerProps> = ({
         />
       </AdvancedMarker>
       {open && marker && (
-        <InfoWindow anchor={marker} onCloseClick={onClose}>
+        <InfoWindow
+          anchor={marker}
+          onCloseClick={onClose}
+          headerDisabled={true}        >
           <div
             style={{
               fontWeight: 600,
               color: '#4285F4',
               fontSize: '16px',
-              padding: '4px 8px'
+              padding: '0px 0px',
+              cursor:"pointer"
             }}
           >
             {district.name}
           </div>
         </InfoWindow>
+
       )}
     </>
   );
@@ -85,7 +90,7 @@ const DistrictMap: React.FC = () => {
         <Map
           mapId="districts-map"
           defaultCenter={{ lat: 21.5, lng: 74.2 }}
-          defaultZoom={9}
+          defaultZoom={10}
           gestureHandling="greedy"
           disableDefaultUI={true}
         >
@@ -93,7 +98,7 @@ const DistrictMap: React.FC = () => {
             <DistrictMarker
               key={idx}
               district={district}
-              open={openIndex === idx}
+              open={true}
               onOpen={() => setOpenIndex(idx)}
               onClose={() => setOpenIndex(null)}
             />
