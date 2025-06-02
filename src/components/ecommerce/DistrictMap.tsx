@@ -8,6 +8,7 @@ import {
   InfoWindow,
   useAdvancedMarkerRef
 } from '@vis.gl/react-google-maps';
+import Modalfarmer from '@/common/Modalfarmer';
 
 // 1. Define the type for a district
 type District = {
@@ -69,9 +70,10 @@ const DistrictMarker: React.FC<DistrictMarkerProps> = ({
               color: '#4285F4',
               fontSize: '16px',
               padding: '0px 0px',
-              cursor:"pointer"
+              cursor: "pointer"
             }}
           >
+       
             {district.name}
           </div>
         </InfoWindow>
@@ -83,10 +85,11 @@ const DistrictMarker: React.FC<DistrictMarkerProps> = ({
 
 const DistrictMap: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  console.log("openIndex",openIndex)
+  console.log("openIndex", openIndex)
 
   return (
     <div style={{ height: '100vh', width: '100%' }}>
+     <Modalfarmer />
       <APIProvider apiKey="AIzaSyBDR0JbLRuagtWQgA2bpRUTprisPetZ1wA">
         <Map
           mapId="districts-map"
@@ -105,6 +108,7 @@ const DistrictMap: React.FC = () => {
             />
           ))}
         </Map>
+
       </APIProvider>
     </div>
   );
