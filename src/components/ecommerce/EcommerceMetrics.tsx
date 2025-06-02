@@ -29,7 +29,7 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
     });
   }, []);
 
-  const filteredFarmers = metrics?.farmers.filter(f =>
+  const filteredFarmers = metrics?.farmers?.filter(f =>
     f.taluka_id === filters.talukaId &&
     f.village_id === filters.villageId
   ) || [];

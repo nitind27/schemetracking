@@ -6,14 +6,13 @@ import { RowDataPacket } from 'mysql2';
 interface Village {
     village_id: number;
     name: string;
-    // Add other properties as needed
 }
 
 export async function GET() {
     try {
         const [rows] = await pool.query<RowDataPacket[] & Village[]>(`SELECT * FROM village where status = "Active"`);
 
-        // 3. Type-safe mapping
+
         const safeVillages = (rows as Village[]).map(({ ...village }) => village);
 
         return NextResponse.json(safeVillages);
