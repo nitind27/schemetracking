@@ -39,7 +39,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         }
     }, [farmersData]);
 
-    const schemeIdss = dataschems.map(datas => {
+    const schemeIdss = dataschems?.map(datas => {
         const id = String(datas.scheme_id).replace("1:", "");
         return Number(id);
     });
@@ -48,14 +48,14 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     //     const farmerScheme = String(data.schemes).replace("1:", "");
     //     return schemeIdss.includes(Number(farmerScheme));
     // });
-    const allfarmersname = datafarmers.filter(data => {
+    const allfarmersname = datafarmers?.filter(data => {
         const farmerScheme = String(data.schemes) != "";
         return schemeIdss.includes(Number(farmerScheme));
     });
 
 
     const handleBenefitedClick = (schemeId: string) => {
-        const benefitedFarmers = dataschems.filter(schemes =>
+        const benefitedFarmers = dataschems?.filter(schemes =>
             schemeId.includes(schemes.scheme_id.toString())
         );
 

@@ -28,6 +28,17 @@ interface AllFarmersData {
 }
 
 const DoTalukadata = ({ farmersData }: { farmersData: AllFarmersData }) => {
+    const [filters, setFilters] = useState({
+        categoryName: null as string | null,
+    });
+
+    useEffect(() => {
+        setFilters({
+            categoryName: sessionStorage.getItem('category_id'),
+        });
+    }, []);
+    if (!["8", "32", "4"].includes(filters.categoryName ?? "")) return null;
+
     return (
         <>
             <Titiledata title="Taluka wise Addhar & not aadhar IFR holders" />
