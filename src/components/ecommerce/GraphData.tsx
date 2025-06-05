@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -9,8 +9,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
 
+} from "recharts";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+
+// --- Type Definitions (same as your imports) ---
 import { FarmdersType } from "../farmersdata/farmers";
 import { UserCategory } from "../usercategory/userCategory";
 import { Schemesdatas } from "../schemesdata/schemes";
@@ -38,122 +42,638 @@ type ChartData = {
   total: number;
   withAadhaar: number;
   withoutAadhaar: number;
+  taluka_id: number;
+};
+
+type DocumentBar = {
+  document: string;
+  has: number;
+  not: number;
+  id: number;
+};
+
+const PAGE_SIZE = 50;
+
+const getFarmerDocumentIds = (docString: string | undefined) => {
+  if (!docString) return new Set<number>();
+  return new Set(
+    docString
+      .split("|")
+      .map((entry) => {
+        const [id, fileName] = entry.split("-");
+        if (
+          id &&
+          fileName &&
+          fileName !== "No" &&
+          fileName.trim() !== ""
+        ) {
+          return parseInt(id, 10);
+        }
+        return null;
+      })
+      .filter((id) => id !== null)
+  );
 };
 
 const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
-  const { taluka, farmers } = farmersData;
+  const { taluka, farmers, documents } = farmersData;
 
+  // --- Aadhaar Chart Data ---
   const chartData: ChartData[] = taluka.map((t) => {
-    const farmersInTaluka = farmers.filter(f => f.taluka_id?.toString() === t.taluka_id.toString());
+    const farmersInTaluka = farmers.filter(
+      (f) => f.taluka_id?.toString() === t.taluka_id.toString()
+    );
 
     const total = farmersInTaluka.length;
-    const withAadhaar = farmersInTaluka.filter(f => f.aadhaar_no && f.aadhaar_no.trim() !== "").length;
+    const withAadhaar = farmersInTaluka.filter(
+      (f) => f.aadhaar_no && f.aadhaar_no.trim() !== ""
+    ).length;
     const withoutAadhaar = total - withAadhaar;
 
     return {
-      taluka: t.name, // Use taluka_name for label
+      taluka: t.name,
       total,
       withAadhaar,
       withoutAadhaar,
+      taluka_id: t.taluka_id,
     };
   });
-  const maxValue = Math.max(...chartData.map((item) => item.total));
+
+  const maxValue = Math.max(...chartData.map((item) => item.total), 1000);
   const ticks = [];
   for (let i = 1000; i <= maxValue + 1000; i += 1000) {
     ticks.push(i);
   }
 
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0 ">
-          IFR Holders With and Without Aadhaar by Taluka
-        </h2>
+  // --- Documents Chart Data ---
+  const documentChartData: DocumentBar[] =
+    documents?.map((doc) => {
+      let hasCount = 0;
+      let notCount = 0;
 
-        {/* Overall summary card */}
-        <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
-          <div className="text-sm text-gray-700 space-y-2">
+      farmers.forEach((farmer) => {
+        const docIds = getFarmerDocumentIds(farmer.documents);
+        if (docIds.has(doc.id)) {
+          hasCount++;
+        } else {
+          notCount++;
+        }
+      });
 
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
-              <p>Total IFR: <strong>{farmers.length}</strong></p>
+      return {
+        document: doc.document_name,
+        has: hasCount,
+        not: notCount,
+        id: doc.id,
+      };
+    }) || [];
+
+  // --- Modal State for Documents ---
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
+  const [selectedDocName, setSelectedDocName] = useState<string>("");
+  const [docFilter, setDocFilter] = useState<"all" | "has" | "not">("all");
+  const [selectedDocDropdown, setSelectedDocDropdown] = useState<number | null>(null);
+
+  // Pagination state for document modal
+  const [page, setPage] = useState(1);
+
+  // --- Modal Data (memoized for performance) ---
+  const filteredFarmers = useMemo(() => {
+    const docId = selectedDocDropdown ?? selectedDocId;
+    if (!docId) return [];
+    return farmers.filter((farmer) => {
+      const docIds = getFarmerDocumentIds(farmer.documents);
+      if (docFilter === "has") return docIds.has(docId);
+      if (docFilter === "not") return !docIds.has(docId);
+      return true;
+    });
+  }, [farmers, docFilter, selectedDocDropdown, selectedDocId]);
+
+  // Pagination logic for document modal
+  const totalPages = Math.ceil(filteredFarmers.length / PAGE_SIZE);
+  const paginatedFarmers = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filteredFarmers.slice(start, start + PAGE_SIZE);
+  }, [filteredFarmers, page]);
+
+  // --- Modal Open Handler for Documents ---
+  const openModal = (docId: number, docName: string) => {
+    setSelectedDocId(docId);
+    setSelectedDocName(docName);
+    setSelectedDocDropdown(docId);
+    setDocFilter("all");
+    setPage(1);
+    setModalOpen(true);
+  };
+
+  // --- Document Dropdown Change Handler ---
+  const handleDocDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const docId = parseInt(e.target.value, 10);
+    setSelectedDocDropdown(docId);
+    setSelectedDocName(
+      documents.find((d) => d.id === docId)?.document_name || ""
+    );
+    setDocFilter("all");
+    setPage(1);
+  };
+
+  // --- Download Excel Handler for Documents ---
+  const handleDownload = () => {
+    const docId = selectedDocDropdown ?? selectedDocId;
+    if (!docId) return;
+    const docName =
+      documents.find((d) => d.id === docId)?.document_name || "Document";
+    const data = filteredFarmers.map((farmer) => ({
+      FarmerID: farmer.farmer_id,
+      Name: farmer.name || farmer.name || "",
+      Aadhaar: farmer.aadhaar_no || "",
+      Taluka: taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))?.name || "",
+      HasDocument: getFarmerDocumentIds(farmer.documents).has(docId)
+        ? "Yes"
+        : "No",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Farmers");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    saveAs(
+      new Blob([excelBuffer], { type: "application/octet-stream" }),
+      `${docName.replace(/\s+/g, "_")}_Farmers.xlsx`
+    );
+  };
+
+  // --- Modal Component for Documents ---
+  const Modal = () =>
+    modalOpen ? (
+      <div
+        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-4 z-99999"
+        onClick={() => setModalOpen(false)}
+      >
+        <div
+          className="bg-white rounded-xl shadow-xl p-6 w-full max-w-4xl relative"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl"
+            onClick={() => setModalOpen(false)}
+          >
+            &times;
+          </button>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
+            <h3 className="text-xl font-bold mb-2 md:mb-0">
+              Farmers for Document:{" "}
+              <span className="text-blue-600">{selectedDocName}</span>
+            </h3>
+            <div className="flex gap-2 flex-wrap">
+              <select
+                value={selectedDocDropdown ?? ""}
+                onChange={handleDocDropdownChange}
+                className="border rounded px-2 py-1"
+              >
+                {documents.map((doc) => (
+                  <option value={doc.id} key={doc.id}>
+                    {doc.document_name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={docFilter}
+
+
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  const value = e.target.value as "all" | "has" | "not";
+                  setDocFilter(value);
+                  setPage(1);
+                }}
+                className="border rounded px-2 py-1"
+              >
+                <option value="all">All</option>
+                <option value="has">Has Document</option>
+                <option value="not">Does Not Have</option>
+              </select>
+              <button
+                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                onClick={handleDownload}
+              >
+                Download Excel
+              </button>
             </div>
-
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
-              <p>With Aadhaar:{" "}
-                <strong>
-                  {farmers.filter(f => f.aadhaar_no && f.aadhaar_no.trim() !== "").length}
-                </strong>
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
-              <p>Without Aadhaar:{" "}
-                <strong>
-                  {farmers.filter(f => !f.aadhaar_no || f.aadhaar_no.trim() === "").length}
-                </strong>
-              </p>
+          </div>
+          <div className="overflow-auto max-h-[60vh]">
+            <table className="min-w-full border text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border px-2 py-1">#</th>
+                  <th className="border px-2 py-1">Farmer ID</th>
+                  <th className="border px-2 py-1">Name</th>
+                  <th className="border px-2 py-1">Aadhaar</th>
+                  <th className="border px-2 py-1">Taluka</th>
+                  <th className="border px-2 py-1">Has Document</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedFarmers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-4">
+                      No data found.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedFarmers.map((farmer, idx) => {
+                    const docId = selectedDocDropdown ?? selectedDocId;
+                    const hasDoc = getFarmerDocumentIds(farmer.documents).has(
+                      docId!
+                    );
+                    return (
+                      <tr key={farmer.farmer_id}>
+                        <td className="border px-2 py-1">
+                          {(page - 1) * PAGE_SIZE + idx + 1}
+                        </td>
+                        <td className="border px-2 py-1">{farmer.farmer_id}</td>
+                        <td className="border px-2 py-1">
+                          {farmer.name || farmer.name || ""}
+                        </td>
+                        <td className="border px-2 py-1">
+                          {farmer.aadhaar_no || ""}
+                        </td>
+                        <td className="border px-2 py-1">
+                          {taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))
+                            ?.name || ""}
+                        </td>
+                        <td className="border px-2 py-1">
+                          {hasDoc ? (
+                            <span className="text-green-600 font-semibold">
+                              Yes
+                            </span>
+                          ) : (
+                            <span className="text-red-600 font-semibold">
+                              No
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Pagination Controls */}
+          <div className="flex justify-between items-center mt-4">
+            <span>
+              Showing {(page - 1) * PAGE_SIZE + 1}-
+              {Math.min(page * PAGE_SIZE, filteredFarmers.length)} of{" "}
+              {filteredFarmers.length}
+            </span>
+            <div className="flex gap-2">
+              <button
+                className="px-3 py-1 border rounded disabled:opacity-50"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Prev
+              </button>
+              <span>
+                Page {page} of {totalPages}
+              </span>
+              <button
+                className="px-3 py-1 border rounded disabled:opacity-50"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>
       </div>
+    ) : null;
 
+  // --- State for Aadhaar Modal ---
+  const [aadhaarModalOpen, setAadhaarModalOpen] = useState(false);
+  const [aadhaarModalTalukaId, setAadhaarModalTalukaId] = useState<number | null>(null);
+  const [aadhaarModalTalukaName, setAadhaarModalTalukaName] = useState<string>("");
+  const [aadhaarFilter, setAadhaarFilter] = useState<"all" | "with" | "without">("all");
+  const [aadhaarPage, setAadhaarPage] = useState(1);
 
-      {/* Bar chart */}
-      <div className="h-[500px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 24, right: 24, left: 16, bottom: 60 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="taluka"
-              angle={-35}
-              textAnchor="end"
-              interval={0}
-              height={80}
-              tick={{ fill: "#4b5563" }}
-            />
-            <YAxis
-              tick={{ fill: "#4b5563" }}
-              domain={[1000, 'auto']}
-              ticks={ticks}
-            />
-            <YAxis
-              tick={{ fill: "#4b5563" }}
-              domain={[1000, 'auto']}
-              tickFormatter={(value) => `${value}`}
-              ticks={[1000, 2000, 3000, 4000, 5000]} // Adjust based on your max value
-            />
+  // --- Aadhaar Modal Data (memoized) ---
+  const aadhaarFilteredFarmers = useMemo(() => {
+    if (!aadhaarModalTalukaId) return [];
+    const talukaFarmers = farmers.filter(f => Number(f.taluka_id) === aadhaarModalTalukaId);
+    if (aadhaarFilter === "with") {
+      return talukaFarmers.filter(f => f.aadhaar_no && f.aadhaar_no.trim() !== "");
+    }
+    if (aadhaarFilter === "without") {
+      return talukaFarmers.filter(f => !f.aadhaar_no || f.aadhaar_no.trim() === "");
+    }
+    return talukaFarmers;
+  }, [farmers, aadhaarModalTalukaId, aadhaarFilter]);
 
-            <Tooltip />
-            <Bar dataKey="total" fill="#6366f1" name="Total IFR" />
-            <Bar dataKey="withAadhaar" fill="#10b981" name="With Aadhaar" />
-            <Bar dataKey="withoutAadhaar" fill="#f87171" name="Without Aadhaar" />
-          </BarChart>
-        </ResponsiveContainer>
+  const aadhaarTotalPages = Math.ceil(aadhaarFilteredFarmers.length / PAGE_SIZE);
+  const aadhaarPaginatedFarmers = useMemo(() => {
+    const start = (aadhaarPage - 1) * PAGE_SIZE;
+    return aadhaarFilteredFarmers.slice(start, start + PAGE_SIZE);
+  }, [aadhaarFilteredFarmers, aadhaarPage]);
+
+  // --- Aadhaar Modal Open Handler ---
+  const openAadhaarModal = (talukaId: number, talukaName: string) => {
+    setAadhaarModalTalukaId(talukaId);
+    setAadhaarModalTalukaName(talukaName);
+    setAadhaarFilter("all");
+    setAadhaarPage(1);
+    setAadhaarModalOpen(true);
+  };
+
+  // --- Aadhaar Download Excel Handler ---
+  const handleAadhaarDownload = () => {
+    if (!aadhaarModalTalukaId) return;
+    const data = aadhaarFilteredFarmers.map((farmer) => ({
+      FarmerID: farmer.farmer_id,
+      Name: farmer.name || farmer.name || "",
+      Aadhaar: farmer.aadhaar_no || "",
+      Taluka: aadhaarModalTalukaName,
+      HasAadhaar: farmer.aadhaar_no && farmer.aadhaar_no.trim() !== "" ? "Yes" : "No",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Farmers");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    saveAs(
+      new Blob([excelBuffer], { type: "application/octet-stream" }),
+      `${aadhaarModalTalukaName.replace(/\s+/g, "_")}_Farmers_Aadhaar.xlsx`
+    );
+  };
+
+  // --- Aadhaar Modal Component ---
+  const AadhaarModal = () =>
+    aadhaarModalOpen ? (
+
+      <div
+        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-4 z-99999"
+        onClick={() => setAadhaarModalOpen(false)}
+      >
+        <div
+          className="bg-white rounded-xl shadow-xl p-8 w-full max-w-4xl relative"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl"
+            onClick={() => setAadhaarModalOpen(false)}
+          >
+            &times;
+          </button>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
+            <h3 className="text-xl font-bold mb-2 md:mb-0">
+              Farmers in Taluka:{" "}
+              <span className="text-blue-600">{aadhaarModalTalukaName}</span>
+            </h3>
+            <div className="flex gap-2 flex-wrap">
+              <select
+                value={aadhaarFilter}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  const value = e.target.value as "all" | "with" | "without";
+                  setAadhaarFilter(value);
+                  setAadhaarPage(1);
+                }}
+
+                className="border rounded px-2 py-1"
+              >
+                <option value="all">All</option>
+                <option value="with">With Aadhaar</option>
+                <option value="without">Without Aadhaar</option>
+              </select>
+              <button
+                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                onClick={handleAadhaarDownload}
+              >
+                Download Excel
+              </button>
+            </div>
+          </div>
+          <div className="overflow-auto max-h-[60vh]">
+            <table className="min-w-full border text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border px-2 py-1">#</th>
+                  <th className="border px-2 py-1">Farmer ID</th>
+                  <th className="border px-2 py-1">Name</th>
+                  <th className="border px-2 py-1">Aadhaar</th>
+                  <th className="border px-2 py-1">Taluka</th>
+                  <th className="border px-2 py-1">Has Aadhaar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {aadhaarPaginatedFarmers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-4">
+                      No data found.
+                    </td>
+                  </tr>
+                ) : (
+                  aadhaarPaginatedFarmers.map((farmer, idx) => {
+                    const hasAadhaar = farmer.aadhaar_no && farmer.aadhaar_no.trim() !== "";
+                    return (
+                      <tr key={farmer.farmer_id}>
+                        <td className="border px-2 py-1">
+                          {(aadhaarPage - 1) * PAGE_SIZE + idx + 1}
+                        </td>
+                        <td className="border px-2 py-1">{farmer.farmer_id}</td>
+                        <td className="border px-2 py-1">
+                          {farmer.name || farmer.name || ""}
+                        </td>
+                        <td className="border px-2 py-1">
+                          {farmer.aadhaar_no || ""}
+                        </td>
+                        <td className="border px-2 py-1">
+                          {aadhaarModalTalukaName}
+                        </td>
+                        <td className="border px-2 py-1">
+                          {hasAadhaar ? (
+                            <span className="text-green-600 font-semibold">
+                              Yes
+                            </span>
+                          ) : (
+                            <span className="text-red-600 font-semibold">
+                              No
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Pagination Controls */}
+          <div className="flex justify-between items-center mt-4">
+            <span>
+              Showing {(aadhaarPage - 1) * PAGE_SIZE + 1}-
+              {Math.min(aadhaarPage * PAGE_SIZE, aadhaarFilteredFarmers.length)} of{" "}
+              {aadhaarFilteredFarmers.length}
+            </span>
+            <div className="flex gap-2">
+              <button
+                className="px-3 py-1 border rounded disabled:opacity-50"
+                onClick={() => setAadhaarPage((p) => Math.max(1, p - 1))}
+                disabled={aadhaarPage === 1}
+              >
+                Prev
+              </button>
+              <span>
+                Page {aadhaarPage} of {aadhaarTotalPages}
+              </span>
+              <button
+                className="px-3 py-1 border rounded disabled:opacity-50"
+                onClick={() => setAadhaarPage((p) => Math.min(aadhaarTotalPages, p + 1))}
+                disabled={aadhaarPage === aadhaarTotalPages}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  // --- Render ---
+  return (
+    <div className="w-full max-w-6xl mx-auto">
+      {/* Aadhaar Chart */}
+      <div className="bg-white p-6 rounded-xl shadow-lg w-full">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0 ">
+            IFR Holders With and Without Aadhaar by Taluka
+          </h2>
+          {/* Overall summary card */}
+          <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
+            <div className="text-sm text-gray-700 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
+                <p>
+                  Total IFR: <strong>{farmers.length}</strong>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
+                <p>
+                  With Aadhaar:{" "}
+                  <strong>
+                    {
+                      farmers.filter(
+                        (f) =>
+                          f.aadhaar_no && f.aadhaar_no.trim() !== ""
+                      ).length
+                    }
+                  </strong>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
+                <p>
+                  Without Aadhaar:{" "}
+                  <strong>
+                    {
+                      farmers.filter(
+                        (f) =>
+                          !f.aadhaar_no || f.aadhaar_no.trim() === ""
+                      ).length
+                    }
+                  </strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Bar chart */}
+        <div className="h-[500px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 24, right: 24, left: 16, bottom: 60 }}
+              onClick={(state) => {
+                if (
+                  state &&
+                  state.activeLabel &&
+                  state.activePayload &&
+                  state.activePayload.length > 0
+                ) {
+                  const talukaItem = chartData.find(
+                    (d) => d.taluka === state.activeLabel
+                  );
+                  if (talukaItem) openAadhaarModal(talukaItem.taluka_id, talukaItem.taluka);
+                }
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="taluka"
+                angle={-35}
+                textAnchor="end"
+                interval={0}
+                height={80}
+                tick={{ fill: "#4b5563" }}
+              />
+              <YAxis tick={{ fill: "#4b5563" }} domain={[1000, "auto"]} ticks={ticks} />
+              <Tooltip />
+              <Bar dataKey="total" fill="#6366f1" name="Total IFR" />
+              <Bar dataKey="withAadhaar" fill="#10b981" name="With Aadhaar" />
+              <Bar dataKey="withoutAadhaar" fill="#f87171" name="Without Aadhaar" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
-      {/* Taluka-wise summary cards */}
-      {/* <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {chartData.map((item, index) => (
-          <div key={index} className="border p-4 rounded-xl shadow-sm">
-            <h3 className="text-lg font-bold text-gray-700 mb-2">{item.taluka}</h3>
-            <p className="text-sm text-gray-600">
-              Total IFR: <strong>{item.total}</strong>
-            </p>
-            <p className="text-sm text-green-600">
-              With Aadhaar: <strong>{item.withAadhaar}</strong>
-            </p>
-            <p className="text-sm text-red-600">
-              Without Aadhaar: <strong>{item.withoutAadhaar}</strong>
-            </p>
-          </div>
-        ))}
-      </div> */}
+      {/* Documents Chart */}
+      <div className="bg-white p-6 rounded-xl shadow-lg w-full mt-10">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          Farmers with/without Each Document
+        </h2>
+        <div className="h-[500px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={documentChartData}
+              margin={{ top: 24, right: 24, left: 16, bottom: 60 }}
+              onClick={(state) => {
+                if (
+                  state &&
+                  state.activeLabel &&
+                  state.activePayload &&
+                  state.activePayload.length > 0
+                ) {
+                  const doc = documentChartData.find(
+                    (d) => d.document === state.activeLabel
+                  );
+                  if (doc) openModal(doc.id, doc.document);
+                }
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="document"
+                angle={-35}
+                textAnchor="end"
+                interval={0}
+                height={80}
+                fontSize={12}
+                tick={{ fill: "#4b5563" }}
+              />
+              <YAxis tick={{ fill: "#4b5563" }} />
+              <Tooltip />
+              {/* <Legend /> */}
+              <Bar dataKey="has" fill="#10b981" name="Has Document" />
+              <Bar dataKey="not" fill="#f87171" name="Does Not Have" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <AadhaarModal />
+      <Modal />
     </div>
   );
-
 };
 
 export default GraphData;
