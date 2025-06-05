@@ -208,11 +208,11 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const Modal = () =>
     modalOpen ? (
       <div
-        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-4 z-99999"
+        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-start p-4 z-99999"
         onClick={() => setModalOpen(false)}
       >
         <div
-          className="bg-white rounded-xl shadow-xl p-6 w-full max-w-4xl relative"
+          className="bg-white rounded-xl shadow-xl p-6 w-full max-w-4xl relative ml-[25%]"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -412,11 +412,11 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     aadhaarModalOpen ? (
 
       <div
-        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-4 z-99999"
+        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-start p-4 z-99999"
         onClick={() => setAadhaarModalOpen(false)}
       >
         <div
-          className="bg-white rounded-xl shadow-xl p-8 w-full max-w-4xl relative"
+          className="bg-white rounded-xl shadow-xl p-6 w-full max-w-4xl relative ml-[25%]"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -446,7 +446,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 <option value="without">Without Aadhaar</option>
               </select>
               <button
-                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 mr-5"
                 onClick={handleAadhaarDownload}
               >
                 Download Excel
