@@ -65,6 +65,11 @@ const allNavItems: NavItem[] = [
     name: "IFR holders",
     path: "/farmerspage",
   },
+  {
+    icon: <GiFarmer />,
+    name: "Supported",
+    path: "/supported",
+  },
 ];
 const dashboardOnly: NavItem[] = [
   {
