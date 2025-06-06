@@ -5,7 +5,17 @@ import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 // Get all documents
 export async function GET() {
     try {
-        const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM supported_documents where status = "Active"');
+        const [rows] = await pool.query<RowDataPacket[]>(`SELECT 
+                sd.*, 
+                d.document_name AS document_name 
+            FROM 
+                supported_documents sd
+            JOIN 
+                documents d 
+            ON 
+                sd.document_id = d.id
+            WHERE 
+                sd.status = "Active"`);
         return NextResponse.json(rows);
     } catch (error) {
         console.error('Fetch error:', error);
@@ -40,7 +50,7 @@ export async function PUT(request: Request) {
 
     if (!supported_id || !document_id) {
         return NextResponse.json(
-            { error: 'Both ID and document ID are required' }, 
+            { error: 'Both ID and document ID are required' },
             { status: 400 }
         );
     }
@@ -56,7 +66,7 @@ export async function PUT(request: Request) {
     } catch (error) {
         console.error('Update error:', error);
         return NextResponse.json(
-            { error: 'Failed to update category' }, 
+            { error: 'Failed to update category' },
             { status: 500 }
         );
     }
@@ -82,8 +92,8 @@ export async function DELETE(request: Request) {
 
 
 export async function PATCH(request: Request) {
-    const { supported_id , status } = await request.json();
-    if (!supported_id  || !status) {
+    const { supported_id, status } = await request.json();
+    if (!supported_id || !status) {
         return NextResponse.json({ error: 'documents ID and status are required' }, { status: 400 });
     }
     try {

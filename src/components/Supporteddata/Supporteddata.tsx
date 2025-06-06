@@ -1,36 +1,37 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-
 import Label from "../form/Label";
 import { ReusableTable } from "../tables/BasicTableOne";
 import { Column } from "../tables/tabletype";
-
-
 import { toast } from 'react-toastify';
 import React from 'react';
 import { useToggleContext } from '@/context/ToggleContext';
 import DefaultModal from '../example/ModalExample/DefaultModal';
 import { FaEdit } from 'react-icons/fa';
-
 import { Documents } from '../Documentsdata/documents';
 import { Supporteddatatype } from './Supporteddatatype';
-
 
 interface Props {
     serverData: Supporteddatatype[];
     documents: Documents[];
 }
-type FormErrors = {
 
-    years?: string;
+type FormErrors = {
+    supported_id?: number;
+    document_id?: string;
+    info?: string;
+    supported_docs?: string;
+    link?: string;
+    status?: string;
 };
+
 const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
     const [data, setData] = useState<Supporteddatatype[]>(serverData || []);
     const [documentdata, setDocumentdata] = useState<Documents[]>(documents || []);
     const [documentsinput, setDocumentsinput] = useState('');
     const [informationinput, setInformationinput] = useState('');
-    const [supportedDocument, setSupportedsdocument] = useState('');
+    const [supportedDocumentList, setSupportedDocumentList] = useState<string[]>(['']);
     const [linkinput, setLinkinput] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
     const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen, isvalidation, setisvalidation } = useToggleContext();
@@ -55,22 +56,29 @@ const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
     };
 
     useEffect(() => {
-
         if (!isvalidation) {
-
-            setErrors({})
+            setErrors({});
         }
-    }, [isvalidation])
-
+    }, [isvalidation]);
 
     const validateInputs = () => {
         const newErrors: FormErrors = {};
-        setisvalidation(true)
-        // Category validation
+        setisvalidation(true);
 
-        // Documents validation
         if (!documentsinput || documentsinput.length === 0) {
-            newErrors.years = "Year is required";
+            newErrors.document_id = "Documents is required";
+        }
+
+        if (!informationinput || informationinput.length === 0) {
+            newErrors.info = "Information is required";
+        }
+
+        if (!supportedDocumentList.some(doc => doc.trim() !== '')) {
+            newErrors.supported_docs = "At least one Supported Document is required";
+        }
+
+        if (!linkinput || linkinput.length === 0) {
+            newErrors.link = "Link is required";
         }
 
         setErrors(newErrors);
@@ -81,21 +89,19 @@ const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
         if (!validateInputs()) return;
         setLoading(true);
 
-
-        const apiUrl = editId ? `/api/supportedapi` : '/api/supportedapi';
+        const apiUrl = '/api/supportedapi';
         const method = editId ? 'PUT' : 'POST';
 
         try {
             const response = await fetch(apiUrl, {
-                method: method,
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     supported_id: editId,
                     document_id: documentsinput,
                     info: informationinput,
-                    supported_docs: supportedDocument,
+                    supported_docs: supportedDocumentList.join('|'),
                     link: linkinput
-
                 })
             });
 
@@ -103,42 +109,59 @@ const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-
             toast.success(editId
-                ? 'Year updated successfully!'
-                : 'Year created successfully!');
+                ? 'Supported updated successfully!'
+                : 'Supported created successfully!');
 
             setDocumentsinput('');
+            setInformationinput('');
+            setSupportedDocumentList(['']);
+            setLinkinput('');
             setEditId(null);
             fetchData();
-
         } catch (error) {
-            console.error('Error saving Year:', error);
+            console.error('Error saving Supported:', error);
             toast.error(editId
-                ? 'Failed to update Year. Please try again.'
-                : 'Failed to create Year. Please try again.');
+                ? 'Failed to update Supported. Please try again.'
+                : 'Failed to create Supported. Please try again.');
         } finally {
-            setLoading(false); // End loading
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         if (!isEditMode) {
             setDocumentsinput("");
-            setEditId(0);
+            setInformationinput("");
+            setSupportedDocumentList([""]);
+            setLinkinput("");
+            setEditId(null);
         }
     }, [isEditMode]);
 
     const handleEdit = (item: Supporteddatatype) => {
         setIsmodelopen(true);
         setIsEditmode(true);
-        setIsActive(!isActive)
+        setIsActive(!isActive);
         setDocumentsinput(item.document_id);
         setInformationinput(item.info);
-        setSupportedsdocument(item.supported_docs);
+        setSupportedDocumentList(item.supported_docs.split(',').map(doc => doc.trim()));
         setLinkinput(item.link);
-        setDocumentsinput(item.document_id);
         setEditId(item.supported_id);
+    };
+
+    const handleSupportedDocChange = (index: number, value: string) => {
+        const updatedList = [...supportedDocumentList];
+        updatedList[index] = value;
+        setSupportedDocumentList(updatedList);
+    };
+    const removeSupportedDocField = (index: number) => {
+        const updatedList = supportedDocumentList.filter((_, i) => i !== index);
+        setSupportedDocumentList(updatedList.length > 0 ? updatedList : ['']);
+    };
+
+    const addSupportedDocField = () => {
+        setSupportedDocumentList([...supportedDocumentList, '']);
     };
 
     const columns: Column<Supporteddatatype>[] = [
@@ -146,7 +169,7 @@ const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
             key: 'document_id',
             label: 'Document',
             accessor: 'document_id',
-            render: (data) => <span>{data.document_id}</span>
+            render: (data) => <span>{data.document_name}</span>
         },
         {
             key: 'info',
@@ -166,7 +189,6 @@ const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
             accessor: 'link',
             render: (data) => <span>{data.link}</span>
         },
-
         {
             key: 'actions',
             label: 'Actions',
@@ -178,7 +200,6 @@ const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
                     >
                         <FaEdit className="inline-block align-middle text-lg" />
                     </span>
-
                     <span>
                         <DefaultModal id={data.supported_id} fetchData={fetchData} endpoint={"supportedapi"} bodyname='supported_id' newstatus={data.status} />
                     </span>
@@ -189,7 +210,6 @@ const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
 
     return (
         <div className="">
-
             <ReusableTable
                 data={data}
                 inputfiled={
@@ -197,73 +217,98 @@ const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
                         <div className="col-span-1">
                             <Label>Documents</Label>
                             <select
-                                name=""
-                                id=""
-                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.years ? "border-red-500" : ""
-                                    }`}
+                                className={`h-11 w-full rounded-lg border px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 ${error.document_id ? "border-red-500" : "border-gray-300"}`}
                                 value={documentsinput}
                                 onChange={(e) => setDocumentsinput(e.target.value)}
                             >
-                                <option value="">Category</option>
-                                {documentdata.map((documents) => (
-                                    <option key={documents.id} value={documents.id}>
-                                        {documents.document_name}
+                                <option value="">Select Document</option>
+                                {documentdata.map((doc) => (
+                                    <option key={doc.id} value={doc.id}>
+                                        {doc.document_name}
                                     </option>
                                 ))}
                             </select>
-                            {error && (
+                            {error.document_id && (
                                 <div className="text-red-500 text-sm mt-1 pl-1">
-                                    {error.years}
+                                    {error.document_id}
                                 </div>
                             )}
                         </div>
+
                         <div className="col-span-1">
                             <Label>Information</Label>
-
                             <textarea
                                 rows={4}
-                                cols={50}
-                                placeholder="Enter Year"
-                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.years ? "border-red-500" : ""
-                                    }`}
+                                placeholder="Enter Information"
+                                className={`w-full rounded-lg border px-4 py-2.5 text-sm ${error.info ? "border-red-500" : "border-gray-300"}`}
                                 value={informationinput}
                                 onChange={(e) => setInformationinput(e.target.value)}
                             />
-                            {error && (
+                            {error.info && (
                                 <div className="text-red-500 text-sm mt-1 pl-1">
-                                    {error.years}
+                                    {error.info}
                                 </div>
                             )}
                         </div>
+
                         <div className="col-span-1">
-                            <Label>Supported Document</Label>
-                            <input
-                                type="text"
-                                placeholder="Enter Year"
-                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.years ? "border-red-500" : ""
-                                    }`}
-                                value={supportedDocument}
-                                onChange={(e) => setSupportedsdocument(e.target.value)}
-                            />
-                            {error && (
+                            <Label>Supported Documents</Label>
+                            {supportedDocumentList.map((doc, index) => (
+                                <div key={index} className="flex items-center gap-2 mb-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Enter Supported Document"
+                                        className={`w-full rounded-lg border px-4 py-2.5 text-sm ${error.supported_docs ? "border-red-500" : "border-gray-300"
+                                            }`}
+                                        value={doc}
+                                        onChange={(e) => handleSupportedDocChange(index, e.target.value)}
+                                    />
+
+                                    {/* Remove button for all except last field */}
+                                    {index < supportedDocumentList.length - 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removeSupportedDocField(index)}
+                                            className="text-red-600 hover:text-red-800 text-lg font-bold px-2"
+                                            title="Remove"
+                                        >
+                                            &times;
+                                        </button>
+                                    )}
+
+                                    {/* Add button only on last input field */}
+                                    {index === supportedDocumentList.length - 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={addSupportedDocField}
+                                            className="text-white bg-green-600 hover:bg-green-700 rounded-full px-3 py-1 text-lg"
+                                            title="Add more"
+                                        >
+                                            +
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+
+                            {error.supported_docs && (
                                 <div className="text-red-500 text-sm mt-1 pl-1">
-                                    {error.years}
+                                    {error.supported_docs}
                                 </div>
                             )}
                         </div>
+
                         <div className="col-span-1">
                             <Label>Link</Label>
                             <input
                                 type="text"
-                                placeholder="Enter Year"
-                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.years ? "border-red-500" : ""
-                                    }`}
+                                placeholder="Enter Link"
+                                className={`w-full rounded-lg border px-4 py-2.5 text-sm ${error.link ? "border-red-500" : "border-gray-300"}`}
                                 value={linkinput}
                                 onChange={(e) => setLinkinput(e.target.value)}
                             />
-                            {error && (
+                            {error.link && (
                                 <div className="text-red-500 text-sm mt-1 pl-1">
-                                    {error.years}
+                                    {error.link}
                                 </div>
                             )}
                         </div>
@@ -273,19 +318,17 @@ const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
                 columns={columns}
                 title="Supported"
                 filterOptions={[]}
-                // filterKey="role"
+                searchKey="supported_id"
                 submitbutton={
                     <button
                         type='button'
                         onClick={handleSave}
-                        className='bg-blue-700 text-white py-2 p-2 rounded'
+                        className='bg-blue-700 text-white py-2 px-4 rounded'
                         disabled={loading}
                     >
                         {loading ? 'Submitting...' : (editId ? 'Update' : 'Save Changes')}
                     </button>
                 }
-                searchKey="year"
-
             />
         </div>
     );

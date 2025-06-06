@@ -5,4 +5,5 @@ export interface Supporteddatatype {
   supported_docs: string;
   link: string;
   status: string;
+  document_name: string;
 }
