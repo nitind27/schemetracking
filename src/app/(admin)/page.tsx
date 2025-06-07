@@ -10,6 +10,7 @@ import DoTalukadata from "@/components/Do/Talukawisedata/DoTalukadata";
 
 import { SchemeSaturation } from "@/components/ecommerce/SchemeSaturation";
 import GraphData from "@/components/ecommerce/GraphData";
+import SchemesBarChart from "@/components/ecommerce/SchemesBarChart";
 
 export const metadata: Metadata = {
   title: "Scheme Monitoring & Tracking System",
@@ -106,8 +107,10 @@ export default async function Ecommerce() {
           {/* <DownloadButtons /> */}
 
           <EcommerceMetrics metrics={metrics} />
-          <GraphData farmersData={farmersData}/>
+
+          <GraphData farmersData={farmersData} />
           <DoTalukadata farmersData={farmersData} />
+          <SchemesBarChart farmersData={farmersData} />
 
           <SchemeSaturation metrics={metrics} />
           <Showschemstable farmersData={farmersData} />
