@@ -5,7 +5,7 @@ import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import { EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from 'react-toastify';
 
@@ -52,6 +52,14 @@ export default function SignInForm() {
         sessionStorage.setItem('village_id', data.user.village_id);
         sessionStorage.setItem('taluka_id', data.user.taluka_id);
       }
+      if (isChecked) {
+        localStorage.setItem('rememberedUsername', formData.username);
+        localStorage.setItem('rememberedpassword', formData.password);
+      } else {
+        localStorage.removeItem('rememberedUsername');
+        localStorage.removeItem('rememberedpassword');
+      }
+
 
       toast.success('Login successful!');
       router.push('/');
@@ -62,6 +70,15 @@ export default function SignInForm() {
       setIsSubmitting(false);
     }
   };
+  useEffect(() => {
+  const rememberedUsername = localStorage.getItem('rememberedUsername');
+  const rememberedpassword = localStorage.getItem('rememberedpassword');
+  if (rememberedUsername && rememberedpassword) {
+    setFormData(prev => ({ ...prev, username: rememberedUsername }));
+    setFormData(prev => ({ ...prev, password: rememberedpassword }));
+    setIsChecked(true);
+  }
+}, []);
 
   return (
     <div className="flex flex-col flex-1 lg:w-1/2 w-full">
@@ -134,7 +151,7 @@ export default function SignInForm() {
                   Forgot password?
                 </Link>
               </div>
-             
+
 
               <div>
                 <Button
@@ -146,7 +163,7 @@ export default function SignInForm() {
                   {isSubmitting ? 'Signing in...' : 'Sign in'}
                 </Button>
               </div>
-               <div className="text-center">
+              <div className="text-center">
                 <Link
                   href="/privacy_policy"
                   target="_blank"
@@ -159,17 +176,6 @@ export default function SignInForm() {
             </div>
           </form>
 
-          {/* <div className="mt-5">
-            <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
-              Don&apos;t have an account? {""}
-              <Link
-                href="/signup"
-                className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
-              >
-                Sign Up
-              </Link>
-            </p>
-          </div> */}
         </div>
       </div>
     </div>
