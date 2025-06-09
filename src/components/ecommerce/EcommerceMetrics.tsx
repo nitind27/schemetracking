@@ -36,8 +36,11 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
   const filteredFarmersbdo = metrics?.farmers.filter(f =>
     f.taluka_id === filters.talukaId
   ) || [];
-
+  const filteredFarmersvanaksetra = metrics?.farmers.filter(f =>
+    f.vanksetra != ""
+  ) || [];
   const counts = {
+
     farmers: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "4" || filters.categoryName === "32"
       ? metrics?.farmers.length ?? 0
       :
@@ -46,7 +49,9 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
         :
         filteredFarmers.length,
     schemes: metrics?.schemes.length ?? 0,
-    users: metrics?.users.length ?? 0
+    users: metrics?.users.length ?? 0,
+    vanakshetra: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "4" || filters.categoryName === "32"
+      ? metrics?.farmers.length ?? 0 : filteredFarmersvanaksetra.length
   };
 
 
@@ -71,7 +76,19 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
       value: counts.users,
       href: "/users",
       show: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4"
+    },
+    {
+      icon: <UserIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
+      label: "Vanksetra",
+      value: `${counts.vanakshetra} / ${counts.vanakshetra}`,
+      href: "/users",
+      show:
+        filters.categoryName === "1" ||
+        filters.categoryName === "8" ||
+        filters.categoryName === "32" ||
+        filters.categoryName === "4"
     }
+
   ];
 
   return (
@@ -87,7 +104,7 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
 const MetricCard = ({ icon, label, value, href }: {
   icon: React.ReactNode;
   label: string;
-  value: number;
+  value: number | string; 
   href: string
 }) => (
   <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow">
