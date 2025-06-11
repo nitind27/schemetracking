@@ -79,25 +79,59 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const { taluka, farmers, documents } = farmersData;
 
   // --- Aadhaar Chart Data ---
-  const chartData: ChartData[] = taluka.map((t) => {
-    const farmersInTaluka = farmers.filter(
-      (f) => f.taluka_id?.toString() === t.taluka_id.toString()
-    );
 
-    const total = farmersInTaluka.length;
-    const withAadhaar = farmersInTaluka.filter(
-      (f) => f.aadhaar_no && f.aadhaar_no.trim() !== ""
-    ).length;
-    const withoutAadhaar = total - withAadhaar;
+  const talukaId = sessionStorage.getItem('taluka_id');
+  const userName = sessionStorage.getItem('userName');
+  const farmersdata = userName === "BDO" ? farmers.filter((data) => data.taluka_id == talukaId) : farmers
 
-    return {
-      taluka: t.name,
-      total,
-      withAadhaar,
-      withoutAadhaar,
-      taluka_id: t.taluka_id,
-    };
-  });
+  let chartData: ChartData[];
+
+  if (userName === "BDO") {
+    chartData = taluka
+      .filter((data) => data.taluka_id == Number(talukaId))
+      .map((t) => {
+        const farmersInTaluka = farmers.filter(
+          (f) => f.taluka_id?.toString() == talukaId
+        );
+
+        const total = farmersInTaluka.length;
+        const withAadhaar = farmersInTaluka.filter(
+          (f) => f.aadhaar_no && f.aadhaar_no.trim() !== ""
+        ).length;
+        const withoutAadhaar = total - withAadhaar;
+
+        return {
+          taluka: t.name,
+          total,
+          withAadhaar,
+          withoutAadhaar,
+          taluka_id: t.taluka_id,
+        };
+      });
+  } else {
+    chartData = taluka.map((t) => {
+      const farmersInTaluka = farmers.filter(
+        (f) => f.taluka_id?.toString() === t.taluka_id.toString()
+      );
+
+      const total = farmersInTaluka.length;
+      const withAadhaar = farmersInTaluka.filter(
+        (f) => f.aadhaar_no && f.aadhaar_no.trim() !== ""
+      ).length;
+      const withoutAadhaar = total - withAadhaar;
+
+      return {
+        taluka: t.name,
+        total,
+        withAadhaar,
+        withoutAadhaar,
+        taluka_id: t.taluka_id,
+      };
+    });
+  }
+
+  // Now use chartData for your charts
+
 
   const maxValue = Math.max(...chartData.map((item) => item.total), 1000);
   const ticks = [];
@@ -119,7 +153,6 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
           notCount++;
         }
       });
-
       return {
         document: doc.document_name,
         has: hasCount,
@@ -554,7 +587,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <div className="flex items-center gap-2">
                 <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
                 <p>
-                  Total IFR: <strong>{farmers.length}</strong>
+                  Total IFR: <strong>{farmersdata.length}</strong>
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -563,7 +596,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                   With Aadhaar:{" "}
                   <strong>
                     {
-                      farmers.filter(
+                      farmersdata.filter(
                         (f) =>
                           f.aadhaar_no && f.aadhaar_no.trim() !== ""
                       ).length
@@ -577,7 +610,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                   Without Aadhaar:{" "}
                   <strong>
                     {
-                      farmers.filter(
+                      farmersdata.filter(
                         (f) =>
                           !f.aadhaar_no || f.aadhaar_no.trim() === ""
                       ).length
