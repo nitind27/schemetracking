@@ -78,7 +78,7 @@ const Schemesdata: React.FC<Props> = ({
     const [documentsedit, setdocumentsedit] = useState("");
     const [loading, setLoading] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
-    console.log("fasdsfdadsaf", initialdata)
+
     // Use the DocOption type here
     const docoptions: DocOption[] = filterdocument.map(doc => ({
         label: doc.document_name,
@@ -369,6 +369,23 @@ const Schemesdata: React.FC<Props> = ({
                 classname={"h-[550px] overflow-y-auto scrollbar-hide"}
                 inputfiled={
                     <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
+                        
+                        <div className="col-span-1">
+                            <Label>Sr No</Label>
+                            <input
+                                type="text"
+                                placeholder="Sr No"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.schemename ? "border-red-500" : ""
+                                    }`}
+                                value={schemename}
+                                onChange={(e) => setschemename(e.target.value)}
+                            />
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.schemename}
+                                </div>
+                            )}
+                        </div>
                         <div>
                             <Label>Category</Label>
                             <select
