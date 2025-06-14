@@ -579,7 +579,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
       <div className="bg-white p-6 rounded-xl shadow-lg w-full">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0 ">
-            IFR Holders With and Without Aadhaar by Taluka
+           Aadhaar Status of IFR Beneficiaries Across Talukas
           </h2>
           {/* Overall summary card */}
           <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">

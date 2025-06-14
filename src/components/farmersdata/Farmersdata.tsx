@@ -101,7 +101,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
 
     }
     // Apply UI filters (override session filters if changed)
-    if (selectedTaluka && filters.aadhaarwith != '1' &&  filters.aadhaarwith != '0') {
+    if (selectedTaluka && filters.aadhaarwith != '1' && filters.aadhaarwith != '0') {
       result = result.filter(
         (f) =>
           f.taluka_id === selectedTaluka &&
@@ -222,29 +222,36 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
         </span>
       )
     },
-    {
-      key: 'location',
-      label: 'Location',
+  {
+  key: 'location',
+  label: 'Location',
 
-      render: (item) => {
-        const coordinates = item.gis
-          ?.split('|')
-          .map((pair) => {
-            const [lat, lng] = pair.split('-').map(Number);
+  render: (item) => {
+    const coordinates = item.gis
+      ?.split('|')
+      .map((entry) => {
+        const parts = entry.split('}');
+        if (parts.length >= 2) {
+          const lat = parseFloat(parts[0]);
+          const lng = parseFloat(parts[1]);
+          if (!isNaN(lat) && !isNaN(lng)) {
             return { lat, lng };
-          });
+          }
+        }
+        return null;
+      })
+      .filter((coord) => coord !== null); // Remove invalid values
 
-        return (
-          <>
+    return (
+      <>
+        {coordinates && coordinates.length > 0 && (
+          <Ifrsmaplocations coordinates={coordinates as { lat: number; lng: number }[]} />
+        )}
+      </>
+    );
+  }
+}
 
-            {coordinates && coordinates.length > 0 && (
-              <Ifrsmaplocations coordinates={coordinates} />
-            )}
-          </>
-        );
-      }
-
-    },
   ];
 
   return (
