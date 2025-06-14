@@ -475,8 +475,8 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 className="border rounded px-2 py-1"
               >
                 <option value="all">All</option>
-                <option value="with">With Aadhaar</option>
-                <option value="without">Without Aadhaar</option>
+                <option value="with">Available</option>
+                <option value="without">Not Availbale</option>
               </select>
               <button
                 className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 mr-5"
@@ -593,7 +593,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <div className="flex items-center gap-2">
                 <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
                 <p>
-                  With Aadhaar:{" "}
+                  Available:{" "}
                   <strong>
                     {
                       farmersdata.filter(
@@ -607,7 +607,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <div className="flex items-center gap-2">
                 <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
                 <p>
-                  Without Aadhaar:{" "}
+                  Not Availbale:{" "}
                   <strong>
                     {
                       farmersdata.filter(
@@ -653,8 +653,8 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <YAxis tick={{ fill: "#4b5563" }} domain={[1000, "auto"]} ticks={ticks} />
               <Tooltip />
               <Bar dataKey="total" fill="#6366f1" name="Total IFR" />
-              <Bar dataKey="withAadhaar" fill="#10b981" name="With Aadhaar" />
-              <Bar dataKey="withoutAadhaar" fill="#f87171" name="Without Aadhaar" />
+              <Bar dataKey="withAadhaar" fill="#10b981" name="Available" />
+              <Bar dataKey="withoutAadhaar" fill="#f87171" name="Not Availbale" />
             </BarChart>
           </ResponsiveContainer>
         </div>

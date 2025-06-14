@@ -104,8 +104,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
     if (selectedTaluka && filters.aadhaarwith != '1' && filters.aadhaarwith != '0') {
       result = result.filter(
         (f) =>
-          f.taluka_id === selectedTaluka &&
-          (f.aadhaar_no == '')
+          f.taluka_id === selectedTaluka 
       );
 
     }
