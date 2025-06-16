@@ -73,22 +73,23 @@ export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
             show: true,
             bgcolor: "bg-red-600"
         },
+         {
+            icon: <FaHandHoldingUsd size={20}/>,
+            label: "Yes",
+            value: counts.users,
+            href: "/",
+            show: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4",
+            bgcolor: "bg-blue-600"
+        },
         {
             icon: <FaNairaSign size={20}/>,
-            label: "Not Applied",
+            label: "No",
             value: counts.schemes,
             href: "/",
             show: true,
             bgcolor: "bg-green-600"
         },
-        {
-            icon: <FaHandHoldingUsd size={20}/>,
-            label: "Benefited",
-            value: counts.users,
-            href: "/",
-            show: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4",
-            bgcolor: "bg-blue-600"
-        }
+       
     ];
     if (!["8", "32", "4"].includes(filters.categoryName ?? "")) return null;
     return (

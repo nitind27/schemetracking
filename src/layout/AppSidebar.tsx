@@ -20,7 +20,34 @@ import {
 } from "../icons/index";
 
 import { useToggleContext } from "@/context/ToggleContext";
+import { FarmdersType } from "@/components/farmersdata/farmers";
+import { Schemesdatas } from "@/components/schemesdata/schemes";
+import { UserData } from "@/components/usersdata/Userdata";
 
+
+async function getData(): Promise<{
+  farmers: FarmdersType[];
+  schemes: Schemesdatas[];
+  users: UserData[];
+}> {
+  const [farmersRes, schemesRes,usersRes] = await Promise.all([
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmers`, { cache: 'no-store' }),
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescrud`, { cache: 'no-store' }),
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, { cache: 'no-store' }),
+  ]);
+
+  const [farmers, schemes, users] = await Promise.all([
+    farmersRes.json(),
+    schemesRes.json(),
+    usersRes.json(),
+  ]);
+
+  return { farmers, schemes, users };
+}
+const { farmers, schemes ,users} = await getData();
+
+const filtervanaksetra = farmers.filter((data)=>data.vanksetra != "")
+console.log("farmersss",filtervanaksetra.length)
 type NavItem = {
   name: string;
   icon: React.ReactNode;
@@ -89,11 +116,33 @@ const dopodashboard: NavItem[] = [
     name: "Dashboard",
     path: "/",
   },
+  {
+    icon: <GiFarmer />,
+    name: `IFR holders (${farmers.length})`,
+    path: "/farmerspage",
+  },
+  {
+    icon: <FaEdit />,
+    name: `Schemes (${schemes.length})`,
+    path: "/schemespage",
+  },
+  {
+    icon: <CiUser />,
+    name: `Users (${users.length})`,
+    path: "/users",
+  },
+  {
+    icon: <RxDashboard />,
+    name: `Vanksetra (${filtervanaksetra.length}/${farmers.length})`,
+    path: "/users",
+  },
 
 ];
 
 
 const othersItems: NavItem[] = [
+
+
 
 ];
 
