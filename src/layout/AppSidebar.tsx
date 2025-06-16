@@ -47,7 +47,8 @@ async function getData(): Promise<{
 const { farmers, schemes ,users} = await getData();
 
 const filtervanaksetra = farmers.filter((data)=>data.vanksetra != "")
-console.log("farmersss",filtervanaksetra.length)
+const schemesfilter = schemes.filter((data)=>data.status == 'Active')
+
 type NavItem = {
   name: string;
   icon: React.ReactNode;
@@ -123,7 +124,7 @@ const dopodashboard: NavItem[] = [
   },
   {
     icon: <FaEdit />,
-    name: `Schemes (${schemes.length})`,
+    name: `Schemes (${schemesfilter.length})`,
     path: "/schemespage",
   },
   {
