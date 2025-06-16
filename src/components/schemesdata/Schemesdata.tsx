@@ -144,7 +144,7 @@ const Schemesdata: React.FC<Props> = ({
         // if (!documents || documents.length === 0) {
         //     newErrors.documents = "Documents are required";
         // }
-        if (!srno.trim()) {
+        if (!srno) {
             newErrors.srno = "Sr No is required";
         }
 
