@@ -4,4 +4,5 @@ export interface Documents {
     status: string;
     created_at: string;
     updated_at: string;
+    sr_no: string;
 }

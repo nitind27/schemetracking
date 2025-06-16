@@ -20,6 +20,7 @@ interface Props {
 type FormErrors = {
 
     documents?: string;
+    srno?: string;
 };
 const Documentsdata: React.FC<Props> = ({ serverData }) => {
     const [data, setData] = useState<Documents[]>(serverData || []);
@@ -28,6 +29,8 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
     const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen, isvalidation, setisvalidation } = useToggleContext();
     const [loading, setLoading] = useState(false);
     const [error, setErrors] = useState<FormErrors>({});
+    const [srno, setSrno] = useState('');
+
 
     const fetchData = async () => {
         setLoading(true);
@@ -53,6 +56,7 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
     useEffect(() => {
         if (!isEditMode) {
             setInputValue("");
+            setSrno("");
             setEditId(0);
         }
     }, [isEditMode]);
@@ -65,6 +69,9 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
         // Documents validation
         if (!inputValue || inputValue.length === 0) {
             newErrors.documents = "Document is required";
+        }
+        if (!srno) {
+            newErrors.srno = "Sr No is required";
         }
 
         setErrors(newErrors);
@@ -82,7 +89,8 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id: editId,
-                    document_name: inputValue
+                    document_name: inputValue,
+                    sr_no: srno
                 })
             });
 
@@ -117,6 +125,7 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
         setIsEditmode(true);
         setIsActive(!isActive)
         setInputValue(item.document_name);
+        setSrno(item.sr_no);
         setEditId(item.id);
     };
 
@@ -154,6 +163,22 @@ const Documentsdata: React.FC<Props> = ({ serverData }) => {
                 data={data}
                 inputfiled={
                     <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
+                        <div className="col-span-1">
+                            <Label>Sr No</Label>
+                            <input
+                                type="number"
+                                placeholder="Sr No"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.srno ? "border-red-500" : ""
+                                    }`}
+                                value={srno}
+                                onChange={(e) => setSrno(e.target.value)}
+                            />
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.srno}
+                                </div>
+                            )}
+                        </div>
                         <div className="col-span-1">
                             <Label>Documents</Label>
                             <input

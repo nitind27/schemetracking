@@ -15,16 +15,16 @@ export async function GET() {
 
 // Create new document category
 export async function POST(request: Request) {
-  const { document_name } = await request.json();
-  
+  const { document_name, sr_no } = await request.json();
+
   if (!document_name) {
     return NextResponse.json({ error: 'Document name is required' }, { status: 400 });
   }
 
   try {
     const [result] = await pool.query<ResultSetHeader>(
-      'INSERT INTO documents (document_name) VALUES (?)',
-      [document_name]
+      'INSERT INTO documents (document_name, sr_no) VALUES (?, ?)',
+      [document_name, sr_no]
     );
     return NextResponse.json({ message: 'Document category created', id: result.insertId });
   } catch (error) {
@@ -35,16 +35,15 @@ export async function POST(request: Request) {
 
 // Update document category
 export async function PUT(request: Request) {
-  const { id, document_name } = await request.json();
-  
+  const { id, document_name, sr_no } = await request.json();
   if (!id || !document_name) {
     return NextResponse.json({ error: 'Both ID and document name are required' }, { status: 400 });
   }
 
   try {
     await pool.query(
-      'UPDATE documents SET document_name = ? WHERE id = ?',
-      [document_name, id]
+      'UPDATE documents SET document_name = ?, sr_no = ?  WHERE id = ?',
+      [document_name, sr_no, id]
     );
     return NextResponse.json({ message: 'Document category updated' });
   } catch (error) {
@@ -56,7 +55,7 @@ export async function PUT(request: Request) {
 // Delete document category
 export async function DELETE(request: Request) {
   const { id } = await request.json();
-  
+
   if (!id) {
     return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
   }
