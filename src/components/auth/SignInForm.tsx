@@ -61,9 +61,9 @@ export default function SignInForm() {
 
 
       setIsLoading(true); // Set loading to true before redirect
-      setTimeout(() => {
+    
         router.push('/');
-      }, 1000); // Optional delay for the loader to be visible
+       
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Invalid credentials');
