@@ -288,9 +288,15 @@ const Schemesdata: React.FC<Props> = ({
         },
         {
             key: 'scheme_name',
-            label: 'Name',
+            label: 'Name (English)',
             accessor: 'scheme_name',
             render: (data) => <span>{data.scheme_name}</span>
+        },
+        {
+            key: 'scheme_name_marathi',
+            label: 'Name (Marathi)',
+            accessor: 'scheme_name',
+            render: (data) => <span>{data.scheme_name_marathi}</span>
         },
         {
             key: 'beneficiery_name',
