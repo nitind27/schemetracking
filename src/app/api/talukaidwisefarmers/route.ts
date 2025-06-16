@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Farmer not found' }, { status: 404 });
     }
 
-    return NextResponse.json(rows[0]);
+    return NextResponse.json(rows);
   } catch (error) {
     console.error('Fetch error:', error);
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
