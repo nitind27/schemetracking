@@ -1,7 +1,7 @@
 "use client";
 
 import PathHandler from '@/components/common/PathHandler';
-import Titiledata from '@/components/common/Titiledata';
+
 import { Documents } from '@/components/Documentsdata/documents';
 import { FarmdersType } from '@/components/farmersdata/farmers';
 import { Schemecategorytype } from '@/components/Schemecategory/Schemecategory';
@@ -41,17 +41,21 @@ const DoTalukadata = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     return (
         <>
-            <Titiledata title="Taluka wise Addhar & not aadhar IFR holders" />
+            <div className="bg-white p-6 rounded-xl shadow-lg w-full">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">
+               Taluka wise Addhar & not aadhar IFR holders
+                </h2>
+               
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-
-                {farmersData.taluka.map((metric, index) => (
-                    <MetricCard
-                        key={index}
-                        {...metric}
-                        farmers={farmersData.farmers}
-                    />
-                ))}
+                    {farmersData.taluka.map((metric, index) => (
+                        <MetricCard
+                            key={index}
+                            {...metric}
+                            farmers={farmersData.farmers}
+                        />
+                    ))}
+                </div>
             </div>
         </>
     );

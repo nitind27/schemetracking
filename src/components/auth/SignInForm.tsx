@@ -7,7 +7,6 @@ import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from 'react-toastify';
-import Loader from "@/common/Loader";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -17,7 +16,7 @@ export default function SignInForm() {
     username: "",
     password: ""
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // New loading state
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,7 +26,7 @@ export default function SignInForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    // setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -60,7 +59,7 @@ export default function SignInForm() {
         localStorage.removeItem('rememberedpassword');
       }
 
-      toast.success('Login successful!');
+
       setIsLoading(true); // Set loading to true before redirect
       setTimeout(() => {
         router.push('/');
@@ -69,7 +68,7 @@ export default function SignInForm() {
       console.error('Login error:', error);
       toast.error('Invalid credentials');
     } finally {
-      setIsSubmitting(false);
+      // setIsSubmitting(false);
     }
   };
 
@@ -83,25 +82,27 @@ export default function SignInForm() {
     }
   }, []);
 
-  // if(isLoading){
-  //   return <></>
-  // }
+  useEffect(() => {
+    if (isLoading) {
+      toast.success('Login successful!');
+    }
+  }, [isLoading])
   return (
     <>
-    {isLoading && <Loader />}
-    <div className="flex flex-col flex-1 lg:w-1/2 w-full">
-      <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
-        <div>
-          <div className="mb-5 sm:mb-8">
-            <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
-              Sign In
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Enter your username and password to sign in!
-            </p>
-          </div>
 
-       
+      <div className="flex flex-col flex-1 lg:w-1/2 w-full">
+        <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
+          <div>
+            <div className="mb-5 sm:mb-8">
+              <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
+                Sign In
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Enter your username and password to sign in!
+              </p>
+            </div>
+
+
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div>
@@ -164,9 +165,9 @@ export default function SignInForm() {
                   <Button
                     className="w-full"
                     size="sm"
-                    disabled={isSubmitting}
+                    disabled={isLoading}
                   >
-                    {isSubmitting ? 'Signing in...' : 'Sign in'}
+                    {isLoading ? 'Signing in...' : 'Sign in'}
                   </Button>
                 </div>
                 <div className="text-center">
@@ -180,10 +181,10 @@ export default function SignInForm() {
                 </div>
               </div>
             </form>
-        
+
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

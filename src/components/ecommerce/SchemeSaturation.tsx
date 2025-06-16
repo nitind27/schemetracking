@@ -7,7 +7,7 @@ import PathHandler from "../common/PathHandler";
 import { FarmdersType } from "../farmersdata/farmers";
 import { Schemesdatas } from "../schemesdata/schemes";
 import { UserData } from "../usersdata/Userdata";
-import Titiledata from "../common/Titiledata";
+
 import { VscGitStashApply } from "react-icons/vsc";
 import { FaNairaSign } from "react-icons/fa6";
 import { FaHandHoldingUsd } from "react-icons/fa";
@@ -66,15 +66,15 @@ export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
 
     const metricsConfig = [
         {
-            icon:<VscGitStashApply size={20}/>,
+            icon: <VscGitStashApply size={20} />,
             label: "Applied",
-            value: counts.farmers, 
+            value: counts.farmers,
             href: "/",
             show: true,
             bgcolor: "bg-red-600"
         },
-         {
-            icon: <FaHandHoldingUsd size={20}/>,
+        {
+            icon: <FaHandHoldingUsd size={20} />,
             label: "Yes",
             value: counts.users,
             href: "/",
@@ -82,24 +82,28 @@ export const SchemeSaturation = ({ metrics }: { metrics: Metrics }) => {
             bgcolor: "bg-blue-600"
         },
         {
-            icon: <FaNairaSign size={20}/>,
+            icon: <FaNairaSign size={20} />,
             label: "No",
             value: counts.schemes,
             href: "/",
             show: true,
             bgcolor: "bg-green-600"
         },
-       
+
     ];
     if (!["8", "32", "4"].includes(filters.categoryName ?? "")) return null;
     return (
         <>
-            <Titiledata title="Scheme Saturation" />
-            <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-3" : "sm:grid-cols-2"
-                }`}>
-                {metricsConfig.map((metric, index) => metric.show && (
-                    <MetricCard key={index} {...metric} />
-                ))}
+            <div className="bg-white p-6 rounded-xl shadow-lg w-full">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                    Scheme Saturation
+                </h2>
+                <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-3" : "sm:grid-cols-2"
+                    }`}>
+                    {metricsConfig.map((metric, index) => metric.show && (
+                        <MetricCard key={index} {...metric} />
+                    ))}
+                </div>
             </div>
         </>
     );

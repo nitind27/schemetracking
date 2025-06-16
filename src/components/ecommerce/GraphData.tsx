@@ -283,8 +283,8 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 className="border rounded px-2 py-1"
               >
                 <option value="all">All</option>
-                <option value="has">Has Document</option>
-                <option value="not">Does Not Have</option>
+                <option value="has">उपलब्ध</option>
+                <option value="not">उपलब्ध नाही</option>
               </select>
               <button
                 className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
@@ -460,8 +460,9 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
           </button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
             <h3 className="text-xl font-bold mb-2 md:mb-0">
-              Farmers in Taluka:{" "}
-              <span className="text-blue-600">{aadhaarModalTalukaName}</span>
+              IFR Holders Adhaar Availabilty in {" "}
+              <span className="text-blue-600 underline">{aadhaarModalTalukaName}</span>{" "}
+              taluka
             </h3>
             <div className="flex gap-2 flex-wrap">
               <select
@@ -491,11 +492,11 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <thead>
                 <tr className="bg-gray-100">
                   <th className="border px-2 py-1">#</th>
-                  <th className="border px-2 py-1">Farmer ID</th>
+                  <th className="border px-2 py-1">ID</th>
                   <th className="border px-2 py-1">Name</th>
                   <th className="border px-2 py-1">Aadhaar</th>
                   <th className="border px-2 py-1">Taluka</th>
-                  <th className="border px-2 py-1">Has Aadhaar</th>
+                  <th className="border px-2 py-1">Availabilty</th>
                 </tr>
               </thead>
               <tbody>
@@ -526,11 +527,11 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                         <td className="border px-2 py-1">
                           {hasAadhaar ? (
                             <span className="text-green-600 font-semibold">
-                              Yes
+                              Available
                             </span>
                           ) : (
                             <span className="text-red-600 font-semibold">
-                              No
+                              Not Available
                             </span>
                           )}
                         </td>
@@ -571,15 +572,18 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
         </div>
       </div>
     ) : null;
+  const totalHas = documentChartData.reduce((sum, doc) => sum + doc.has, 0);
+  const totalNot = documentChartData.reduce((sum, doc) => sum + doc.not, 0);
 
   // --- Render ---
   return (
+
     <div className="w-full max-w-6xl mx-auto">
       {/* Aadhaar Chart */}
-      <div className="bg-white p-6 rounded-xl shadow-lg w-full">
+      <div className="bg-white p-2 rounded-xl shadow-lg w-full">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0 ">
-           Aadhaar Status of IFR Beneficiaries Across Talukas
+            Aadhaar Status of IFR Beneficiaries Across Talukas
           </h2>
           {/* Overall summary card */}
           <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
@@ -662,9 +666,36 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
       {/* Documents Chart */}
       <div className="bg-white p-6 rounded-xl shadow-lg w-full mt-10">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          Farmers with/without Each Document
-        </h2>
+
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0 ">
+            Farmers with/without Each Document
+          </h2>
+          {/* Overall summary card */}
+          <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
+            <div className="text-sm text-gray-700 space-y-2">
+
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
+                <p>
+                  उपलब्ध:{" "}
+                  <strong>
+                    {totalHas}
+                  </strong>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
+                <p>
+                  उपलब्ध नाही:{" "}
+                  <strong>
+                    {totalNot}
+                  </strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
         <div className="h-[500px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -697,8 +728,8 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <YAxis tick={{ fill: "#4b5563" }} />
               <Tooltip />
               {/* <Legend /> */}
-              <Bar dataKey="has" fill="#10b981" name="Has Document" />
-              <Bar dataKey="not" fill="#f87171" name="Does Not Have" />
+              <Bar dataKey="has" fill="#10b981" name="उपलब्ध" />
+              <Bar dataKey="not" fill="#f87171" name="उपलब्ध नाही" />
             </BarChart>
           </ResponsiveContainer>
         </div>

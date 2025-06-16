@@ -55,6 +55,8 @@ type FormErrors = {
     applyedat?: string;
     link?: string;
     documents?: string;
+    srno?: string;
+    schememarathiname?: string;
 };
 const Schemesdata: React.FC<Props> = ({
     initialdata,
@@ -69,6 +71,9 @@ const Schemesdata: React.FC<Props> = ({
     const [schemesubcategoryid, setschemesubcategoryid] = useState(0);
     const [schemeyearid, setschemeyearid] = useState(0);
     const [schemename, setschemename] = useState('');
+    const [schememarathiname, setschememarathiname] = useState('');
+    const [srno, setSrno] = useState('');
+
     const [beneficieryname, setbeneficieryname] = useState('');
     const [applyedat, setapplyedat] = useState('');
     const [link, setlink] = useState('');
@@ -113,7 +118,7 @@ const Schemesdata: React.FC<Props> = ({
 
         // Scheme name validation
         if (!schemename.trim()) {
-            newErrors.schemename = "Scheme name is required";
+            newErrors.schemename = "Scheme name (english) is required";
         }
 
         // Beneficiary name validation
@@ -130,10 +135,17 @@ const Schemesdata: React.FC<Props> = ({
         if (!link.trim()) {
             newErrors.link = "Link is required";
         }
+        if (!schememarathiname.trim()) {
+            newErrors.schememarathiname = "Scheme name (marathi) is required";
+        }
+
 
         // Documents validation
-        if (!documents || documents.length === 0) {
-            newErrors.documents = "Documents are required";
+        // if (!documents || documents.length === 0) {
+        //     newErrors.documents = "Documents are required";
+        // }
+        if (!srno.trim()) {
+            newErrors.srno = "Sr No is required";
         }
 
         setErrors(newErrors);
@@ -178,7 +190,10 @@ const Schemesdata: React.FC<Props> = ({
                     link: link,
                     documents: isEditMode && documents.length == 0 ? filterdocument
                         .filter(data => documentsedit.includes(data.id.toString()))
-                        .map(data => (data.id)).join(',') : documents.map((data: DocOption) => data.value).join(',')
+                        .map(data => (data.id)).join(',') : documents.map((data: DocOption) => data.value).join(','),
+                    sr_no: srno,
+                    scheme_name_marathi: schememarathiname,
+
                 })
             });
 
@@ -213,6 +228,8 @@ const Schemesdata: React.FC<Props> = ({
         setschemesubcategoryid(0)
         setschemeyearid(0)
         setschemename("")
+        setschememarathiname("")
+        setSrno("")
         setbeneficieryname("")
         setapplyedat("")
         setlink("")
@@ -233,10 +250,12 @@ const Schemesdata: React.FC<Props> = ({
         setIsEditmode(true);
         setIsActive(!isActive)
         setEditId(item.scheme_id)
+        setSrno(item.sr_no)
         setschemecategoryid(item.scheme_category_id)
         setschemesubcategoryid(item.scheme_sub_category_id)
         setschemeyearid(item.scheme_year_id)
         setschemename(item.scheme_name)
+        setschememarathiname(item.scheme_name_marathi)
         setbeneficieryname(item.beneficiery_name)
         setapplyedat(item.applyed_at)
         setlink(item.link)
@@ -369,20 +388,20 @@ const Schemesdata: React.FC<Props> = ({
                 classname={"h-[550px] overflow-y-auto scrollbar-hide"}
                 inputfiled={
                     <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
-                        
+
                         <div className="col-span-1">
                             <Label>Sr No</Label>
                             <input
-                                type="text"
+                                type="number"
                                 placeholder="Sr No"
-                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.schemename ? "border-red-500" : ""
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.srno ? "border-red-500" : ""
                                     }`}
-                                value={schemename}
-                                onChange={(e) => setschemename(e.target.value)}
+                                value={srno}
+                                onChange={(e) => setSrno(e.target.value)}
                             />
                             {error && (
                                 <div className="text-red-500 text-sm mt-1 pl-1">
-                                    {error.schemename}
+                                    {error.srno}
                                 </div>
                             )}
                         </div>
@@ -459,7 +478,7 @@ const Schemesdata: React.FC<Props> = ({
                         </div>
 
                         <div className="col-span-1">
-                            <Label>Name</Label>
+                            <Label>Name (English)</Label>
                             <input
                                 type="text"
                                 placeholder="Enter name"
@@ -471,6 +490,22 @@ const Schemesdata: React.FC<Props> = ({
                             {error && (
                                 <div className="text-red-500 text-sm mt-1 pl-1">
                                     {error.schemename}
+                                </div>
+                            )}
+                        </div>
+                        <div className="col-span-1">
+                            <Label>Name (Marathi)</Label>
+                            <input
+                                type="text"
+                                placeholder="Enter name"
+                                className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.schememarathiname ? "border-red-500" : ""
+                                    }`}
+                                value={schememarathiname}
+                                onChange={(e) => setschememarathiname(e.target.value)}
+                            />
+                            {error && (
+                                <div className="text-red-500 text-sm mt-1 pl-1">
+                                    {error.schememarathiname}
                                 </div>
                             )}
                         </div>

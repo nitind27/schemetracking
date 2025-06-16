@@ -9,12 +9,14 @@ import { Taluka } from '../Taluka/Taluka';
 import { Schemesdatas } from '../schemesdata/schemes';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import Ifrsmaplocations from './Ifrsmaplocations';
+import { Documents } from '../Documentsdata/documents';
 
 interface FarmersdataProps {
   data: FarmdersType[];
   datavillage: Village[];
   datataluka: Taluka[];
   dataschems: Schemesdatas[];
+  documents: Documents[];
 }
 
 const Farmersdata: React.FC<FarmersdataProps> = ({
@@ -22,6 +24,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
   datavillage,
   datataluka,
   dataschems,
+  documents,
 }) => {
   const [filters, setFilters] = useState({
     talukaId: null as string | null,
@@ -104,7 +107,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
     if (selectedTaluka && filters.aadhaarwith != '1' && filters.aadhaarwith != '0') {
       result = result.filter(
         (f) =>
-          f.taluka_id === selectedTaluka 
+          f.taluka_id === selectedTaluka
       );
 
     }
@@ -209,7 +212,22 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
       key: 'documents',
       label: 'Documents',
       accessor: 'documents',
-      render: (item) => <span>{item.documents}</span>
+      render: (item) => {
+        // Split the string into segments
+        const segments = typeof item.documents === "string" ? item.documents.split('|') : [];
+        // Extract document IDs before the first "--" in each segment
+        const docIds = segments.map(seg => seg.split('--')[0]).filter(Boolean);
+        // Match IDs with names from the documents prop
+        const docNames = docIds
+          .map(id => {
+            const doc = documents.find(d => String(d.id) === id);
+            return doc ? doc.document_name : null;
+          })
+          .filter(Boolean);
+        // Display as comma-separated names
+        return <span>{docNames.join(', ')}</span>;
+      }
+
     },
     {
       key: 'schemes',
@@ -221,35 +239,36 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
         </span>
       )
     },
-  {
-  key: 'location',
-  label: 'Location',
 
-  render: (item) => {
-    const coordinates = item.gis
-      ?.split('|')
-      .map((entry) => {
-        const parts = entry.split('}');
-        if (parts.length >= 2) {
-          const lat = parseFloat(parts[0]);
-          const lng = parseFloat(parts[1]);
-          if (!isNaN(lat) && !isNaN(lng)) {
-            return { lat, lng };
-          }
-        }
-        return null;
-      })
-      .filter((coord) => coord !== null); // Remove invalid values
+    {
+      key: 'location',
+      label: 'Location',
 
-    return (
-      <>
-        {coordinates && coordinates.length > 0 && (
-          <Ifrsmaplocations coordinates={coordinates as { lat: number; lng: number }[]} />
-        )}
-      </>
-    );
-  }
-}
+      render: (item) => {
+        const coordinates = item.gis
+          ?.split('|')
+          .map((entry) => {
+            const parts = entry.split('}');
+            if (parts.length >= 2) {
+              const lat = parseFloat(parts[0]);
+              const lng = parseFloat(parts[1]);
+              if (!isNaN(lat) && !isNaN(lng)) {
+                return { lat, lng };
+              }
+            }
+            return null;
+          })
+          .filter((coord) => coord !== null); // Remove invalid values
+
+        return (
+          <>
+            {coordinates && coordinates.length > 0 && (
+              <Ifrsmaplocations coordinates={coordinates as { lat: number; lng: number }[]} />
+            )}
+          </>
+        );
+      }
+    }
 
   ];
 

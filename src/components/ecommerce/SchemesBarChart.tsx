@@ -171,6 +171,10 @@ const SchemeStatusBarChart = ({ farmersData }: { farmersData: AllFarmersData }) 
             `Farmers_${selectedScheme?.schemeName}_${selectedStatus}_Page${page}.xlsx`
         );
     };
+    // Calculate totals for all statuses across all schemes
+    const totalApplied = chartData.reduce((sum, scheme) => sum + scheme.Applied, 0);
+    const totalNotApplied = chartData.reduce((sum, scheme) => sum + scheme.NotApplied, 0);
+    const totalBenefited = chartData.reduce((sum, scheme) => sum + scheme.Benefited, 0);
 
     return (
         <>
@@ -178,9 +182,36 @@ const SchemeStatusBarChart = ({ farmersData }: { farmersData: AllFarmersData }) 
                 {/* Aadhaar Chart */}
                 <div className="bg-white p-6 rounded-xl shadow-lg w-full">
                     <div className="">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0 ">
-                            Scheme wise IFR holders
-                        </h2>
+                  
+
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">
+                                Scheme wise IFR holders
+                            </h2>
+                            <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
+                                <div className="text-sm text-gray-700 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-4 h-4" style={{ background: "#8884d8", borderRadius: 4 }} />
+                                        <p>
+                                            Applied: <strong>{totalApplied}</strong>
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-4 h-4" style={{ background: "#ffc658", borderRadius: 4 }} />
+                                        <p>
+                                            Not Applied: <strong>{totalNotApplied}</strong>
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-4 h-4" style={{ background: "#82ca9d", borderRadius: 4 }} />
+                                        <p>
+                                            Benefited: <strong>{totalBenefited}</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div style={{ width: "100%", height: 400 }}>
                             <ResponsiveContainer>
                                 <BarChart
@@ -198,9 +229,7 @@ const SchemeStatusBarChart = ({ farmersData }: { farmersData: AllFarmersData }) 
                                     />
                                     <YAxis />
                                     <Tooltip />
-                                    <g>
-                                        <text x={10} y={10} fontSize={12} fontWeight="bold">Click bar to view details</text>
-                                    </g>
+
                                     {STATUS_LABELS.map((status) => (
                                         <Bar
                                             key={status.value}

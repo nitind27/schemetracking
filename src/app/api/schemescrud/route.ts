@@ -37,7 +37,9 @@ export async function POST(request: Request) {
     beneficiery_name,
     applyed_at,
     link,
-    documents
+    documents,
+    sr_no,
+    scheme_name_marathi,
   } = await request.json();
 
   // Basic validation
@@ -57,8 +59,8 @@ export async function POST(request: Request) {
   try {
     const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO schemes 
-      (scheme_category_id, scheme_sub_category_id, scheme_year_id, scheme_name, beneficiery_name, applyed_at, link, documents)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      (scheme_category_id, scheme_sub_category_id, scheme_year_id, scheme_name, beneficiery_name, applyed_at, link, documents, sr_no, scheme_name_marathi)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         scheme_category_id,
         scheme_sub_category_id,
@@ -67,7 +69,8 @@ export async function POST(request: Request) {
         beneficiery_name,
         applyed_at,
         link,
-        documents
+        documents,
+        sr_no, scheme_name_marathi
       ]
     );
     return NextResponse.json({ message: 'Scheme created', id: result.insertId });
@@ -88,7 +91,9 @@ export async function PUT(request: Request) {
     beneficiery_name,
     applyed_at,
     link,
-    documents
+    documents,
+    sr_no,
+    scheme_name_marathi
   } = await request.json();
 
   if (
@@ -115,7 +120,9 @@ export async function PUT(request: Request) {
         beneficiery_name = ?,
         applyed_at = ?,
         link = ?,
-        documents = ?
+        documents = ?,
+        sr_no = ?,
+        scheme_name_marathi = ?
       WHERE scheme_id = ?`,
       [
         scheme_category_id,
@@ -126,6 +133,8 @@ export async function PUT(request: Request) {
         applyed_at,
         link,
         documents,
+        sr_no,
+        scheme_name_marathi,
         scheme_id
       ]
     );

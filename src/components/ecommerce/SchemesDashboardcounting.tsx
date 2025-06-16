@@ -107,7 +107,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         },
         {
             key: 'Benefited',
-            label: 'Benefited',
+            label: 'Yes',
             render: (scheme) => (
                 <button
                     onClick={() => handleBenefitedClick(scheme.scheme_id.toString())}
@@ -121,7 +121,30 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         },
         {
             key: 'NotBenefited',
-            label: 'Not Benefited',
+            label: 'No',
+            render: (scheme) => {
+                // Convert current scheme ID to string for consistent comparison
+                const currentSchemeId = scheme.scheme_id.toString();
+                
+                // Filter farmers who don't have the current scheme
+                const nonBenefitedCount = datafarmers.filter(farmer => {
+                    const farmerSchemes = farmer.schemes;  // Handle undefined schemes
+                    return !farmerSchemes.includes(currentSchemeId);
+                }).length;
+        
+                return (
+                    <button
+                        onClick={handleNotBenefitedClick}
+                        className="hover:underline cursor-pointer"
+                    >
+                        {nonBenefitedCount}
+                    </button>
+                );
+            }
+        },
+        {
+            key: 'NotBenefited',
+            label: 'Applied',
             render: (scheme) => {
                 // Convert current scheme ID to string for consistent comparison
                 const currentSchemeId = scheme.scheme_id.toString();

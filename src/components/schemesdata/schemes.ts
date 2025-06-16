@@ -12,6 +12,8 @@ export interface Schemesdatas {
   link: string;
   documents: string;
   status: string;
+  sr_no: string;
+  scheme_name_marathi: string;
 
 
 }
