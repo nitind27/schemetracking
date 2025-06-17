@@ -5,10 +5,10 @@ import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import Showschemstable from "@/components/ecommerce/Showschemstable";
 import { Suspense } from "react";
 import Loader from "@/common/Loader";
-import DoTalukadata from "@/components/Do/Talukawisedata/DoTalukadata";
+// import DoTalukadata from "@/components/Do/Talukawisedata/DoTalukadata";
 
 
-import { SchemeSaturation } from "@/components/ecommerce/SchemeSaturation";
+// import { SchemeSaturation } from "@/components/ecommerce/SchemeSaturation";
 import GraphData from "@/components/ecommerce/GraphData";
 import SchemesBarChart from "@/components/ecommerce/SchemesBarChart";
 
@@ -103,7 +103,7 @@ export default async function Ecommerce() {
     <>
     
     <div className="grid grid-cols-6 gap-4 md:gap-6">
-      <div className="col-span-12 space-y-5 xl:col-span-7 ">
+      <div className="col-span-12 space-y-0 xl:col-span-7 ">
         {/* <Loader /> */}
         <Suspense fallback={<Loader />}>
           {/* <DownloadButtons /> */}
@@ -111,10 +111,10 @@ export default async function Ecommerce() {
           <EcommerceMetrics metrics={metrics} />
 
           <GraphData farmersData={farmersData} />
-          <DoTalukadata farmersData={farmersData} />
+          {/* <DoTalukadata farmersData={farmersData} /> */}
           <SchemesBarChart farmersData={farmersData} />
 
-          <SchemeSaturation metrics={metrics} />
+          {/* <SchemeSaturation metrics={metrics} /> */}
           <Showschemstable farmersData={farmersData} />
         </Suspense>
       </div>

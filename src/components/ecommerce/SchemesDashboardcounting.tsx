@@ -1,5 +1,5 @@
-"use client"
-import React, { useEffect, useState } from 'react'
+"use client";
+import React, { useEffect, useState } from 'react';
 import { UserCategory } from '../usercategory/userCategory';
 import { Column } from '../tables/tabletype';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
@@ -21,8 +21,33 @@ interface AllFarmersData {
     documents: Documents[];
 }
 
+// Helper function to parse farmer's schemes string to extract statuses per schemeId based on your format
+function parseFarmerSchemeStatuses(schemesString?: string) : Record<string, 'Applied' | 'Benefited' | 'NotApplied'> {
+    const statusMap: Record<string, 'Applied' | 'Benefited' | 'NotApplied'> = {};
+    if (!schemesString) return statusMap;
+    const entries = schemesString.split('|');
+    entries.forEach(entry => {
+        // schemeId is digits before first hyphen
+        const idMatch = entry.match(/^(\d+)-/);
+        if (!idMatch) return;
+        const schemeId = idMatch[1];
+        // status is last part after last hyphen, case insensitive and trimmed
+        const lastHyphen = entry.lastIndexOf('-');
+        if (lastHyphen === -1) return;
+        const rawStatus = entry.substring(lastHyphen + 1).trim().toLowerCase();
+        // Map possible statuses
+        if (rawStatus === 'benefit received') {
+            statusMap[schemeId] = 'Benefited';
+        } else if (rawStatus === 'applyed' || rawStatus === 'applied') {
+            statusMap[schemeId] = 'Applied';
+        } else {
+            statusMap[schemeId] = 'NotApplied';
+        }
+    });
+    return statusMap;
+}
+
 const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData }) => {
-    // const [data, setData] = useState<UserCategory[]>([]);
     const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
     const [dataschemsyear, setDataschemsyear] = useState<Scheme_year[]>([]);
     const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
@@ -39,13 +64,12 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
 
     useEffect(() => {
         if (farmersData) {
-            // setData(farmersData.users);
             setDataschems(farmersData.schemes);
             setDatafarmers(farmersData.farmers);
-            setDataSchemecategory(farmersData.schemescrud)
-            setDataSchemesubcategory(farmersData.schemessubcategory)
-            setDataschemsyear(farmersData.yearmaster)
-            setDocumentsdata(farmersData.documents)
+            setDataSchemecategory(farmersData.schemescrud);
+            setDataSchemesubcategory(farmersData.schemessubcategory);
+            setDataschemsyear(farmersData.yearmaster);
+            setDocumentsdata(farmersData.documents);
         }
     }, [farmersData]);
 
@@ -53,32 +77,40 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         setCurrentPage(1);
     }, [filteredFarmers]);
 
-    const schemeIds = dataschems.map(scheme => scheme.scheme_id.toString());
-
+    // const schemeIds = dataschems.map(scheme => scheme.scheme_id.toString());
     const alldata = datafarmers.filter(farmer => farmer.schemes?.trim() !== "");
 
-    // const matches = dataschems.filter(scheme => 
-    //     alldata.some(farmer => farmer.schemes?.includes(scheme.scheme_id.toString()))
-    // );
-    const matches = dataschems.filter(scheme => 
-   
+    // Filter schemes if farmers have schemes string (dummy filter)
+    const matches = dataschems.filter(scheme =>
         alldata.some(farmer => farmer.schemes && scheme)
     );
-    
 
     const handleBenefitedClick = (schemeId: string) => {
-        const benefitedFarmers = datafarmers.filter(farmer =>
-            farmer.schemes?.includes(schemeId)
-        );
+        const benefitedFarmers = datafarmers.filter(farmer => {
+            const statuses = parseFarmerSchemeStatuses(farmer.schemes);
+            return statuses[schemeId] === 'Benefited';
+        });
         setModalTitle(`Benefited IFR holders`);
         setFilteredFarmers(benefitedFarmers);
         setIsModalOpen(true);
     };
 
-    const handleNotBenefitedClick = () => {
-        const notBenefited = datafarmers.filter(farmer =>
-            !schemeIds.some(id => farmer.schemes?.includes(id))
-        );
+    const handleAppliedClick = (schemeId: string) => {
+        const appliedFarmers = datafarmers.filter(farmer => {
+            const statuses = parseFarmerSchemeStatuses(farmer.schemes);
+            return statuses[schemeId] === 'Applied';
+        });
+        setModalTitle(`Applied IFR holders`);
+        setFilteredFarmers(appliedFarmers);
+        setIsModalOpen(true);
+    };
+
+    const handleNotBenefitedClick = (schemeId: string) => {
+        const notBenefited = datafarmers.filter(farmer => {
+            const statuses = parseFarmerSchemeStatuses(farmer.schemes);
+            // Farmer is not Benefited or Applied for this scheme
+            return !(statuses[schemeId] === 'Benefited' || statuses[schemeId] === 'Applied');
+        });
         setModalTitle('Non-Benefited IFR Holders');
         setFilteredFarmers(notBenefited);
         setIsModalOpen(true);
@@ -98,72 +130,83 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         setCurrentPage((prev) => Math.min(prev + 1, totalPages));
     };
 
+    /* Count functions for each scheme and status */
+    const countBenefited = (schemeId: string) => {
+        return datafarmers.reduce((count, farmer) => {
+            const statuses = parseFarmerSchemeStatuses(farmer.schemes);
+            return statuses[schemeId] === 'Benefited' ? count + 1 : count;
+        }, 0);
+    };
+
+    const countApplied = (schemeId: string) => {
+        return datafarmers.reduce((count, farmer) => {
+            const statuses = parseFarmerSchemeStatuses(farmer.schemes);
+            return statuses[schemeId] === 'Applied' ? count + 1 : count;
+        }, 0);
+    };
+
+    const countNotBenefited = (schemeId: string) => {
+        return datafarmers.reduce((count, farmer) => {
+            const statuses = parseFarmerSchemeStatuses(farmer.schemes);
+            if (!statuses[schemeId] || statuses[schemeId] === 'NotApplied') return count + 1;
+            return count;
+        }, 0);
+    };
+
     const columns: Column<Schemesdatas>[] = [
         {
             key: 'scheme_name',
             label: 'Schemes Name',
             accessor: 'scheme_name',
-            render: (scheme) => <span> <SchemesDataModel schemeid={scheme.scheme_id} farmername={scheme.scheme_name} datascheme={dataschems} schemescrud={dataSchemecategory} schemessubcategory={dataSchemesubcategory} dataschemsyear={dataschemsyear} datadocuments={datadocuments} /></span>
+            render: (scheme) => (
+                <span>
+                    <SchemesDataModel
+                        schemeid={scheme.scheme_id}
+                        farmername={scheme.scheme_name}
+                        datascheme={dataschems}
+                        schemescrud={dataSchemecategory}
+                        schemessubcategory={dataSchemesubcategory}
+                        dataschemsyear={dataschemsyear}
+                        datadocuments={datadocuments}
+                    />
+                </span>
+            )
         },
         {
             key: 'Benefited',
-            label: 'Yes',
+            label: 'Benefited',
             render: (scheme) => (
                 <button
                     onClick={() => handleBenefitedClick(scheme.scheme_id.toString())}
                     className="text-blue-700 hover:underline cursor-pointer"
                 >
-                    {datafarmers.filter(farmer =>
-                        farmer.schemes?.includes(scheme.scheme_id.toString())
-                    ).length}
+                    {countBenefited(scheme.scheme_id.toString())}
                 </button>
             )
         },
         {
             key: 'NotBenefited',
-            label: 'No',
-            render: (scheme) => {
-                // Convert current scheme ID to string for consistent comparison
-                const currentSchemeId = scheme.scheme_id.toString();
-                
-                // Filter farmers who don't have the current scheme
-                const nonBenefitedCount = datafarmers.filter(farmer => {
-                    const farmerSchemes = farmer.schemes;  // Handle undefined schemes
-                    return !farmerSchemes.includes(currentSchemeId);
-                }).length;
-        
-                return (
-                    <button
-                        onClick={handleNotBenefitedClick}
-                        className="hover:underline cursor-pointer"
-                    >
-                        {nonBenefitedCount}
-                    </button>
-                );
-            }
+            label: 'Not Benefited',
+            render: (scheme) => (
+                <button
+                    onClick={() => handleNotBenefitedClick(scheme.scheme_id.toString())}
+                    className="hover:underline cursor-pointer"
+                >
+                    {countNotBenefited(scheme.scheme_id.toString())}
+                </button>
+            )
         },
         {
-            key: 'NotBenefited',
+            key: 'Applied',
             label: 'Applied',
-            render: (scheme) => {
-                // Convert current scheme ID to string for consistent comparison
-                const currentSchemeId = scheme.scheme_id.toString();
-                
-                // Filter farmers who don't have the current scheme
-                const nonBenefitedCount = datafarmers.filter(farmer => {
-                    const farmerSchemes = farmer.schemes;  // Handle undefined schemes
-                    return !farmerSchemes.includes(currentSchemeId);
-                }).length;
-        
-                return (
-                    <button
-                        onClick={handleNotBenefitedClick}
-                        className="hover:underline cursor-pointer"
-                    >
-                        {nonBenefitedCount}
-                    </button>
-                );
-            }
+            render: (scheme) => (
+                <button
+                    onClick={() => handleAppliedClick(scheme.scheme_id.toString())}
+                    className="hover:underline cursor-pointer"
+                >
+                    {countApplied(scheme.scheme_id.toString())}
+                </button>
+            )
         }
     ];
 
@@ -180,7 +223,6 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                 title="Scheme Beneficiaries"
                 filterOptions={[]}
                 searchKey="beneficiery_name"
-                
             />
 
             {isModalOpen && (
@@ -221,7 +263,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                         {paginatedFarmers.map((farmer, index) => (
                                             <tr key={farmer.farmer_id}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {index + 1}
+                                                    {(currentPage -1)*rowsPerPage + index + 1}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {farmer.name}
@@ -260,14 +302,14 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                 >
                                     Next
                                 </button>
-
                             </div>
                         </div>
                     </div>
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
 export default SchemesDashboardcounting;
+

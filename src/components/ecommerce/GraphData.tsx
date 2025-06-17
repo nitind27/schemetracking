@@ -572,8 +572,8 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
         </div>
       </div>
     ) : null;
-  const totalHas = documentChartData.reduce((sum, doc) => sum + doc.has, 0);
-  const totalNot = documentChartData.reduce((sum, doc) => sum + doc.not, 0);
+  // const totalHas = documentChartData.reduce((sum, doc) => sum + doc.has, 0);
+  // const totalNot = documentChartData.reduce((sum, doc) => sum + doc.not, 0);
 
   // --- Render ---
   return (
@@ -669,7 +669,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0 ">
-            Farmers with/without Each Document
+           Availability of each documents for IFR holders
           </h2>
           {/* Overall summary card */}
           <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
@@ -678,19 +678,19 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <div className="flex items-center gap-2">
                 <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
                 <p>
-                  उपलब्ध:{" "}
-                  <strong>
+                  Available{" "}
+                  {/* <strong>
                     {totalHas}
-                  </strong>
+                  </strong> */}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
                 <p>
-                  उपलब्ध नाही:{" "}
-                  <strong>
+                  Not Available{" "}
+                  {/* <strong>
                     {totalNot}
-                  </strong>
+                  </strong> */}
                 </p>
               </div>
             </div>

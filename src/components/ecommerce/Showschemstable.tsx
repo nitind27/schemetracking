@@ -36,7 +36,7 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     return (
         <div>
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 md:gap-2 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 md:gap-2 mb-8 mt-5">
                 <div>
                     <button
                         className={`p-5 w-full  ${activeTab === 'farmers' ? 'bg-blue-500' : 'bg-blue-300'
