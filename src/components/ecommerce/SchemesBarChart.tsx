@@ -251,7 +251,7 @@ const SchemeStatusBarChart = ({
                     angle={-40}
                     textAnchor="end"
                     interval={0}
-                    fontSize={6}
+                    fontSize={10}
                     height={80}
                   />
                   <YAxis />
