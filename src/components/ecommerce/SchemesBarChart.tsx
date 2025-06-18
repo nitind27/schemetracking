@@ -125,7 +125,7 @@ const SchemeStatusBarChart = ({
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedScheme, setSelectedScheme] = useState<SchemeBarData | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<"Applied" | "NotApplied" | "Benefited">("Applied");
+  const [selectedStatus, setSelectedStatus] = useState<"Applied" | "NotApplied" | "Benefited">("Benefited");
   const [page, setPage] = useState(1);
 
   // On bar click
@@ -297,7 +297,7 @@ const SchemeStatusBarChart = ({
             </button>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
               <h3 className="text-xl font-bold mb-2 md:mb-0">
-                Farmers for Scheme:{" "}
+                IFR Holders for Scheme:{" "}
                 <span className="text-blue-600">{selectedScheme.schemeName}</span>
               </h3>
               <div className="flex gap-2 flex-wrap">
