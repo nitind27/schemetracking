@@ -5,7 +5,9 @@ import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 // Get all documents
 export async function GET() {
   try {
-    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM documents where status = "Active"');
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT * FROM documents WHERE status = "Active" ORDER BY sr_no ASC'
+    );
     return NextResponse.json(rows);
   } catch (error) {
     console.error('Fetch error:', error);
