@@ -11,7 +11,7 @@ import Loader from "@/common/Loader";
 // import { SchemeSaturation } from "@/components/ecommerce/SchemeSaturation";
 import GraphData from "@/components/ecommerce/GraphData";
 import SchemesBarChart from "@/components/ecommerce/SchemesBarChart";
-import Tabchangepage from "@/components/ecommerce/Tabchangepage";
+// import Tabchangepage from "@/components/ecommerce/Tabchangepage";
 
 export const metadata: Metadata = {
   title: "Scheme Monitoring & Tracking System",
