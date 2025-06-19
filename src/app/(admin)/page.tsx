@@ -108,7 +108,7 @@ export default async function Ecommerce() {
        
           <Suspense fallback={<Loader />}>
             {/* <DownloadButtons /> */}
-            <Tabchangepage />
+            {/* <Tabchangepage /> */}
             <EcommerceMetrics metrics={metrics} />
 
             <GraphData farmersData={farmersData} />
