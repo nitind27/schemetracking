@@ -100,10 +100,11 @@ const Supporteddata: React.FC<Props> = ({ serverData, documents }) => {
                     supported_id: editId,
                     document_id: documentsinput,
                     info: informationinput,
-                    supported_docs: supportedDocumentList.join('|'),
+                    supported_docs: supportedDocumentList.join(','),
                     link: linkinput
                 })
             });
+   
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
