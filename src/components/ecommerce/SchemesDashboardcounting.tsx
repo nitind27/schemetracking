@@ -10,6 +10,8 @@ import { Schemecategorytype } from '../Schemecategory/Schemecategory';
 import { Schemesubcategorytype } from '../Schemesubcategory/Schemesubcategory';
 import { Scheme_year } from '../Yearmaster/yearmaster';
 import { Documents } from '../Documentsdata/documents';
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 interface AllFarmersData {
     users: UserCategory[];
@@ -77,7 +79,6 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         setCurrentPage(1);
     }, [filteredFarmers]);
 
-    // const schemeIds = dataschems.map(scheme => scheme.scheme_id.toString());
     const alldata = datafarmers.filter(farmer => farmer.schemes?.trim() !== "");
 
     // Filter schemes if farmers have schemes string (dummy filter)
@@ -130,6 +131,24 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         setCurrentPage((prev) => Math.min(prev + 1, totalPages));
     };
 
+    // Excel download handler
+    const handleDownloadExcel = () => {
+        const excelData = filteredFarmers.map((farmer, idx) => ({
+            "Sr.No": (currentPage - 1) * rowsPerPage + idx + 1,
+            "IFR Holder": farmer.name,
+            "Type": farmer.adivasi,
+            "Contact No": farmer.contact_no || "-",
+            "Vanksetra": farmer.vanksetra
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Farmers");
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+        saveAs(blob, `${modalTitle.replace(/\s+/g, "_")}_Farmers.xlsx`);
+    };
+
     /* Count functions for each scheme and status */
     const countBenefited = (schemeId: string) => {
         return datafarmers.reduce((count, farmer) => {
@@ -174,11 +193,11 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         },
         {
             key: 'Benefited',
-            label: 'Benefited',
+            label: 'Yes',
             render: (scheme) => (
                 <button
                     onClick={() => handleBenefitedClick(scheme.scheme_id.toString())}
-                    className="text-blue-700 hover:underline cursor-pointer"
+                    className="text-blue-700 font-bold underline cursor-pointer"
                 >
                     {countBenefited(scheme.scheme_id.toString())}
                 </button>
@@ -186,11 +205,11 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         },
         {
             key: 'NotBenefited',
-            label: 'Not Benefited',
+            label: 'No',
             render: (scheme) => (
                 <button
                     onClick={() => handleNotBenefitedClick(scheme.scheme_id.toString())}
-                    className="hover:underline cursor-pointer"
+                    className="text-red-700 font-bold underline cursor-pointer"
                 >
                     {countNotBenefited(scheme.scheme_id.toString())}
                 </button>
@@ -202,7 +221,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
             render: (scheme) => (
                 <button
                     onClick={() => handleAppliedClick(scheme.scheme_id.toString())}
-                    className="hover:underline cursor-pointer"
+                    className="text-green-700 font-bold underline cursor-pointer"
                 >
                     {countApplied(scheme.scheme_id.toString())}
                 </button>
@@ -238,6 +257,12 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                             </button>
                         </div>
                         <div className="p-4">
+                            <button
+                                onClick={handleDownloadExcel}
+                                className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                            >
+                                डाउनलोड करा
+                            </button>
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
@@ -312,4 +337,3 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
 };
 
 export default SchemesDashboardcounting;
-

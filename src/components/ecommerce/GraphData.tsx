@@ -139,27 +139,46 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     ticks.push(i);
   }
 
-  // --- Documents Chart Data ---
-  const documentChartData: DocumentBar[] =
-    documents?.map((doc) => {
-      let hasCount = 0;
-      let notCount = 0;
-
-      farmers.forEach((farmer) => {
-        const docIds = getFarmerDocumentIds(farmer.documents);
-        if (docIds.has(doc.id)) {
-          hasCount++;
-        } else {
-          notCount++;
-        }
-      });
-      return {
-        document: doc.document_name,
-        has: hasCount,
-        not: notCount,
-        id: doc.id,
+// Helper to parse farmer's document string and return a map of docId => { check, updation, available }
+const parseFarmerDocuments = (docString: string | undefined): Record<string, { check: string, updation: string, available: string }> => {
+  const result: Record<string, { check: string, updation: string, available: string }> = {};
+  if (!docString) return result;
+  docString.split('|').forEach(segment => {
+    const [id, status] = segment.split('--');
+    if (!id || !status) return;
+    const [check, updation, available] = status.split('-');
+    if (check && updation && available) {
+      result[id.trim()] = {
+        check: check.trim(),
+        updation: updation.trim(),
+        available: available.trim()
       };
-    }) || [];
+    }
+  });
+  return result;
+};
+
+const documentChartData: DocumentBar[] = documents?.map((doc) => {
+  let hasCount = 0;
+  let notCount = 0;
+
+  farmers.forEach((farmer) => {
+    const docMap = parseFarmerDocuments(farmer.documents);
+    // If farmer has this doc and available is 'Yes'
+    if (docMap[String(doc.id)] && docMap[String(doc.id)].available === 'Yes') {
+      hasCount++;
+    } else {
+      notCount++;
+    }
+  });
+
+  return {
+    document: doc.document_name,
+    has: hasCount,
+    not: notCount,
+    id: doc.id,
+  };
+}) || [];
 
   // --- Modal State for Documents ---
   const [modalOpen, setModalOpen] = useState(false);
@@ -578,7 +597,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
   // --- Render ---
   return (
 
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto mt-5">
       {/* Aadhaar Chart */}
       <div className="bg-white p-2 rounded-xl shadow-lg w-full">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">

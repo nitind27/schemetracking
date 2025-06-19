@@ -8,6 +8,8 @@ import { FarmdersType } from '../farmersdata/farmers';
 import UserDatamodel from '../example/ModalExample/UserDatamodel';
 import { Taluka } from '../Taluka/Taluka';
 import { Village } from '../Village/village';
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 interface AllFarmersData {
     users: UserCategory[];
@@ -17,7 +19,6 @@ interface AllFarmersData {
     villages: Village[];
 }
 
-// Helper: Parse farmer.schemes string for scheme IDs and statuses
 function extractSchemeDataFromSchemesString(schemesString?: string): { id: number; status: string }[] {
     if (!schemesString) return [];
     const entries = schemesString.split('|');
@@ -26,7 +27,7 @@ function extractSchemeDataFromSchemesString(schemesString?: string): { id: numbe
         const match = entry.match(/^(\d+)-/);
         if (match) {
             const id = Number(match[1]);
-            const status = entry.split('-').pop()?.trim() || 'NotApplied'; // Get the last part as status
+            const status = entry.split('-').pop()?.trim() || 'NotApplied';
             schemeData.push({ id, status });
         }
     });
@@ -38,7 +39,6 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
-    const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
     const [filteredschemes, setFilteredschemes] = useState<Schemesdatas[]>([]);
     const [datataluka, setdatataluka] = useState<Taluka[]>([]);
     const [datavillage, setdatavillages] = useState<Village[]>([]);
@@ -52,7 +52,6 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         }
     }, [farmersData]);
 
-    // Filter farmers who have schemes string non-empty
     const allfarmersname = datafarmers.filter(farmer => {
         return farmer.schemes && farmer.schemes.trim() !== "";
     });
@@ -61,7 +60,6 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         const benefitedSchemes = dataschems.filter(scheme =>
             schemeIds.includes(scheme.scheme_id)
         );
-   
         setModalTitle(`Benefited Schemes`);
         setFilteredschemes(benefitedSchemes);
         setIsModalOpen(true);
@@ -69,14 +67,30 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     const handleNotBenefitedClickschemes = (schemeIds: number[]) => {
         const notBenefitedSchemes = dataschems.filter(scheme =>
-            schemeIds.includes(scheme.scheme_id) 
+            schemeIds.includes(scheme.scheme_id)
         );
-
         setModalTitle('Non-Benefited Schemes');
         setFilteredschemes(notBenefitedSchemes);
         setIsModalOpen(true);
     };
 
+    const handleDownloadExcel = () => {
+        if (filteredschemes.length === 0) return;
+        const excelData = filteredschemes.map((scheme, idx) => {
+            return {
+                "Sr.No": idx + 1,
+                "Scheme Name": scheme.scheme_name,
+                "Beneficiary Name": scheme.beneficiery_name,
+                "Applied At": scheme.applyed_at || '-',
+            };
+        });
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Schemes");
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+        saveAs(blob, `${modalTitle.replace(/\s+/g, "_")}_Schemes.xlsx`);
+    };
 
     const columns: Column<FarmdersType>[] = [
         {
@@ -103,7 +117,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         },
         {
             key: 'Benefited',
-            label: 'Benefited',
+            label: 'Yes',
             render: (farmer) => {
                 const schemeData = extractSchemeDataFromSchemesString(farmer.schemes);
                 const benefitedSchemeIds = schemeData
@@ -114,7 +128,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 return (
                     <button
                         onClick={() => handleBenefitedClick(benefitedSchemeIds)}
-                        className="text-blue-700 hover:underline cursor-pointer"
+                        className="text-blue-700 font-bold underline cursor-pointer"
                     >
                         {count}
                     </button>
@@ -123,7 +137,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         },
         {
             key: 'NotBenefited',
-            label: 'Not Benefited',
+            label: 'No',
             render: (farmer) => {
                 const schemeData = extractSchemeDataFromSchemesString(farmer.schemes);
                 const notBenefitedSchemeIds = schemeData
@@ -134,18 +148,16 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 return (
                     <button
                         onClick={() => handleNotBenefitedClickschemes(notBenefitedSchemeIds)}
-                        className="hover:underline cursor-pointer text-red-700"
+                        className="text-red-700 font-bold underline cursor-pointer"
                     >
                         {count}
                     </button>
                 );
             }
         }
-
     ];
 
     const handleclosemodel = () => {
-        setFilteredFarmers([]);
         setFilteredschemes([]);
         setIsModalOpen(false);
     };
@@ -178,6 +190,12 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                             </button>
                         </div>
                         <div className="p-4">
+                            <button
+                                onClick={handleDownloadExcel}
+                                className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                            >
+                                डाउनलोड करा
+                            </button>
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 ">
                                     <thead className="bg-gray-50">
@@ -197,32 +215,19 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredschemes.length > 0 && filteredschemes.map((farmer, index) => (
-                                            <tr key={farmer.scheme_id}>
+                                        {filteredschemes.map((scheme, index) => (
+                                            <tr key={scheme.scheme_id}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {index + 1}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.scheme_name}
+                                                    {scheme.scheme_name}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.beneficiery_name}
+                                                    {scheme.beneficiery_name}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.applyed_at}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {filteredFarmers.length > 0 && filteredFarmers.map((farmer) => (
-                                            <tr key={farmer.name}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.farmer_id}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.name}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.schemes}
+                                                    {scheme.applyed_at || '-'}
                                                 </td>
                                             </tr>
                                         ))}
