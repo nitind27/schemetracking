@@ -11,6 +11,7 @@ import Loader from "@/common/Loader";
 // import { SchemeSaturation } from "@/components/ecommerce/SchemeSaturation";
 import GraphData from "@/components/ecommerce/GraphData";
 import SchemesBarChart from "@/components/ecommerce/SchemesBarChart";
+import Tabchangepage from "@/components/ecommerce/Tabchangepage";
 
 export const metadata: Metadata = {
   title: "Scheme Monitoring & Tracking System",
@@ -101,24 +102,24 @@ export default async function Ecommerce() {
 
   return (
     <>
-    
-    <div className="grid grid-cols-6 gap-4 md:gap-6">
-      <div className="col-span-12 space-y-0 xl:col-span-7 ">
-        {/* <Loader /> */}
-        <Suspense fallback={<Loader />}>
-          {/* <DownloadButtons /> */}
 
-          <EcommerceMetrics metrics={metrics} />
+      <div className="grid grid-cols-6 gap-4 md:gap-6">
+        <div className="col-span-12 space-y-0 xl:col-span-7 ">
+       
+          <Suspense fallback={<Loader />}>
+            {/* <DownloadButtons /> */}
+            <Tabchangepage />
+            <EcommerceMetrics metrics={metrics} />
 
-          <GraphData farmersData={farmersData} />
-          {/* <DoTalukadata farmersData={farmersData} /> */}
-          <SchemesBarChart farmersData={farmersData} />
+            <GraphData farmersData={farmersData} />
+            {/* <DoTalukadata farmersData={farmersData} /> */}
+            <SchemesBarChart farmersData={farmersData} />
 
-          {/* <SchemeSaturation metrics={metrics} /> */}
-          <Showschemstable farmersData={farmersData} />
-        </Suspense>
+            {/* <SchemeSaturation metrics={metrics} /> */}
+            <Showschemstable farmersData={farmersData} />
+          </Suspense>
+        </div>
       </div>
-    </div>
     </>
   );
 }
