@@ -1,4 +1,5 @@
 // app/ecommerce/page.tsx
+
 import type { Metadata } from "next";
 import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 
@@ -11,7 +12,7 @@ import Loader from "@/common/Loader";
 // import { SchemeSaturation } from "@/components/ecommerce/SchemeSaturation";
 import GraphData from "@/components/ecommerce/GraphData";
 import SchemesBarChart from "@/components/ecommerce/SchemesBarChart";
-// import Tabchangepage from "@/components/ecommerce/Tabchangepage";
+import Tabchangepage from "@/components/ecommerce/Tabchangepage";
 
 export const metadata: Metadata = {
   title: "Scheme Monitoring & Tracking System",
@@ -108,7 +109,7 @@ export default async function Ecommerce() {
        
           <Suspense fallback={<Loader />}>
             {/* <DownloadButtons /> */}
-            {/* <Tabchangepage /> */}
+            <Tabchangepage />
             <EcommerceMetrics metrics={metrics} />
 
             <GraphData farmersData={farmersData} />
