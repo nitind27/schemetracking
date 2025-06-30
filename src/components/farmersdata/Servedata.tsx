@@ -330,12 +330,23 @@ const Servedata: React.FC<FarmersdataProps> = ({
     const totalDocPages = Math.ceil(documents.length / docsPerPage);
     const paginatedDocs = documents.slice((docPage - 1) * docsPerPage, docPage * docsPerPage);
 
-    // Helper to get farmer's scheme IDs as string[]
-    const getFarmerSchemeIds = (farmer: FarmdersType) => {
-        if (!farmer || typeof farmer.schemes !== 'string') return [];
-        // If schemes is a single id or pipe-separated
-        return farmer.schemes.split('|').map(id => id.trim()).filter(Boolean);
-    };
+    // Helper to extract scheme data from schemes string
+    function extractSchemeDataFromSchemesString(schemesString?: string): { id: number; status: string }[] {
+        if (!schemesString) return [];
+        const entries = schemesString.split('|');
+        const schemeData: { id: number; status: string }[] = [];
+        entries.forEach(entry => {
+            // Try to match id at start, or id as first segment
+            const idMatch = entry.match(/^(\d+)[-]/) || entry.match(/^(\d+)---/);
+            if (idMatch) {
+                const id = Number(idMatch[1]);
+                // Status is after last dash or after last pipe
+                const status = entry.split('-').pop()?.trim() || 'NotApplied';
+                schemeData.push({ id, status });
+            }
+        });
+        return schemeData;
+    }
 
     // Pagination logic for schemes in modal
     const totalSchemePages = Math.ceil(dataschems.length / schemesPerPage);
@@ -420,18 +431,27 @@ const Servedata: React.FC<FarmersdataProps> = ({
                                     <tr>
                                         <th className="border px-2 py-1">अ.क्र.</th>
                                         <th className="border px-2 py-1">योजनेचे नाव</th>
-                                        <th className="border px-2 py-1">उपलब्धता</th>
+                                        <th className="border px-2 py-1">स्थिती</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {paginatedSchemes.map((scheme, idx) => {
-                                        const farmerSchemeIds = getFarmerSchemeIds(modalSchemesFarmer);
-                                        const available = farmerSchemeIds.includes(String(scheme.scheme_id));
+                                        const farmerSchemes = extractSchemeDataFromSchemesString(modalSchemesFarmer.schemes);
+                                        const found = farmerSchemes.find(s => s.id === scheme.scheme_id);
+                                        let statusText = 'लाभार्थी नाही'; // Not Benefited
+                                        if (found) {
+                                            const status = found.status.toLowerCase();
+                                            if (status.includes('benefit') || status.includes('लाभ')) {
+                                                statusText = 'लाभार्थी'; // Benefited
+                                            } else if (status.includes('applied') || status.includes('अर्ज')) {
+                                                statusText = 'अर्ज केले'; // Applied
+                                            }
+                                        }
                                         return (
                                             <tr key={scheme.scheme_id}>
                                                 <td className="border px-2 py-1 text-center">{(schemePage - 1) * schemesPerPage + idx + 1}</td>
                                                 <td className="border px-2 py-1">{scheme.scheme_name_marathi || scheme.scheme_name}</td>
-                                                <td className={`border px-2 py-1 text-center ${available ? 'text-green-600' : 'text-red-600'}`}>{available ? 'उपलब्ध' : 'उपलब्ध नाही'}</td>
+                                                <td className={`border px-2 py-1 text-center ${statusText === 'लाभार्थी' ? 'text-green-600' : statusText === 'अर्ज केले' ? 'text-yellow-600' : 'text-red-600'}`}>{statusText}</td>
                                             </tr>
                                         );
                                     })}
