@@ -10,7 +10,7 @@ export async function GET() {
     let connection;
     try {
         connection = await pool.getConnection();
-        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM farmers where status = "Active"');
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM farmers_new where status = "Active"');
         const safeUsers = rows.map(user => ({ ...user }));
         return NextResponse.json(safeUsers);
     } catch (error) {

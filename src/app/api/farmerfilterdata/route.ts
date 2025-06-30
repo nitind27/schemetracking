@@ -3,13 +3,11 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 
-
-// GET handler (existing)
 export async function GET() {
     let connection;
     try {
         connection = await pool.getConnection();
-        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM farmers where status = "Active" AND update_record != ""');
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM farmers_new where status = "Active" AND update_record != ""');
         const safeUsers = rows.map(user => ({ ...user }));
         return NextResponse.json(safeUsers);
     } catch (error) {

@@ -64,7 +64,6 @@ const Servedata: React.FC<FarmersdataProps> = ({
         })),
         [datataluka]
     );
-    console.log("datadata", data)
 
     const villageOptions = useMemo(() =>
         selectedTaluka
@@ -150,13 +149,20 @@ const Servedata: React.FC<FarmersdataProps> = ({
             key: 'name',
             label: 'Name',
             accessor: 'name',
-            render: (item) => <span>{item.name}</span>
-        },
+            render: (item) => {
+                const nameParts = item.farmer_record?.split('|') || [];
+                return <span>{nameParts[0] || ''}</span>;
+            }
+        }
+        ,
         {
             key: 'adivasi',
             label: 'Adivasi',
             accessor: 'adivasi',
-            render: (item) => <span>{item.adivasi}</span>
+            render: (item) => {
+                const nameParts = item.farmer_record?.split('|') || [];
+                return <span>{nameParts[1] || ''}</span>;
+            }
         },
         {
             key: 'village_id',
@@ -182,43 +188,64 @@ const Servedata: React.FC<FarmersdataProps> = ({
             key: 'gat_no',
             label: 'Gat No',
             accessor: 'gat_no',
-            render: (item) => <span>{item.gat_no}</span>
+            render: (item) => {
+                const nameParts = item.farmer_record?.split('|') || [];
+                return <span>{nameParts[2] || ''}</span>;
+            }
         },
         {
             key: 'vanksetra',
             label: 'Vanksetra',
             accessor: 'vanksetra',
-            render: (item) => <span>{item.vanksetra}</span>
+            render: (item) => {
+                const nameParts = item.farmer_record?.split('|') || [];
+                return <span>{nameParts[3] || ''}</span>;
+            }
         },
         {
             key: 'nivas_seti',
             label: 'Nivas Seti',
             accessor: 'nivas_seti',
-            render: (item) => <span>{item.nivas_seti}</span>
+            render: (item) => {
+                const nameParts = item.farmer_record?.split('|') || [];
+                return <span>{nameParts[4] || ''}</span>;
+            }
         },
         {
             key: 'aadhaar_no',
             label: 'Aadhaar No',
             accessor: 'aadhaar_no',
-            render: (item) => <span>{item.aadhaar_no}</span>
+            render: (item) => {
+                const nameParts = item.farmer_record?.split('|') || [];
+                return <span>{nameParts[5] || ''}</span>;
+            }
         },
         {
             key: 'contact_no',
             label: 'Contact No',
             accessor: 'contact_no',
-            render: (item) => <span>{item.contact_no}</span>
+            render: (item) => {
+                const nameParts = item.farmer_record?.split('|') || [];
+                return <span>{nameParts[6] || ''}</span>;
+            }
         },
         {
             key: 'email',
             label: 'Email',
             accessor: 'email',
-            render: (item) => <span>{item.email}</span>
+            render: (item) => {
+                const nameParts = item.farmer_record?.split('|') || [];
+                return <span>{nameParts[7] || ''}</span>;
+            }
         },
         {
             key: 'kisan_id',
             label: 'Kisan Id',
             accessor: 'kisan_id',
-            render: (item) => <span>{item.kisan_id}</span>
+            render: (item) => {
+                const nameParts = item.farmer_record?.split('|') || [];
+                return <span>{nameParts[8] || ''}</span>;
+            }
         },
         {
             key: 'documents',
@@ -278,7 +305,7 @@ const Servedata: React.FC<FarmersdataProps> = ({
 
     return (
         <div className="">
-      
+
             <Servefilterdatatable
                 key={JSON.stringify(filteredFarmers)}
                 data={filteredFarmers}
