@@ -19,6 +19,7 @@ export interface FarmdersType {
   status: string;
   schedule_j: string;
   gis: string;
+  update_record: string;
 }
 
 export interface FarmdersTypess {

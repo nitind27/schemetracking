@@ -29,6 +29,7 @@
     "apexcharts": "^4.3.0",
     "autoprefixer": "^10.4.20",
     "cookie": "^1.0.2",
+    "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",
     "flatpickr": "^4.6.13",
     "formidable": "^3.5.3",
