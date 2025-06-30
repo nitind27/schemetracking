@@ -17,7 +17,7 @@ async function getData(): Promise<{
   documents: Documents[];
 }> {
   const [farmersRes, villagesRes, talukaRes, schemesRes, documentsRes] = await Promise.all([
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmers`, { cache: 'no-store' }),
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmerfilterdata`, { cache: 'no-store' }),
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/villages`, { cache: 'no-store' }),
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/taluka`, { cache: 'no-store' }),
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescrud`, { cache: 'no-store' }),
