@@ -12,12 +12,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'taluka_id is required' }, { status: 400 });
     }
 
-    // const [rows] = await pool.query<RowDataPacket[]>(
-    //   'SELECT * FROM  farmers WHERE taluka_id = ? AND status = "Active"',
-    //   [taluka_id]
-    // );
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT * FROM  farmers_new WHERE taluka_id = ? AND status = "Active"',
+      'SELECT * FROM  farmers WHERE taluka_id = ? AND status = "Active"',
       [taluka_id]
     );
 
