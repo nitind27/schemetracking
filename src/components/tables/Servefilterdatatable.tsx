@@ -2,7 +2,9 @@
 
 import React, { useState, useMemo } from "react";
 import DataTable from "react-data-table-component";
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import Flatpickr from "react-flatpickr";
+import 'flatpickr/dist/themes/material_green.css';
 
 type FilterOption = {
   label: string;
@@ -139,18 +141,36 @@ export function Servefilterdatatable<T extends object>({
           {/* Fixed date filter section - now properly visible */}
           {dateFilter && (
             <div className="flex items-center gap-2">
-              <input
-                type="date"
-                className="border rounded px-3 py-2 min-w-[150px]"
+              <Flatpickr
                 value={dateFilter.selectedDate ? format(dateFilter.selectedDate, 'yyyy-MM-dd') : ''}
-                onChange={(e) => dateFilter.onDateChange(e.target.value ? parseISO(e.target.value) : null)}
+                onChange={([date]) => dateFilter.onDateChange(date ?? null)}
+                options={{
+                  dateFormat: "Y-m-d",
+                  allowInput: true,
+                  maxDate: "today", // Optional: restrict to today or earlier
+                }}
+                disabled={dateFilter.selectedDate ? true : false}
+                className="border rounded px-3 py-2 min-w-[150px]"
+                placeholder="Select Date"
               />
+              {
+                dateFilter.selectedDate &&
+                < button
+                  className="bg-gray-400 text-white px-3 py-2 rounded hover:bg-gray-300 whitespace-nowrap"
+                  onClick={() => dateFilter.onDateChange(null)}
+                  type="button"
+                >
+                  Clear
+                </button>
+              }
               <button
                 className="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 whitespace-nowrap"
                 onClick={dateFilter.onTodayClick}
+                type="button"
               >
                 Today
               </button>
+
             </div>
           )}
 
@@ -170,12 +190,14 @@ export function Servefilterdatatable<T extends object>({
         )}
       </div>
 
-      {inputfiled && (
-        <div className="mt-4">
-          {inputfiled}
-        </div>
-      )}
-    </div>
+      {
+        inputfiled && (
+          <div className="mt-4">
+            {inputfiled}
+          </div>
+        )
+      }
+    </div >
   );
 
   return (
@@ -197,6 +219,7 @@ export function Servefilterdatatable<T extends object>({
           setPerPage(newPerPage);
           setCurrentPage(1);
         }}
+        paginationRowsPerPageOptions={[10]}
         customStyles={{
           rows: {
             style: {

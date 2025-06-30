@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { format } from 'date-fns';
+import React from 'react';
 
 import { Column } from "../tables/tabletype";
 import { FarmdersType } from './farmers';
@@ -12,6 +13,7 @@ import { Schemesdatas } from '../schemesdata/schemes';
 import Ifrsmaplocations from './Ifrsmaplocations';
 import { Documents } from '../Documentsdata/documents';
 import { Servefilterdatatable } from '../tables/Servefilterdatatable';
+import Pagination from '../tables/Pagination';
 
 interface FarmersdataProps {
     data: FarmdersType[];
@@ -38,6 +40,14 @@ const Servedata: React.FC<FarmersdataProps> = ({
     const [selectedTaluka, setSelectedTaluka] = useState<string>('');
     const [selectedVillage, setSelectedVillage] = useState<string>('');
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalFarmer, setModalFarmer] = useState<FarmdersType | null>(null);
+    const [docPage, setDocPage] = useState(1);
+    const docsPerPage = 10;
+    const [modalSchemesOpen, setModalSchemesOpen] = useState(false);
+    const [modalSchemesFarmer, setModalSchemesFarmer] = useState<FarmdersType | null>(null);
+    const [schemePage, setSchemePage] = useState(1);
+    const schemesPerPage = 10;
 
     useEffect(() => {
         const talukaId = sessionStorage.getItem('taluka_id');
@@ -251,26 +261,33 @@ const Servedata: React.FC<FarmersdataProps> = ({
             key: 'documents',
             label: 'Documents',
             accessor: 'documents',
-            render: (item) => {
-                const segments = typeof item.documents === "string" ? item.documents.split('|') : [];
-                const docIds = segments.map(seg => seg.split('--')[0]).filter(Boolean);
-                const docNames = docIds
-                    .map(id => {
-                        const doc = documents.find(d => String(d.id) === id);
-                        return doc ? doc.document_name : null;
-                    })
-                    .filter(Boolean);
-                return <span>{docNames.join(', ')}</span>;
-            }
+            render: (item) => (
+                <button
+                    className="px-2 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 whitespace-nowrap"
+                    onClick={() => {
+                        setModalFarmer(item);
+                        setModalOpen(true);
+                    }}
+                >
+                    Availability
+                </button>
+            )
         },
         {
             key: 'schemes',
             label: 'Schemes',
             accessor: 'schemes',
             render: (item) => (
-                <span>
-                    {dataschems.find(s => s.scheme_id === Number(item.schemes))?.scheme_name}
-                </span>
+                <button
+                    className="px-2 py-3 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                    onClick={() => {
+                        setModalSchemesFarmer(item);
+                        setModalSchemesOpen(true);
+                        setSchemePage(1);
+                    }}
+                >
+                    Schemes
+                </button>
             )
         },
         {
@@ -303,9 +320,142 @@ const Servedata: React.FC<FarmersdataProps> = ({
         }
     ];
 
+    // Helper to get farmer's document IDs as string[]
+    const getFarmerDocIds = (farmer: FarmdersType) => {
+        if (!farmer || typeof farmer.documents !== 'string') return [];
+        return farmer.documents.split('|').map(seg => seg.split('--')[0]).filter(Boolean);
+    };
+
+    // Pagination logic for documents in modal
+    const totalDocPages = Math.ceil(documents.length / docsPerPage);
+    const paginatedDocs = documents.slice((docPage - 1) * docsPerPage, docPage * docsPerPage);
+
+    // Helper to get farmer's scheme IDs as string[]
+    const getFarmerSchemeIds = (farmer: FarmdersType) => {
+        if (!farmer || typeof farmer.schemes !== 'string') return [];
+        // If schemes is a single id or pipe-separated
+        return farmer.schemes.split('|').map(id => id.trim()).filter(Boolean);
+    };
+
+    // Pagination logic for schemes in modal
+    const totalSchemePages = Math.ceil(dataschems.length / schemesPerPage);
+    const paginatedSchemes = dataschems.slice((schemePage - 1) * schemesPerPage, schemePage * schemesPerPage);
+
     return (
         <div className="">
+            {/* Modal for document check */}
+            {modalOpen && modalFarmer && (
+                <div className="fixed inset-0 z-999 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
+                    <div className="bg-white rounded shadow-lg max-w-lg w-full mx-2">
+                        <div className="flex justify-between items-center py-3 px-4 border-b">
+                            <h2 className="text-lg font-bold">Document Availability</h2>
+                            <button
+                                className="text-gray-500 hover:text-gray-700"
+                                onClick={() => setModalOpen(false)}
+                                aria-label="Close"
+                            >
+                                <span className="text-2xl">&times;</span>
+                            </button>
+                        </div>
+                        <div className="p-4 overflow-y-auto">
+                            <table className="min-w-full border">
+                                <thead>
+                                    <tr>
+                                        <th className="border px-2 py-1">अ.क्र.</th>
+                                        <th className="border px-2 py-1">दस्तऐवजाचे नाव</th>
+                                        <th className="border px-2 py-1">उपलब्धता</th>
 
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedDocs.map((doc, idx) => {
+                                        const farmerDocIds = getFarmerDocIds(modalFarmer);
+                                        const available = farmerDocIds.includes(String(doc.id));
+                                        return (
+                                            <tr key={doc.id}>
+                                                <td className="border px-2 py-1 text-center">{(docPage - 1) * docsPerPage + idx + 1}</td>
+                                                <td className="border px-2 py-1">{doc.document_name}</td>
+                                                <td className={`border px-2 py-1 text-center ${available ? 'text-green-600' : 'text-red-600'}`}>{available ? 'उपलब्ध' : 'उपलब्ध नाही'}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                            <div className="flex justify-center mt-4">
+                                <Pagination
+                                    currentPage={docPage}
+                                    totalPages={totalDocPages}
+                                    onPageChange={setDocPage}
+                                />
+                            </div>
+                        </div>
+                        <div className="py-3 px-4 text-right border-t">
+                            <button
+                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                                onClick={() => setModalOpen(false)}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Modal for schemes check */}
+            {modalSchemesOpen && modalSchemesFarmer && (
+                <div className="fixed inset-0 z-999 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
+                    <div className="bg-white rounded shadow-lg max-w-lg w-full mx-2">
+                        <div className="flex justify-between items-center py-3 px-4 border-b">
+                            <h2 className="text-lg font-bold">Schemes Availability</h2>
+                            <button
+                                className="text-gray-500 hover:text-gray-700"
+                                onClick={() => setModalSchemesOpen(false)}
+                                aria-label="Close"
+                            >
+                                <span className="text-2xl">&times;</span>
+                            </button>
+                        </div>
+                        <div className="p-4 overflow-y-auto">
+                            <table className="min-w-full border">
+                                <thead>
+                                    <tr>
+                                        <th className="border px-2 py-1">अ.क्र.</th>
+                                        <th className="border px-2 py-1">योजनेचे नाव</th>
+                                        <th className="border px-2 py-1">उपलब्धता</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedSchemes.map((scheme, idx) => {
+                                        const farmerSchemeIds = getFarmerSchemeIds(modalSchemesFarmer);
+                                        const available = farmerSchemeIds.includes(String(scheme.scheme_id));
+                                        return (
+                                            <tr key={scheme.scheme_id}>
+                                                <td className="border px-2 py-1 text-center">{(schemePage - 1) * schemesPerPage + idx + 1}</td>
+                                                <td className="border px-2 py-1">{scheme.scheme_name_marathi || scheme.scheme_name}</td>
+                                                <td className={`border px-2 py-1 text-center ${available ? 'text-green-600' : 'text-red-600'}`}>{available ? 'उपलब्ध' : 'उपलब्ध नाही'}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                            <div className="flex justify-center mt-4">
+                                <Pagination
+                                    currentPage={schemePage}
+                                    totalPages={totalSchemePages}
+                                    onPageChange={setSchemePage}
+                                />
+                            </div>
+                        </div>
+                        <div className="py-3 px-4 text-right border-t">
+                            <button
+                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                                onClick={() => setModalSchemesOpen(false)}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <Servefilterdatatable
                 key={JSON.stringify(filteredFarmers)}
                 data={filteredFarmers}

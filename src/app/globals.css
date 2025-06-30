@@ -349,7 +349,7 @@
 }
 .flatpickr-current-month .cur-month,
 .flatpickr-current-month input.cur-year {
-  @apply h-auto! pt-0! text-lg! font-medium! text-gray-800! dark:text-white/90!;
+  @apply h-auto! pt-0! text-lg! font-medium! text-gray-800! dark:text-gray-900/90!;
 }
 
 .flatpickr-prev-month,
@@ -411,7 +411,7 @@ span.flatpickr-weekday,
   @apply border-b-0!;
 }
 .flatpickr-months .flatpickr-month {
-  @apply bg-none!;
+  @apply bg-brand-600!;
 }
 .flatpickr-day.inRange {
   box-shadow: -5px 0 0 #f9fafb, 5px 0 0 #f9fafb !important;
