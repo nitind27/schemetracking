@@ -102,7 +102,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                     <UserDatamodel
                         farmersid={farmer.farmer_id.toString()}
                         datafarmers={datafarmers}
-                        farmername={farmer.name}
+                        farmername={farmer.farmer_record?.split('|')[0]}
                         datavillage={datavillage}
                         datataluka={datataluka}
                     />
@@ -113,7 +113,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
             key: 'contactno',
             label: 'Contact No',
             accessor: 'contact_no',
-            render: (farmer) => <span>{farmer.contact_no || '-'}</span>
+            render: (farmer) => <span>{farmer.farmer_record?.split('|')[6] || '-'}</span>
         },
         {
             key: 'Benefited',

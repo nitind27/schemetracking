@@ -130,8 +130,8 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const handleDownloadExcel = () => {
         const excelData = modalFarmers.map((farmer, idx) => ({
             "Sr.No": idx + 1,
-            "IFR Holder": farmer.name,
-            "Contact No": farmer.contact_no || "-",
+            "IFR Holder":farmer.farmer_record?.split('|')[0] || "",
+            "Contact No": farmer.farmer_record?.split('|')[6]|| "-",
             "Taluka": farmersData.taluka.find(t => t.taluka_id === Number(farmer.taluka_id))?.name || "",
             "Village": farmersData.villages.find(v => v.village_id === Number(farmer.village_id))?.marathi_name || ""
         }));
@@ -249,10 +249,10 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
                                                     {(currentPage - 1) * rowsPerPage + index + 1}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.name}
+                                                    {farmer.farmer_record?.split('|')[0] || ""}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.contact_no || '-'}
+                                                    {farmer.farmer_record?.split('|')[6] || ""}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {farmersData.taluka.find((data) => data.taluka_id === Number(farmer.taluka_id))?.name || ""}

@@ -187,15 +187,7 @@ const Servedata: React.FC<FarmersdataProps> = ({
             }
         }
         ,
-        {
-            key: 'adivasi',
-            label: 'Adivasi',
-            accessor: 'adivasi',
-            render: (item) => {
-                const nameParts = item.farmer_record?.split('|') || [];
-                return <span>{nameParts[1] || ''}</span>;
-            }
-        },
+
         {
             key: 'village_id',
             label: 'Village',
@@ -234,15 +226,7 @@ const Servedata: React.FC<FarmersdataProps> = ({
                 return <span>{nameParts[3] || ''}</span>;
             }
         },
-        {
-            key: 'nivas_seti',
-            label: 'Nivas Seti',
-            accessor: 'nivas_seti',
-            render: (item) => {
-                const nameParts = item.farmer_record?.split('|') || [];
-                return <span>{nameParts[4] || ''}</span>;
-            }
-        },
+
         {
             key: 'aadhaar_no',
             label: 'Aadhaar No',

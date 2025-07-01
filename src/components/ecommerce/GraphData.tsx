@@ -96,7 +96,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
         const total = farmersInTaluka.length;
         const withAadhaar = farmersInTaluka.filter(
-          (f) => f.aadhaar_no && f.aadhaar_no.trim() !== ""
+          (f) => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
         ).length;
         const withoutAadhaar = total - withAadhaar;
 
@@ -116,7 +116,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
       const total = farmersInTaluka.length;
       const withAadhaar = farmersInTaluka.filter(
-        (f) => f.aadhaar_no && f.aadhaar_no.trim() !== ""
+        (f) => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
       ).length;
       const withoutAadhaar = total - withAadhaar;
 
@@ -239,7 +239,7 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
     const data = filteredFarmers.map((farmer) => ({
       FarmerID: farmer.farmer_id,
       Name: farmer.name || farmer.name || "",
-      Aadhaar: farmer.aadhaar_no || "",
+      Aadhaar:farmer.farmer_record?.split('|')[5] || "",
       Taluka: taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))?.name || "",
       HasDocument: getFarmerDocumentIds(farmer.documents).has(docId)
         ? "Yes"
@@ -348,7 +348,7 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
                           {farmer.name || farmer.name || ""}
                         </td>
                         <td className="border px-2 py-1">
-                          {farmer.aadhaar_no || ""}
+                          {farmer.farmer_record?.split('|')[5]|| ""}
                         </td>
                         <td className="border px-2 py-1">
                           {taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))
@@ -415,10 +415,10 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
     if (!aadhaarModalTalukaId) return [];
     const talukaFarmers = farmers.filter(f => Number(f.taluka_id) === aadhaarModalTalukaId);
     if (aadhaarFilter === "with") {
-      return talukaFarmers.filter(f => f.aadhaar_no && f.aadhaar_no.trim() !== "");
+      return talukaFarmers.filter(f => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== "");
     }
     if (aadhaarFilter === "without") {
-      return talukaFarmers.filter(f => !f.aadhaar_no || f.aadhaar_no.trim() === "");
+      return talukaFarmers.filter(f => !f.farmer_record?.split('|')[5] || f.farmer_record?.split('|')[5].trim() === "");
     }
     return talukaFarmers;
   }, [farmers, aadhaarModalTalukaId, aadhaarFilter]);
@@ -438,15 +438,20 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
     setAadhaarModalOpen(true);
   };
 
+    // render: (item) => {
+    //             const nameParts = item.farmer_record?.split('|') || [];
+    //             return <span>{nameParts[5] || ''}</span>;
+    //         }
+            
   // --- Aadhaar Download Excel Handler ---
   const handleAadhaarDownload = () => {
     if (!aadhaarModalTalukaId) return;
     const data = aadhaarFilteredFarmers.map((farmer) => ({
       FarmerID: farmer.farmer_id,
-      Name: farmer.name || farmer.name || "",
-      Aadhaar: farmer.aadhaar_no || "",
+      Name: farmer.farmer_record?.split('|')[0] || "",
+      Aadhaar: farmer.farmer_record?.split('|')[5] || "" || "",
       Taluka: aadhaarModalTalukaName,
-      HasAadhaar: farmer.aadhaar_no && farmer.aadhaar_no.trim() !== "" ? "Yes" : "No",
+      HasAadhaar: farmer.farmer_record?.split('|')[5] && farmer.farmer_record?.split('|')[5].trim() !== "" ? "Yes" : "No",
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -527,7 +532,7 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
                   </tr>
                 ) : (
                   aadhaarPaginatedFarmers.map((farmer, idx) => {
-                    const hasAadhaar = farmer.aadhaar_no && farmer.aadhaar_no.trim() !== "";
+                    const hasAadhaar = farmer.farmer_record?.split('|')[5] && farmer.farmer_record?.split('|')[5].trim() !== "";
                     return (
                       <tr key={farmer.farmer_id}>
                         <td className="border px-2 py-1">
@@ -535,10 +540,10 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
                         </td>
                         <td className="border px-2 py-1">{farmer.farmer_id}</td>
                         <td className="border px-2 py-1">
-                          {farmer.name || farmer.name || ""}
+                         {farmer.farmer_record?.split('|')[0] || ""}
                         </td>
                         <td className="border px-2 py-1">
-                          {farmer.aadhaar_no || ""}
+                          {farmer.farmer_record?.split('|')[5] || ""}
                         </td>
                         <td className="border px-2 py-1">
                           {aadhaarModalTalukaName}
@@ -621,7 +626,7 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
                     {
                       farmersdata.filter(
                         (f) =>
-                          f.aadhaar_no && f.aadhaar_no.trim() !== ""
+                          f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
                       ).length
                     }
                   </strong>
@@ -635,7 +640,7 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
                     {
                       farmersdata.filter(
                         (f) =>
-                          !f.aadhaar_no || f.aadhaar_no.trim() === ""
+                          !f.farmer_record?.split('|')[5] || f.farmer_record?.split('|')[5].trim() === ""
                       ).length
                     }
                   </strong>

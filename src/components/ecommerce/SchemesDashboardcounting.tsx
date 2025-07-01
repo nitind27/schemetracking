@@ -291,16 +291,16 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                                     {(currentPage -1)*rowsPerPage + index + 1}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.name}
+                                                    {farmer.farmer_record?.split('|')[0]}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.adivasi}
+                                                    {farmer.farmer_record?.split('|')[1]}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.contact_no || '-'}
+                                                    {farmer.farmer_record?.split('|')[6] || '-'}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.vanksetra}
+                                                    {farmer.farmer_record?.split('|')[3]}
                                                 </td>
                                             </tr>
                                         ))}
