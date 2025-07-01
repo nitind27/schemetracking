@@ -22,7 +22,12 @@ interface FarmersdataProps {
     dataschems: Schemesdatas[];
     documents: Documents[];
 }
-
+type FarmerDocumentStatus = {
+  updateNeeded: string;
+  available: string;
+  notAvailable: string;
+};
+type FarmerDocumentMap = Record<string, FarmerDocumentStatus>;
 const Servedata: React.FC<FarmersdataProps> = ({
     data,
     datavillage,
@@ -324,7 +329,7 @@ const Servedata: React.FC<FarmersdataProps> = ({
     const parseFarmerDocuments = (farmer: FarmdersType | null) => {
         if (!farmer || typeof farmer.documents !== 'string') return {};
         // Example segment: "1--No-Yes-No"
-        return farmer.documents.split('|').reduce((acc: any, seg: string) => {
+        return farmer.documents.split('|').reduce<FarmerDocumentMap>((acc, seg) => {
             const [id, rest] = seg.split('--');
             if (id && rest) {
                 const [updateNeeded, available, notAvailable] = rest.split('-');
@@ -338,36 +343,36 @@ const Servedata: React.FC<FarmersdataProps> = ({
     // In your component:
     const farmerDocMap = parseFarmerDocuments(modalFarmer);
     // Helper to get farmer's document IDs as string[]
-    const getFarmerDocIds = (farmer: FarmdersType) => {
-        if (!farmer || typeof farmer.documents !== 'string') return [];
-        return farmer.documents.split('|').map(seg => seg.split('--')[0]).filter(Boolean);
-    };
+    // const getFarmerDocIds = (farmer: FarmdersType) => {
+    //     if (!farmer || typeof farmer.documents !== 'string') return [];
+    //     return farmer.documents.split('|').map(seg => seg.split('--')[0]).filter(Boolean);
+    // };
 
     // Pagination logic for documents in modal
     const totalDocPages = Math.ceil(documents.length / docsPerPage);
     const paginatedDocs = documents.slice((docPage - 1) * docsPerPage, docPage * docsPerPage);
 
-    // Helper to extract scheme data from schemes string
-    function extractSchemeDataFromSchemesString(schemesString?: string): { id: number; status: string }[] {
-        if (!schemesString) return [];
-        const entries = schemesString.split('|');
-        const schemeData: { id: number; status: string }[] = [];
-        entries.forEach(entry => {
-            // Try to match id at start, or id as first segment
-            const idMatch = entry.match(/^(\d+)[-]/) || entry.match(/^(\d+)---/);
-            if (idMatch) {
-                const id = Number(idMatch[1]);
-                // Status is after last dash or after last pipe
-                const status = entry.split('-').pop()?.trim() || 'NotApplied';
-                schemeData.push({ id, status });
-            }
-        });
-        return schemeData;
-    }
+    // // Helper to extract scheme data from schemes string
+    // function extractSchemeDataFromSchemesString(schemesString?: string): { id: number; status: string }[] {
+    //     if (!schemesString) return [];
+    //     const entries = schemesString.split('|');
+    //     const schemeData: { id: number; status: string }[] = [];
+    //     entries.forEach(entry => {
+    //         // Try to match id at start, or id as first segment
+    //         const idMatch = entry.match(/^(\d+)[-]/) || entry.match(/^(\d+)---/);
+    //         if (idMatch) {
+    //             const id = Number(idMatch[1]);
+    //             // Status is after last dash or after last pipe
+    //             const status = entry.split('-').pop()?.trim() || 'NotApplied';
+    //             schemeData.push({ id, status });
+    //         }
+    //     });
+    //     return schemeData;
+    // }
 
     // Pagination logic for schemes in modal
     const totalSchemePages = Math.ceil(dataschems.length / schemesPerPage);
-    const paginatedSchemes = dataschems.slice((schemePage - 1) * schemesPerPage, schemePage * schemesPerPage);
+    // const paginatedSchemes = dataschems.slice((schemePage - 1) * schemesPerPage, schemePage * schemesPerPage);
 
     return (
         <div className="">
