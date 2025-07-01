@@ -238,29 +238,21 @@ const Servedata: React.FC<FarmersdataProps> = ({
         },
         {
             key: 'contact_no',
-            label: 'Contact No',
+            label: 'Contact No & Email',
             accessor: 'contact_no',
             render: (item) => {
                 const nameParts = item.farmer_record?.split('|') || [];
-                return <span>{nameParts[6] || ''}</span>;
+                return <span>{nameParts[6] || ''} <br /> {nameParts[7] || ''}</span>;
             }
         },
-        {
-            key: 'email',
-            label: 'Email',
-            accessor: 'email',
-            render: (item) => {
-                const nameParts = item.farmer_record?.split('|') || [];
-                return <span>{nameParts[7] || ''}</span>;
-            }
-        },
+       
         {
             key: 'kisan_id',
-            label: 'Kisan Id',
+            label: 'Claim Id',
             accessor: 'kisan_id',
             render: (item) => {
                 const nameParts = item.farmer_record?.split('|') || [];
-                return <span>{nameParts[8] || ''}</span>;
+                return <span>{nameParts[15] || ''}</span>;
             }
         },
         {
@@ -292,7 +284,7 @@ const Servedata: React.FC<FarmersdataProps> = ({
                         setSchemePage(1);
                     }}
                 >
-                    Schemes
+                    Availability
                 </button>
             )
         },

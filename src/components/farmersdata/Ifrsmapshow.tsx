@@ -80,7 +80,7 @@ useEffect(() => {
             {/* Close Button */}
             <button
                 onClick={onClose}
-                className="absolute top-4 right-4 z-10 bg-white p-2 rounded-full shadow-md hover:bg-gray-200"
+                className="absolute top-16 right-2 z-10 bg-red-500 p-2 rounded-full shadow-md hover:bg-red-200 text-white"
             >
                 <IoClose size={24} />
             </button>
