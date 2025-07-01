@@ -42,6 +42,7 @@ const Servedata: React.FC<FarmersdataProps> = ({
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [modalFarmer, setModalFarmer] = useState<FarmdersType | null>(null);
+
     const [docPage, setDocPage] = useState(1);
     const docsPerPage = 10;
     const [modalSchemesOpen, setModalSchemesOpen] = useState(false);
@@ -320,6 +321,22 @@ const Servedata: React.FC<FarmersdataProps> = ({
         }
     ];
 
+    const parseFarmerDocuments = (farmer: FarmdersType | null) => {
+        if (!farmer || typeof farmer.documents !== 'string') return {};
+        // Example segment: "1--No-Yes-No"
+        return farmer.documents.split('|').reduce((acc: any, seg: string) => {
+            const [id, rest] = seg.split('--');
+            if (id && rest) {
+                const [updateNeeded, available, notAvailable] = rest.split('-');
+                acc[id] = { updateNeeded, available, notAvailable };
+            }
+            return acc;
+        }, {});
+    };
+
+
+    // In your component:
+    const farmerDocMap = parseFarmerDocuments(modalFarmer);
     // Helper to get farmer's document IDs as string[]
     const getFarmerDocIds = (farmer: FarmdersType) => {
         if (!farmer || typeof farmer.documents !== 'string') return [];
@@ -375,18 +392,40 @@ const Servedata: React.FC<FarmersdataProps> = ({
                                         <th className="border px-2 py-1">अ.क्र.</th>
                                         <th className="border px-2 py-1">दस्तऐवजाचे नाव</th>
                                         <th className="border px-2 py-1">उपलब्धता</th>
-
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {paginatedDocs.map((doc, idx) => {
-                                        const farmerDocIds = getFarmerDocIds(modalFarmer);
-                                        const available = farmerDocIds.includes(String(doc.id));
+                                        const farmerDocMap = parseFarmerDocuments(modalFarmer);
+                                        const docInfo = farmerDocMap[String(doc.id)];
+
+                                        let status = '';
+                                        let statusClass = '';
+
+                                        if (docInfo) {
+                                            if (docInfo.available === 'Yes') {
+                                                status = 'उपलब्ध';
+                                                statusClass = 'text-green-600';
+                                            } else if (docInfo.notAvailable === 'Yes') {
+                                                status = 'उपलब्ध नाही';
+                                                statusClass = 'text-red-600';
+                                            } else if (docInfo.updateNeeded === 'Yes') {
+                                                status = 'अपडेट आवश्यक';
+                                                statusClass = 'text-yellow-600';
+                                            } else {
+                                                status = 'माहिती नाही';
+                                                statusClass = 'text-gray-600';
+                                            }
+                                        } else {
+                                            status = 'माहिती नाही';
+                                            statusClass = 'text-gray-600';
+                                        }
+
                                         return (
                                             <tr key={doc.id}>
                                                 <td className="border px-2 py-1 text-center">{(docPage - 1) * docsPerPage + idx + 1}</td>
                                                 <td className="border px-2 py-1">{doc.document_name}</td>
-                                                <td className={`border px-2 py-1 text-center ${available ? 'text-green-600' : 'text-red-600'}`}>{available ? 'उपलब्ध' : 'उपलब्ध नाही'}</td>
+                                                <td className={`border px-2 py-1 text-center ${statusClass}`}>{status}</td>
                                             </tr>
                                         );
                                     })}
@@ -402,15 +441,16 @@ const Servedata: React.FC<FarmersdataProps> = ({
                         </div>
                         <div className="py-3 px-4 text-right border-t">
                             <button
-                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
                                 onClick={() => setModalOpen(false)}
                             >
-                                Close
+                                बंद करा
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
             {/* Modal for schemes check */}
             {modalSchemesOpen && modalSchemesFarmer && (
                 <div className="fixed inset-0 z-999 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
@@ -435,23 +475,36 @@ const Servedata: React.FC<FarmersdataProps> = ({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedSchemes.map((scheme, idx) => {
-                                        const farmerSchemes = extractSchemeDataFromSchemesString(modalSchemesFarmer.schemes);
-                                        const found = farmerSchemes.find(s => s.id === scheme.scheme_id);
-                                        let statusText = 'लाभार्थी नाही'; // Not Benefited
-                                        if (found) {
-                                            const status = found.status.toLowerCase();
-                                            if (status.includes('benefit') || status.includes('लाभ')) {
-                                                statusText = 'लाभार्थी'; // Benefited
-                                            } else if (status.includes('applied') || status.includes('अर्ज')) {
-                                                statusText = 'अर्ज केले'; // Applied
+                                    {paginatedDocs.map((doc, idx) => {
+                                        const docInfo = farmerDocMap[String(doc.id)];
+
+                                        let status = '';
+                                        let statusClass = '';
+
+                                        if (docInfo) {
+                                            if (docInfo.available === 'Yes') {
+                                                status = 'उपलब्ध';
+                                                statusClass = 'text-green-600';
+                                            } else if (docInfo.notAvailable === 'Yes') {
+                                                status = 'उपलब्ध नाही';
+                                                statusClass = 'text-red-600';
+                                            } else if (docInfo.updateNeeded === 'Yes') {
+                                                status = 'अपडेट आवश्यक';
+                                                statusClass = 'text-yellow-600';
+                                            } else {
+                                                status = 'माहिती नाही';
+                                                statusClass = 'text-gray-600';
                                             }
+                                        } else {
+                                            status = 'माहिती नाही';
+                                            statusClass = 'text-gray-600';
                                         }
+
                                         return (
-                                            <tr key={scheme.scheme_id}>
-                                                <td className="border px-2 py-1 text-center">{(schemePage - 1) * schemesPerPage + idx + 1}</td>
-                                                <td className="border px-2 py-1">{scheme.scheme_name_marathi || scheme.scheme_name}</td>
-                                                <td className={`border px-2 py-1 text-center ${statusText === 'लाभार्थी' ? 'text-green-600' : statusText === 'अर्ज केले' ? 'text-yellow-600' : 'text-red-600'}`}>{statusText}</td>
+                                            <tr key={doc.id}>
+                                                <td className="border px-2 py-1 text-center">{(docPage - 1) * docsPerPage + idx + 1}</td>
+                                                <td className="border px-2 py-1">{doc.document_name}</td>
+                                                <td className={`border px-2 py-1 text-center ${statusClass}`}>{status}</td>
                                             </tr>
                                         );
                                     })}
