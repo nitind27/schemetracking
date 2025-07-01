@@ -23,9 +23,9 @@ interface FarmersdataProps {
     documents: Documents[];
 }
 type FarmerDocumentStatus = {
-  updateNeeded: string;
-  available: string;
-  notAvailable: string;
+    updateNeeded: string;
+    available: string;
+    notAvailable: string;
 };
 type FarmerDocumentMap = Record<string, FarmerDocumentStatus>;
 const Servedata: React.FC<FarmersdataProps> = ({
@@ -93,6 +93,22 @@ const Servedata: React.FC<FarmersdataProps> = ({
         [datavillage, selectedTaluka]
     );
 
+    function extractSchemeDataFromSchemesString(schemesString?: string): { id: number; status: string }[] {
+        if (!schemesString) return [];
+        const entries = schemesString.split('|');
+        const schemeData: { id: number; status: string }[] = [];
+        entries.forEach(entry => {
+            // Try to match id at start, or id as first segment
+            const idMatch = entry.match(/^(\d+)[-]/) || entry.match(/^(\d+)---/);
+            if (idMatch) {
+                const id = Number(idMatch[1]);
+                const status = entry.split('-').pop()?.trim() || 'NotApplied';
+                schemeData.push({ id, status });
+            }
+        });
+        return schemeData;
+    }
+    const paginatedSchemes = dataschems.slice((schemePage - 1) * schemesPerPage, schemePage * schemesPerPage);
 
     const filteredFarmers = useMemo(() => {
         let result = data;
@@ -341,7 +357,7 @@ const Servedata: React.FC<FarmersdataProps> = ({
 
 
     // In your component:
-    const farmerDocMap = parseFarmerDocuments(modalFarmer);
+    // const farmerDocMap = parseFarmerDocuments(modalFarmer);
     // Helper to get farmer's document IDs as string[]
     // const getFarmerDocIds = (farmer: FarmdersType) => {
     //     if (!farmer || typeof farmer.documents !== 'string') return [];
@@ -480,36 +496,23 @@ const Servedata: React.FC<FarmersdataProps> = ({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedDocs.map((doc, idx) => {
-                                        const docInfo = farmerDocMap[String(doc.id)];
-
-                                        let status = '';
-                                        let statusClass = '';
-
-                                        if (docInfo) {
-                                            if (docInfo.available === 'Yes') {
-                                                status = 'उपलब्ध';
-                                                statusClass = 'text-green-600';
-                                            } else if (docInfo.notAvailable === 'Yes') {
-                                                status = 'उपलब्ध नाही';
-                                                statusClass = 'text-red-600';
-                                            } else if (docInfo.updateNeeded === 'Yes') {
-                                                status = 'अपडेट आवश्यक';
-                                                statusClass = 'text-yellow-600';
-                                            } else {
-                                                status = 'माहिती नाही';
-                                                statusClass = 'text-gray-600';
+                                    {paginatedSchemes.map((scheme, idx) => {
+                                        const farmerSchemes = extractSchemeDataFromSchemesString(modalSchemesFarmer.schemes);
+                                        const found = farmerSchemes.find(s => s.id === scheme.scheme_id);
+                                        let statusText = 'लाभार्थी नाही'; // Not Benefited
+                                        if (found) {
+                                            const status = found.status.toLowerCase();
+                                            if (status.includes('benefit') || status.includes('लाभ')) {
+                                                statusText = 'लाभार्थी'; // Benefited
+                                            } else if (status.includes('applied') || status.includes('अर्ज')) {
+                                                statusText = 'अर्ज केले'; // Applied
                                             }
-                                        } else {
-                                            status = 'माहिती नाही';
-                                            statusClass = 'text-gray-600';
                                         }
-
                                         return (
-                                            <tr key={doc.id}>
-                                                <td className="border px-2 py-1 text-center">{(docPage - 1) * docsPerPage + idx + 1}</td>
-                                                <td className="border px-2 py-1">{doc.document_name}</td>
-                                                <td className={`border px-2 py-1 text-center ${statusClass}`}>{status}</td>
+                                            <tr key={scheme.scheme_id}>
+                                                <td className="border px-2 py-1 text-center">{(schemePage - 1) * schemesPerPage + idx + 1}</td>
+                                                <td className="border px-2 py-1">{scheme.scheme_name_marathi || scheme.scheme_name}</td>
+                                                <td className={`border px-2 py-1 text-center ${statusText === 'लाभार्थी' ? 'text-green-600' : statusText === 'अर्ज केले' ? 'text-yellow-600' : 'text-red-600'}`}>{statusText}</td>
                                             </tr>
                                         );
                                     })}
