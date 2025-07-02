@@ -356,7 +356,7 @@ const Servedata: React.FC<FarmersdataProps> = ({
         const maxSchemeRows = dataschems.length;
 
         // Prepare all rows
-        let rows: any[][] = [];
+        const rows: string[][] = [];
         filteredFarmers.forEach(farmer => {
             const nameParts = farmer.farmer_record?.split('|') || [];
             const villageName = datavillage.find(v => v.village_id === Number(farmer.village_id))?.name || '';
