@@ -343,6 +343,10 @@ const Servedata: React.FC<FarmersdataProps> = ({
 
     // Export to Excel logic
 const handleExportExcel = () => {
+    // Main header row
+    const mainHeader = ['IFR Sarve'];
+    
+    // Column headers
     const baseHeaders = [
         'Sr No',
         'Name', 'Village', 'Taluka', 'Gat No', 'Vanksetra', 'Aadhaar No', 
@@ -350,12 +354,16 @@ const handleExportExcel = () => {
     ];
     const docTableHeaders = ['Doc Sr No', 'Document Name', 'Status'];
     const schemeTableHeaders = ['Scheme Sr No', 'Scheme Name', 'Status'];
+    const locationHeader = ['Location'];
 
     const maxDocRows = documents.length;
     const maxSchemeRows = dataschems.length;
 
     const rows: string[][] = [];
     let farmerSrNo = 1;
+    
+    // Add empty row after main header for spacing
+    rows.push([]);
     
     filteredFarmers.forEach(farmer => {
         const nameParts = farmer.farmer_record?.split('|') || [];
@@ -365,10 +373,10 @@ const handleExportExcel = () => {
         const email = nameParts[7] || '';
         const compartmentNumber = nameParts[13] || '';
         const scheduleJ = nameParts[14] || '';
+        const hasLocation = farmer.gis && farmer.gis.trim() !== '' ? 'Yes' : 'No';
         const docMap = parseFarmerDocuments(farmer);
         const farmerSchemes = extractSchemeDataFromSchemesString(farmer.schemes);
 
-        // First row: Farmer info + headers for docs/schemes
         rows.push([
             String(farmerSrNo++),
             nameParts[0] || '', 
@@ -384,21 +392,19 @@ const handleExportExcel = () => {
             scheduleJ,
             ...docTableHeaders, 
             '', 
-            ...schemeTableHeaders
+            ...schemeTableHeaders,
+            hasLocation
         ]);
 
-        // Fill document and scheme rows side by side
         const maxRows = Math.max(maxDocRows, maxSchemeRows);
         for (let i = 0; i < maxRows; i++) {
             const doc = documents[i];
             const scheme = dataschems[i];
             
-            // Document columns
             const docSrNo = doc ? String(i + 1) : '';
             const docName = doc ? doc.document_name : '';
             const docStatus = doc ? getDocumentStatusMarathi(docMap[String(doc.id)]) : '';
             
-            // Scheme columns
             const schemeSrNo = scheme ? String(i + 1) : '';
             let schemeName = '';
             let schemeStatus = '';
@@ -417,37 +423,64 @@ const handleExportExcel = () => {
             }
             
             rows.push([
-                '', // Empty for farmer Sr No
-                '', '', '', '', '', '', '', '', '', '', '', // Empty for farmer info
-                docSrNo, docName, docStatus, '', // Document info
-                schemeSrNo, schemeName, schemeStatus // Scheme info
+                '', '', '', '', '', '', '', '', '', '', '', '',
+                docSrNo, docName, docStatus, '',
+                schemeSrNo, schemeName, schemeStatus,
+                ''
             ]);
         }
-        // Blank row for separation
         rows.push([]);
     });
 
-    // Create worksheet and workbook
+    // Create worksheet
     const ws = XLSX.utils.aoa_to_sheet([
-        baseHeaders.concat(docTableHeaders).concat(['']).concat(schemeTableHeaders),
+        mainHeader,
+        [...baseHeaders, ...docTableHeaders, '', ...schemeTableHeaders, ...locationHeader],
         ...rows
     ]);
 
-    // Add borders to all cells
+    // Merge and style main header
     if (ws['!ref']) {
         const range = XLSX.utils.decode_range(ws['!ref']);
-        for (let R = range.s.r; R <= range.e.r; ++R) {
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: range.e.c } }
+        ];
+        
+        // Style main header
+        const headerCell = ws['A1'];
+        if (headerCell) {
+            headerCell.s = {
+                font: {
+                    bold: true,
+                    sz: 18, // Larger font size
+                    color: { rgb: '000000' }
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center'
+                },
+                fill: {
+                    patternType: 'solid',
+                    fgColor: { rgb: 'D3D3D3' } // Light gray background
+                }
+            };
+        }
+    }
+
+    // Add borders to data cells
+    if (ws['!ref']) {
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = 1; R <= range.e.r; ++R) {
             for (let C = range.s.c; C <= range.e.c; ++C) {
                 const cell_address = { c: C, r: R };
                 const cell_ref = XLSX.utils.encode_cell(cell_address);
                 if (!ws[cell_ref]) continue;
-                ws[cell_ref].s = {
-                    border: {
-                        top: { style: 'thin', color: { rgb: '000000' } },
-                        bottom: { style: 'thin', color: { rgb: '000000' } },
-                        left: { style: 'thin', color: { rgb: '000000' } },
-                        right: { style: 'thin', color: { rgb: '000000' } }
-                    }
+                ws[cell_ref].s = ws[cell_ref].s || {};
+                ws[cell_ref].s.border = {
+                    top: { style: 'thin', color: { rgb: '000000' } },
+                    bottom: { style: 'thin', color: { rgb: '000000' } },
+                    left: { style: 'thin', color: { rgb: '000000' } },
+                    right: { style: 'thin', color: { rgb: '000000' } }
                 };
             }
         }
