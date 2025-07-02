@@ -221,7 +221,7 @@ const SchemeStatusBarChart = ({
                       style={{ background: "#ffc658", borderRadius: 4 }}
                     />
                     <p>
-                      Not Applied
+                      Not Benefited
                       {/* : <strong>{totalNotApplied}</strong> */}
                     </p>
                   </div>

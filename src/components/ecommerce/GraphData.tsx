@@ -139,46 +139,46 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     ticks.push(i);
   }
 
-// Helper to parse farmer's document string and return a map of docId => { check, updation, available }
-const parseFarmerDocuments = (docString: string | undefined): Record<string, { check: string, updation: string, available: string }> => {
-  const result: Record<string, { check: string, updation: string, available: string }> = {};
-  if (!docString) return result;
-  docString.split('|').forEach(segment => {
-    const [id, status] = segment.split('--');
-    if (!id || !status) return;
-    const [updation, available, check] = status.split('-');
-    if (check && updation && available) {
-      result[id.trim()] = {
-        updation: updation.trim(),
-        available: available.trim(),
-        check: check.trim(),
-      };
-    }
-  });
-  return result;
-};
-
-const documentChartData: DocumentBar[] = documents?.map((doc) => {
-  let hasCount = 0;
-  let notCount = 0;
-
-  farmers.forEach((farmer) => {
-    const docMap = parseFarmerDocuments(farmer.documents);
-    // If farmer has this doc and available is 'Yes'
-    if (docMap[String(doc.id)] && docMap[String(doc.id)].available === 'Yes') {
-      hasCount++;
-    } else {
-      notCount++;
-    }
-  });
-
-  return {
-    document: doc.document_name,
-    has: hasCount,
-    not: notCount,
-    id: doc.id,
+  // Helper to parse farmer's document string and return a map of docId => { check, updation, available }
+  const parseFarmerDocuments = (docString: string | undefined): Record<string, { check: string, updation: string, available: string }> => {
+    const result: Record<string, { check: string, updation: string, available: string }> = {};
+    if (!docString) return result;
+    docString.split('|').forEach(segment => {
+      const [id, status] = segment.split('--');
+      if (!id || !status) return;
+      const [updation, available, check] = status.split('-');
+      if (check && updation && available) {
+        result[id.trim()] = {
+          updation: updation.trim(),
+          available: available.trim(),
+          check: check.trim(),
+        };
+      }
+    });
+    return result;
   };
-}) || [];
+
+  const documentChartData: DocumentBar[] = documents?.map((doc) => {
+    let hasCount = 0;
+    let notCount = 0;
+
+    farmers.forEach((farmer) => {
+      const docMap = parseFarmerDocuments(farmer.documents);
+      // If farmer has this doc and available is 'Yes'
+      if (docMap[String(doc.id)] && docMap[String(doc.id)].available === 'Yes') {
+        hasCount++;
+      } else {
+        notCount++;
+      }
+    });
+
+    return {
+      document: doc.document_name,
+      has: hasCount,
+      not: notCount,
+      id: doc.id,
+    };
+  }) || [];
 
   // --- Modal State for Documents ---
   const [modalOpen, setModalOpen] = useState(false);
@@ -239,7 +239,7 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
     const data = filteredFarmers.map((farmer) => ({
       FarmerID: farmer.farmer_id,
       Name: farmer.name || farmer.name || "",
-      Aadhaar:farmer.farmer_record?.split('|')[5] || "",
+      Aadhaar: farmer.farmer_record?.split('|')[5] || "",
       Taluka: taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))?.name || "",
       HasDocument: getFarmerDocumentIds(farmer.documents).has(docId)
         ? "Yes"
@@ -345,10 +345,10 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
                         </td>
                         <td className="border px-2 py-1">{farmer.farmer_id}</td>
                         <td className="border px-2 py-1">
-                          {farmer.name || farmer.name || ""}
+                          {farmer.farmer_record?.split('|')[0] || ""}
                         </td>
                         <td className="border px-2 py-1">
-                          {farmer.farmer_record?.split('|')[5]|| ""}
+                          {farmer.farmer_record?.split('|')[5] || ""}
                         </td>
                         <td className="border px-2 py-1">
                           {taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))
@@ -438,11 +438,11 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
     setAadhaarModalOpen(true);
   };
 
-    // render: (item) => {
-    //             const nameParts = item.farmer_record?.split('|') || [];
-    //             return <span>{nameParts[5] || ''}</span>;
-    //         }
-            
+  // render: (item) => {
+  //             const nameParts = item.farmer_record?.split('|') || [];
+  //             return <span>{nameParts[5] || ''}</span>;
+  //         }
+
   // --- Aadhaar Download Excel Handler ---
   const handleAadhaarDownload = () => {
     if (!aadhaarModalTalukaId) return;
@@ -540,7 +540,7 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
                         </td>
                         <td className="border px-2 py-1">{farmer.farmer_id}</td>
                         <td className="border px-2 py-1">
-                         {farmer.farmer_record?.split('|')[0] || ""}
+                          {farmer.farmer_record?.split('|')[0] || ""}
                         </td>
                         <td className="border px-2 py-1">
                           {farmer.farmer_record?.split('|')[5] || ""}
@@ -693,7 +693,7 @@ const documentChartData: DocumentBar[] = documents?.map((doc) => {
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0 ">
-           Availability of each documents for IFR holders
+            Availability of each documents for IFR holders
           </h2>
           {/* Overall summary card */}
           <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
