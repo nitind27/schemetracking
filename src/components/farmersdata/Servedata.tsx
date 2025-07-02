@@ -342,100 +342,123 @@ const Servedata: React.FC<FarmersdataProps> = ({
     };
 
     // Export to Excel logic
-    const handleExportExcel = () => {
-        // Farmer info headers
-        const baseHeaders = [
-            'Name', 'Village', 'Taluka', 'Gat No', 'Vanksetra', 'Aadhaar No', 'Contact No', 'Email', 'Claim Id'
-        ];
-        // Document and scheme table headers
-        const docTableHeaders = ['Document Name', 'Status'];
-        const schemeTableHeaders = ['Scheme Name', 'Status'];
+const handleExportExcel = () => {
+    const baseHeaders = [
+        'Sr No',
+        'Name', 'Village', 'Taluka', 'Gat No', 'Vanksetra', 'Aadhaar No', 
+        'Contact No', 'Email', 'Claim Id', 'Compartment Number', 'Schedule J'
+    ];
+    const docTableHeaders = ['Doc Sr No', 'Document Name', 'Status'];
+    const schemeTableHeaders = ['Scheme Sr No', 'Scheme Name', 'Status'];
 
-        // Calculate max rows needed for doc/scheme tables
-        const maxDocRows = documents.length;
-        const maxSchemeRows = dataschems.length;
+    const maxDocRows = documents.length;
+    const maxSchemeRows = dataschems.length;
 
-        // Prepare all rows
-        const rows: string[][] = [];
-        filteredFarmers.forEach(farmer => {
-            const nameParts = farmer.farmer_record?.split('|') || [];
-            const villageName = datavillage.find(v => v.village_id === Number(farmer.village_id))?.name || '';
-            const talukaName = datataluka.find(t => t.taluka_id === Number(farmer.taluka_id))?.name || '';
-            const contactNo = nameParts[6] || '';
-            const email = nameParts[7] || '';
-            const docMap = parseFarmerDocuments(farmer);
-            const farmerSchemes = extractSchemeDataFromSchemesString(farmer.schemes);
+    const rows: string[][] = [];
+    let farmerSrNo = 1;
+    
+    filteredFarmers.forEach(farmer => {
+        const nameParts = farmer.farmer_record?.split('|') || [];
+        const villageName = datavillage.find(v => v.village_id === Number(farmer.village_id))?.name || '';
+        const talukaName = datataluka.find(t => t.taluka_id === Number(farmer.taluka_id))?.name || '';
+        const contactNo = nameParts[6] || '';
+        const email = nameParts[7] || '';
+        const compartmentNumber = nameParts[13] || '';
+        const scheduleJ = nameParts[14] || '';
+        const docMap = parseFarmerDocuments(farmer);
+        const farmerSchemes = extractSchemeDataFromSchemesString(farmer.schemes);
 
-            // First row: Farmer info + headers for docs/schemes
-            rows.push([
-                nameParts[0] || '', villageName, talukaName, nameParts[2] || '', nameParts[3] || '',
-                nameParts[5] || '', contactNo, email, nameParts[15] || '',
-                ...docTableHeaders, '', ...schemeTableHeaders
-            ]);
-
-            // Fill document and scheme rows side by side
-            const maxRows = Math.max(maxDocRows, maxSchemeRows);
-            for (let i = 0; i < maxRows; i++) {
-                const doc = documents[i];
-                const scheme = dataschems[i];
-                const docName = doc ? doc.document_name : '';
-                const docStatus = doc ? getDocumentStatusMarathi(docMap[String(doc.id)]) : '';
-                let schemeName = '';
-                let schemeStatus = '';
-                if (scheme) {
-                    schemeName = scheme.scheme_name_marathi || scheme.scheme_name;
-                    const found = farmerSchemes.find(s => s.id === scheme.scheme_id);
-                    schemeStatus = 'लाभार्थी नाही';
-                    if (found) {
-                        const status = found.status.toLowerCase();
-                        if (status.includes('benefit') || status.includes('लाभ')) {
-                            schemeStatus = 'लाभार्थी';
-                        } else if (status.includes('applied') || status.includes('अर्ज')) {
-                            schemeStatus = 'अर्ज केले';
-                        }
-                    }
-                }
-                rows.push([
-                    '', '', '', '', '', '', '', '', '',
-                    docName, docStatus, '', schemeName, schemeStatus
-                ]);
-            }
-            // Blank row for separation
-            rows.push([]);
-        });
-
-        // Create worksheet and workbook
-        const ws = XLSX.utils.aoa_to_sheet([
-            baseHeaders.concat(docTableHeaders).concat(['']).concat(schemeTableHeaders),
-            ...rows
+        // First row: Farmer info + headers for docs/schemes
+        rows.push([
+            String(farmerSrNo++),
+            nameParts[0] || '', 
+            villageName, 
+            talukaName, 
+            nameParts[2] || '', 
+            nameParts[3] || '',
+            nameParts[5] || '', 
+            contactNo, 
+            email, 
+            nameParts[15] || '',
+            compartmentNumber,
+            scheduleJ,
+            ...docTableHeaders, 
+            '', 
+            ...schemeTableHeaders
         ]);
 
-        // Add borders to all cells (if using xlsx-style)
-        if (ws['!ref']) {
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for (let R = range.s.r; R <= range.e.r; ++R) {
-                for (let C = range.s.c; C <= range.e.c; ++C) {
-                    const cell_address = { c: C, r: R };
-                    const cell_ref = XLSX.utils.encode_cell(cell_address);
-                    if (!ws[cell_ref]) continue;
-                    ws[cell_ref].s = {
-                        border: {
-                            top: { style: 'thin', color: { rgb: '000000' } },
-                            bottom: { style: 'thin', color: { rgb: '000000' } },
-                            left: { style: 'thin', color: { rgb: '000000' } },
-                            right: { style: 'thin', color: { rgb: '000000' } }
-                        }
-                    };
+        // Fill document and scheme rows side by side
+        const maxRows = Math.max(maxDocRows, maxSchemeRows);
+        for (let i = 0; i < maxRows; i++) {
+            const doc = documents[i];
+            const scheme = dataschems[i];
+            
+            // Document columns
+            const docSrNo = doc ? String(i + 1) : '';
+            const docName = doc ? doc.document_name : '';
+            const docStatus = doc ? getDocumentStatusMarathi(docMap[String(doc.id)]) : '';
+            
+            // Scheme columns
+            const schemeSrNo = scheme ? String(i + 1) : '';
+            let schemeName = '';
+            let schemeStatus = '';
+            if (scheme) {
+                schemeName = scheme.scheme_name_marathi || scheme.scheme_name;
+                const found = farmerSchemes.find(s => s.id === scheme.scheme_id);
+                schemeStatus = 'लाभार्थी नाही';
+                if (found) {
+                    const status = found.status.toLowerCase();
+                    if (status.includes('benefit') || status.includes('लाभ')) {
+                        schemeStatus = 'लाभार्थी';
+                    } else if (status.includes('applied') || status.includes('अर्ज')) {
+                        schemeStatus = 'अर्ज केले';
+                    }
                 }
             }
+            
+            rows.push([
+                '', // Empty for farmer Sr No
+                '', '', '', '', '', '', '', '', '', '', '', // Empty for farmer info
+                docSrNo, docName, docStatus, '', // Document info
+                schemeSrNo, schemeName, schemeStatus // Scheme info
+            ]);
         }
+        // Blank row for separation
+        rows.push([]);
+    });
 
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Farmers');
-        XLSX.writeFile(wb, 'farmers_data.xlsx');
-    };
+    // Create worksheet and workbook
+    const ws = XLSX.utils.aoa_to_sheet([
+        baseHeaders.concat(docTableHeaders).concat(['']).concat(schemeTableHeaders),
+        ...rows
+    ]);
 
+    // Add borders to all cells
+    if (ws['!ref']) {
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell_address = { c: C, r: R };
+                const cell_ref = XLSX.utils.encode_cell(cell_address);
+                if (!ws[cell_ref]) continue;
+                ws[cell_ref].s = {
+                    border: {
+                        top: { style: 'thin', color: { rgb: '000000' } },
+                        bottom: { style: 'thin', color: { rgb: '000000' } },
+                        left: { style: 'thin', color: { rgb: '000000' } },
+                        right: { style: 'thin', color: { rgb: '000000' } }
+                    }
+                };
+            }
+        }
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Farmers');
+    XLSX.writeFile(wb, 'IFR SARVE DATA.xlsx');
+};
     // Pagination logic for documents in modal
+    
     const totalDocPages = Math.ceil(documents.length / docsPerPage);
     const paginatedDocs = documents.slice((docPage - 1) * docsPerPage, docPage * docsPerPage);
 
