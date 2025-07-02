@@ -34,7 +34,7 @@ type SchemeBarData = {
 
 const STATUS_LABELS = [
   { value: "Applied", label: "Applied", color: "#8884d8" },
-  { value: "NotApplied", label: "Not Applied", color: "#ffc658" },
+  { value: "NotApplied", label: "Not Benefited", color: "#ffc658" },
   { value: "Benefited", label: "Benefited", color: "#82ca9d" },
 ];
 const PAGE_SIZE = 50;
