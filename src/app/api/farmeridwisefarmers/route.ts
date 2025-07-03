@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     const placeholders = farmerIds.map(() => '?').join(', ');
-    const query = `SELECT * FROM farmers WHERE farmer_id IN (${placeholders}) AND status = "Active"`;
+    const query = `SELECT * FROM farmers_new WHERE farmer_id IN (${placeholders}) AND status = "Active"`;
 
     const [rows] = await pool.query<RowDataPacket[]>(query, farmerIds);
 
