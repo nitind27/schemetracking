@@ -31,7 +31,7 @@ const parseFarmerDocuments = (docString: string | undefined): Record<string, { c
     docString.split('|').forEach(segment => {
         const [id, status] = segment.split('--');
         if (!id || !status) return;
-        const [updation, available, check] = status.split('-');
+        const [updation, check, available] = status.split('-');
         if (check && updation && available) {
             result[id.trim()] = {
                 check: check.trim(),

@@ -146,7 +146,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     docString.split('|').forEach(segment => {
       const [id, status] = segment.split('--');
       if (!id || !status) return;
-      const [updation, available, check] = status.split('-');
+      const [updation, check, available] = status.split('-');
       if (check && updation && available) {
         result[id.trim()] = {
           updation: updation.trim(),
@@ -157,7 +157,6 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     });
     return result;
   };
-
   const documentChartData: DocumentBar[] = documents?.map((doc) => {
     let hasCount = 0;
     let notCount = 0;
