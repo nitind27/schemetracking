@@ -37,9 +37,9 @@ async function getData(): Promise<{
   // ]);
 
     const [farmersRes, schemesRes,usersRes] = await Promise.all([
-    fetch(`https://weclocks.org/api/farmers`, { cache: 'no-store' }),
-    fetch(`https://weclocks.org/api/schemescrud`, { cache: 'no-store' }),
-    fetch(`https://weclocks.org/api/users`, { cache: 'no-store' }),
+    fetch(`https://fra.weclocks.online/api/farmers`, { cache: 'no-store' }),
+    fetch(`https://fra.weclocks.online/api/schemescrud`, { cache: 'no-store' }),
+    fetch(`https://fra.weclocks.online/api/users`, { cache: 'no-store' }),
   ]);
 
   const [farmers, schemes, users] = await Promise.all([
