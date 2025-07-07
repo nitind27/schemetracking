@@ -237,7 +237,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
       documents.find((d) => d.id === docId)?.document_name || "Document";
     const data = filteredFarmers.map((farmer) => ({
       FarmerID: farmer.farmer_id,
-      Name: farmer.name || farmer.name || "",
+      Name: farmer.farmer_record?.split('|')[0] ||"",
       Aadhaar: farmer.farmer_record?.split('|')[5] || "",
       Taluka: taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))?.name || "",
       HasDocument: getFarmerDocumentIds(farmer.documents).has(docId)
