@@ -54,25 +54,27 @@ type DocumentBar = {
 
 const PAGE_SIZE = 50;
 
-const getFarmerDocumentIds = (docString: string | undefined) => {
-  if (!docString) return new Set<number>();
-  return new Set(
-    docString
-      .split("|")
-      .map((entry) => {
-        const [id, fileName] = entry.split("-");
-        if (
-          id &&
-          fileName &&
-          fileName !== "No" &&
-          fileName.trim() !== ""
-        ) {
-          return parseInt(id, 10);
-        }
-        return null;
-      })
-      .filter((id) => id !== null)
-  );
+const parseFarmerDocuments = (docString: string | undefined): Record<string, { check: string, updation: string, available: string }> => {
+  const result: Record<string, { check: string, updation: string, available: string }> = {};
+  if (!docString) return result;
+  docString.split('|').forEach(segment => {
+    const [id, status] = segment.split('--');
+    if (!id || !status) return;
+    const [updation, check, available] = status.split('-');
+    if (check && updation && available) {
+      result[id.trim()] = {
+        updation: updation.trim(),
+        available: available.trim(),
+        check: check.trim(),
+      };
+    }
+  });
+  return result;
+};
+
+const farmerHasAvailableDocument = (farmer: FarmdersType, docId: number) => {
+  const docMap = parseFarmerDocuments(farmer.documents);
+  return docMap[String(docId)] && docMap[String(docId)].available === 'Yes';
 };
 
 const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
@@ -139,24 +141,6 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     ticks.push(i);
   }
 
-  // Helper to parse farmer's document string and return a map of docId => { check, updation, available }
-  const parseFarmerDocuments = (docString: string | undefined): Record<string, { check: string, updation: string, available: string }> => {
-    const result: Record<string, { check: string, updation: string, available: string }> = {};
-    if (!docString) return result;
-    docString.split('|').forEach(segment => {
-      const [id, status] = segment.split('--');
-      if (!id || !status) return;
-      const [updation, check, available] = status.split('-');
-      if (check && updation && available) {
-        result[id.trim()] = {
-          updation: updation.trim(),
-          available: available.trim(),
-          check: check.trim(),
-        };
-      }
-    });
-    return result;
-  };
   const documentChartData: DocumentBar[] = documents?.map((doc) => {
     let hasCount = 0;
     let notCount = 0;
@@ -194,9 +178,9 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const docId = selectedDocDropdown ?? selectedDocId;
     if (!docId) return [];
     return farmers.filter((farmer) => {
-      const docIds = getFarmerDocumentIds(farmer.documents);
-      if (docFilter === "has") return docIds.has(docId);
-      if (docFilter === "not") return !docIds.has(docId);
+      const hasAvailable = farmerHasAvailableDocument(farmer, docId);
+      if (docFilter === "has") return hasAvailable;
+      if (docFilter === "not") return !hasAvailable;
       return true;
     });
   }, [farmers, docFilter, selectedDocDropdown, selectedDocId]);
@@ -235,14 +219,20 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     if (!docId) return;
     const docName =
       documents.find((d) => d.id === docId)?.document_name || "Document";
-    const data = filteredFarmers.map((farmer) => ({
+
+    let farmersToExport = farmers.filter((farmer) => {
+      const hasAvailable = farmerHasAvailableDocument(farmer, docId);
+      if (docFilter === "has") return hasAvailable;
+      if (docFilter === "not") return !hasAvailable;
+      return true;
+    });
+
+    const data = farmersToExport.map((farmer) => ({
       FarmerID: farmer.farmer_id,
-      Name: farmer.farmer_record?.split('|')[0] ||"",
+      Name: farmer.farmer_record?.split('|')[0] || "",
       Aadhaar: farmer.farmer_record?.split('|')[5] || "",
       Taluka: taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))?.name || "",
-      HasDocument: getFarmerDocumentIds(farmer.documents).has(docId)
-        ? "Yes"
-        : "No",
+      HasDocument: farmerHasAvailableDocument(farmer, docId) ? "Yes" : "No",
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -334,9 +324,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 ) : (
                   paginatedFarmers.map((farmer, idx) => {
                     const docId = selectedDocDropdown ?? selectedDocId;
-                    const hasDoc = getFarmerDocumentIds(farmer.documents).has(
-                      docId!
-                    );
+                    const hasDoc = farmerHasAvailableDocument(farmer, docId!);
                     return (
                       <tr key={farmer.farmer_id}>
                         <td className="border px-2 py-1">
@@ -436,11 +424,6 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     setAadhaarPage(1);
     setAadhaarModalOpen(true);
   };
-
-  // render: (item) => {
-  //             const nameParts = item.farmer_record?.split('|') || [];
-  //             return <span>{nameParts[5] || ''}</span>;
-  //         }
 
   // --- Aadhaar Download Excel Handler ---
   const handleAadhaarDownload = () => {
@@ -595,8 +578,6 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
         </div>
       </div>
     ) : null;
-  // const totalHas = documentChartData.reduce((sum, doc) => sum + doc.has, 0);
-  // const totalNot = documentChartData.reduce((sum, doc) => sum + doc.not, 0);
 
   // --- Render ---
   return (
