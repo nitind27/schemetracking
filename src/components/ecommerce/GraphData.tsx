@@ -220,7 +220,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const docName =
       documents.find((d) => d.id === docId)?.document_name || "Document";
 
-    let farmersToExport = farmers.filter((farmer) => {
+    const farmersToExport = farmers.filter((farmer) => {
       const hasAvailable = farmerHasAvailableDocument(farmer, docId);
       if (docFilter === "has") return hasAvailable;
       if (docFilter === "not") return !hasAvailable;
