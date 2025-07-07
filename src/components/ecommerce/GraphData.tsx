@@ -267,40 +267,50 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               Farmers for Document:{" "}
               <span className="text-blue-600">{selectedDocName}</span>
             </h3>
-            <div className="flex gap-2 flex-wrap">
-              <select
-                value={selectedDocDropdown ?? ""}
-                onChange={handleDocDropdownChange}
-                className="border rounded px-2 py-1"
-              >
-                {documents.map((doc) => (
-                  <option value={doc.id} key={doc.id}>
-                    {doc.document_name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={docFilter}
 
+          </div>
+          <div>
+            <div className="flex gap-2 flex-wrap rounded p-2 items-center">
+              <label htmlFor="">Select Documents</label>
 
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                  const value = e.target.value as "all" | "has" | "not";
-                  setDocFilter(value);
-                  setPage(1);
-                }}
-                className="border rounded px-2 py-1"
-              >
-                <option value="all">All</option>
-                <option value="has">उपलब्ध</option>
-                <option value="not">उपलब्ध नाही</option>
-              </select>
+              <div className="card bg-gray-200">
+                <select
+                  value={selectedDocDropdown ?? ""}
+                  onChange={handleDocDropdownChange}
+                  className="border rounded px-2 py-1"
+                >
+                  {documents.map((doc) => (
+                    <option value={doc.id} key={doc.id}>
+                      {doc.document_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="card bg-gray-200">
+                <select
+                  value={docFilter}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                    const value = e.target.value as "all" | "has" | "not";
+                    setDocFilter(value);
+                    setPage(1);
+                  }}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value="all">All</option>
+                  <option value="has">उपलब्ध</option>
+                  <option value="not">उपलब्ध नाही</option>
+                </select>
+              </div>
+
               <button
-                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 ml-auto"
                 onClick={handleDownload}
               >
                 Download Excel
               </button>
             </div>
+
           </div>
           <div className="overflow-auto max-h-[60vh]">
             <table className="min-w-full border text-sm">
@@ -471,20 +481,23 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               taluka
             </h3>
             <div className="flex gap-2 flex-wrap">
-              <select
-                value={aadhaarFilter}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                  const value = e.target.value as "all" | "with" | "without";
-                  setAadhaarFilter(value);
-                  setAadhaarPage(1);
-                }}
+              <div className="card bg-gray-200 rounded">
 
-                className="border rounded px-2 py-1"
-              >
-                <option value="all">All</option>
-                <option value="with">Available</option>
-                <option value="without">Not Availbale</option>
-              </select>
+                <select
+                  value={aadhaarFilter}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                    const value = e.target.value as "all" | "with" | "without";
+                    setAadhaarFilter(value);
+                    setAadhaarPage(1);
+                  }}
+
+                  className="border rounded px-2 py-1"
+                >
+                  <option value="all">All</option>
+                  <option value="with">Available</option>
+                  <option value="without">Not Availbale</option>
+                </select>
+              </div>
               <button
                 className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 mr-5"
                 onClick={handleAadhaarDownload}

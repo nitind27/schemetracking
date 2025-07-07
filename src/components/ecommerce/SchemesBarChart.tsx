@@ -190,9 +190,9 @@ const SchemeStatusBarChart = ({
   };
 
   // Calculate totals for all statuses across all schemes
-//   const totalApplied = chartData.reduce((sum, scheme) => sum + scheme.Applied, 0);
-//   const totalNotApplied = chartData.reduce((sum, scheme) => sum + scheme.NotApplied, 0);
-//   const totalBenefited = chartData.reduce((sum, scheme) => sum + scheme.Benefited, 0);
+  //   const totalApplied = chartData.reduce((sum, scheme) => sum + scheme.Applied, 0);
+  //   const totalNotApplied = chartData.reduce((sum, scheme) => sum + scheme.NotApplied, 0);
+  //   const totalBenefited = chartData.reduce((sum, scheme) => sum + scheme.Benefited, 0);
 
   return (
     <>
@@ -301,22 +301,25 @@ const SchemeStatusBarChart = ({
                 <span className="text-blue-600">{selectedScheme.schemeName}</span>
               </h3>
               <div className="flex gap-2 flex-wrap">
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => {
-                    setSelectedStatus(
-                      e.target.value as "Applied" | "NotApplied" | "Benefited"
-                    );
-                    setPage(1);
-                  }}
-                  className="border rounded px-2 py-1"
-                >
-                  {STATUS_LABELS.map((s) => (
-                    <option value={s.value} key={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="card bg-gray-200 rounded">
+
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => {
+                      setSelectedStatus(
+                        e.target.value as "Applied" | "NotApplied" | "Benefited"
+                      );
+                      setPage(1);
+                    }}
+                    className="border rounded px-2 py-1"
+                  >
+                    {STATUS_LABELS.map((s) => (
+                      <option value={s.value} key={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
                   onClick={handleDownload}
@@ -352,9 +355,9 @@ const SchemeStatusBarChart = ({
                         <td className="border px-2 py-1">
                           {farmer.farmer_id || ""}
                         </td>
-                        <td className="border px-2 py-1">{farmer.name || ""}</td>
+                        <td className="border px-2 py-1">{farmer.farmer_record?.split('|')[0] || ""}</td>
                         <td className="border px-2 py-1">
-                          {farmer.aadhaar_no || ""}
+                          {farmer.farmer_record?.split('|')[5] || ""}
                         </td>
                         <td className="border px-2 py-1">
                           {taluka.find(
