@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-
 } from "recharts";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -19,11 +18,12 @@ import { FarmdersType } from "../farmersdata/farmers";
 import { UserCategory } from "../usercategory/userCategory";
 import { Schemesdatas } from "../schemesdata/schemes";
 import { Schemecategorytype } from "../Schemecategory/Schemecategory";
-import { Schemesubcategorytype } from "../Schemesubcategory/Schemesubcategory";
+// import { Schemesubcategorytype } from "../Schemesubcategory/Schemecategory";
 import { Scheme_year } from "../Yearmaster/yearmaster";
 import { Documents } from "../Documentsdata/documents";
 import { Taluka } from "../Taluka/Taluka";
 import { Village } from "../Village/village";
+import { Schemesubcategorytype } from "../Schemesubcategory/Schemesubcategory";
 
 interface AllFarmersData {
   users: UserCategory[];
@@ -81,10 +81,9 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const { taluka, farmers, documents } = farmersData;
 
   // --- Aadhaar Chart Data ---
-
   const talukaId = sessionStorage.getItem('taluka_id');
   const userName = sessionStorage.getItem('userName');
-  const farmersdata = userName === "BDO" ? farmers.filter((data) => data.taluka_id == talukaId) : farmers
+  const farmersdata = userName === "BDO" ? farmers.filter((data) => data.taluka_id == talukaId) : farmers;
 
   let chartData: ChartData[];
 
@@ -132,9 +131,6 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     });
   }
 
-  // Now use chartData for your charts
-
-
   const maxValue = Math.max(...chartData.map((item) => item.total), 1000);
   const ticks = [];
   for (let i = 1000; i <= maxValue + 1000; i += 1000) {
@@ -147,7 +143,6 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     farmers.forEach((farmer) => {
       const docMap = parseFarmerDocuments(farmer.documents);
-      // If farmer has this doc and available is 'Yes'
       if (docMap[String(doc.id)] && docMap[String(doc.id)].available === 'Yes') {
         hasCount++;
       } else {
@@ -169,8 +164,6 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const [selectedDocName, setSelectedDocName] = useState<string>("");
   const [docFilter, setDocFilter] = useState<"all" | "has" | "not">("all");
   const [selectedDocDropdown, setSelectedDocDropdown] = useState<number | null>(null);
-
-  // Pagination state for document modal
   const [page, setPage] = useState(1);
 
   // --- Modal Data (memoized for performance) ---
@@ -249,11 +242,11 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const Modal = () =>
     modalOpen ? (
       <div
-        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-99999"
+        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-99999 overflow-y-auto"
         onClick={() => setModalOpen(false)}
       >
         <div
-          className="bg-white rounded-lg md:rounded-xl shadow-xl p-2 md:p-6 w-full max-w-full md:max-w-4xl relative"
+          className="bg-white rounded-lg md:rounded-xl shadow-xl p-2 md:p-6 w-full max-w-full md:max-w-4xl relative mx-2 my-4"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -263,21 +256,20 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
             &times;
           </button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-            <h3 className="text-xl font-bold mb-2 md:mb-0">
+            <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-0">
               IFR Holders for Document:{" "}
               <span className="text-blue-600">{selectedDocName}</span>
             </h3>
-
           </div>
           <div>
-            <div className="flex gap-2 flex-wrap rounded p-2 items-center">
-              <label htmlFor="">Select Documents</label>
+            <div className="flex flex-col md:flex-row gap-2 flex-wrap rounded p-2 items-center">
+              <label className="text-sm md:text-base">Select Documents</label>
 
-              <div className="card bg-gray-200">
+              <div className="card bg-gray-200 w-full md:w-auto">
                 <select
                   value={selectedDocDropdown ?? ""}
                   onChange={handleDocDropdownChange}
-                  className="border rounded px-2 py-1"
+                  className="border rounded px-2 py-1 w-full"
                 >
                   {documents.map((doc) => (
                     <option value={doc.id} key={doc.id}>
@@ -287,7 +279,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 </select>
               </div>
 
-              <div className="card bg-gray-200">
+              <div className="card bg-gray-200 w-full md:w-auto">
                 <select
                   value={docFilter}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -295,7 +287,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                     setDocFilter(value);
                     setPage(1);
                   }}
-                  className="border rounded px-2 py-1"
+                  className="border rounded px-2 py-1 w-full"
                 >
                   <option value="all">All</option>
                   <option value="has">उपलब्ध</option>
@@ -304,13 +296,12 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               </div>
 
               <button
-                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 ml-auto"
+                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 w-full md:w-auto"
                 onClick={handleDownload}
               >
                 Download Excel
               </button>
             </div>
-
           </div>
           <div className="overflow-x-auto max-h-[60vh]">
             <table className="min-w-full border text-xs md:text-sm">
@@ -370,25 +361,25 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
             </table>
           </div>
           {/* Pagination Controls */}
-          <div className="flex justify-between items-center mt-4">
-            <span>
+          <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-2">
+            <span className="text-sm">
               Showing {(page - 1) * PAGE_SIZE + 1}-
               {Math.min(page * PAGE_SIZE, filteredFarmers.length)} of{" "}
               {filteredFarmers.length}
             </span>
             <div className="flex gap-2">
               <button
-                className="px-3 py-1 border rounded disabled:opacity-50"
+                className="px-3 py-1 border rounded disabled:opacity-50 text-sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
                 Prev
               </button>
-              <span>
+              <span className="text-sm">
                 Page {page} of {totalPages}
               </span>
               <button
-                className="px-3 py-1 border rounded disabled:opacity-50"
+                className="px-3 py-1 border rounded disabled:opacity-50 text-sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
               >
@@ -413,7 +404,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
       setIsMobile(window.innerWidth < 768);
     };
 
-    handleResize(); // Set initial value
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -470,13 +461,12 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
   // --- Aadhaar Modal Component ---
   const AadhaarModal = () =>
     aadhaarModalOpen ? (
-
       <div
-        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-99999"
+        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-99999 overflow-y-auto"
         onClick={() => setAadhaarModalOpen(false)}
       >
         <div
-          className="bg-white rounded-lg md:rounded-xl shadow-xl p-2 md:p-6 w-full max-w-full md:max-w-4xl relative"
+          className="bg-white rounded-lg md:rounded-xl shadow-xl p-2 md:p-6 w-full max-w-full md:max-w-4xl relative mx-2 my-4"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -486,14 +476,13 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
             &times;
           </button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-            <h3 className="text-xl font-bold mb-2 md:mb-0">
+            <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-0">
               IFR Holders Adhaar Availabilty in {" "}
               <span className="text-blue-600 underline">{aadhaarModalTalukaName}</span>{" "}
               taluka
             </h3>
-            <div className="flex gap-2 flex-wrap">
-              <div className="card bg-gray-200 rounded">
-
+            <div className="flex flex-col md:flex-row gap-2 flex-wrap">
+              <div className="card bg-gray-200 rounded w-full md:w-auto">
                 <select
                   value={aadhaarFilter}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -501,8 +490,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                     setAadhaarFilter(value);
                     setAadhaarPage(1);
                   }}
-
-                  className="border rounded px-2 py-1"
+                  className="border rounded px-2 py-1 w-full"
                 >
                   <option value="all">All</option>
                   <option value="with">Available</option>
@@ -510,7 +498,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 </select>
               </div>
               <button
-                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 mr-5"
+                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 w-full md:w-auto"
                 onClick={handleAadhaarDownload}
               >
                 Download Excel
@@ -573,25 +561,25 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
             </table>
           </div>
           {/* Pagination Controls */}
-          <div className="flex justify-between items-center mt-4">
-            <span>
+          <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-2">
+            <span className="text-sm">
               Showing {(aadhaarPage - 1) * PAGE_SIZE + 1}-
               {Math.min(aadhaarPage * PAGE_SIZE, aadhaarFilteredFarmers.length)} of{" "}
               {aadhaarFilteredFarmers.length}
             </span>
             <div className="flex gap-2">
               <button
-                className="px-3 py-1 border rounded disabled:opacity-50"
+                className="px-3 py-1 border rounded disabled:opacity-50 text-sm"
                 onClick={() => setAadhaarPage((p) => Math.max(1, p - 1))}
                 disabled={aadhaarPage === 1}
               >
                 Prev
               </button>
-              <span>
+              <span className="text-sm">
                 Page {aadhaarPage} of {aadhaarTotalPages}
               </span>
               <button
-                className="px-3 py-1 border rounded disabled:opacity-50"
+                className="px-3 py-1 border rounded disabled:opacity-50 text-sm"
                 onClick={() => setAadhaarPage((p) => Math.min(aadhaarTotalPages, p + 1))}
                 disabled={aadhaarPage === aadhaarTotalPages}
               >
@@ -605,16 +593,15 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
   // --- Render ---
   return (
-
-    <div className="w-full max-w-6xl mx-auto mt-5">
+    <div className="w-full max-w-6xl  mt-5 ">
       {/* Aadhaar Chart */}
-      <div className="bg-white p-2 rounded-xl shadow-lg w-full">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0 ">
+      <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full overflow-x-auto">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+          <h2 className="text-lg md:text-2xl font-bold text-gray-800">
             Aadhaar Status of IFR Beneficiaries Across Talukas
           </h2>
           {/* Overall summary card */}
-          <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
+          <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
             <div className="text-sm text-gray-700 space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
@@ -654,7 +641,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
           </div>
         </div>
         {/* Bar chart */}
-        <div className="h-[300px] md:h-[500px]">
+        <div className="h-[500px] md:h-[500px] w-full min-w-[600px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
@@ -662,7 +649,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 top: 24,
                 right: isMobile ? 8 : 24,
                 left: isMobile ? 8 : 16,
-                bottom: isMobile ? 80 : 60
+                // bottom: isMobile ? 80 : 60
               }}
               barSize={isMobile ? 20 : 40}
               onClick={(state) => {
@@ -711,42 +698,34 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
       </div>
 
       {/* Documents Chart */}
-      <div className="bg-white p-6 rounded-xl shadow-lg w-full mt-10">
-
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0 ">
+      <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full mt-6 md:mt-10 overflow-x-auto">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+          <h2 className="text-lg md:text-2xl font-bold text-gray-800">
             Availability of each documents for IFR holders
           </h2>
           {/* Overall summary card */}
-          <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
+          <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
             <div className="text-sm text-gray-700 space-y-2">
-
               <div className="flex items-center gap-2">
                 <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
                 <p>
-                  Available{" "}
-                  {/* <strong>
-                    {totalHas}
-                  </strong> */}
+                  Available
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
                 <p>
-                  Not Available{" "}
-                  {/* <strong>
-                    {totalNot}
-                  </strong> */}
+                  Not Available
                 </p>
               </div>
             </div>
           </div>
         </div>
-        <div className="h-[300px] md:h-[500px]">
+        <div className="h-[500px] md:h-[500px] w-full min-w-[600px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={documentChartData}
-             margin={{
+              margin={{
                 top: 24,
                 right: isMobile ? 8 : 24,
                 left: isMobile ? 8 : 16,
@@ -770,16 +749,16 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="document"
-                angle={-35}
+                angle={isMobile ? -45 : -35}
                 textAnchor="end"
                 interval={0}
-                height={80}
-                fontSize={isMobile ? 2 : 12}
-                tick={{ fill: "#4b5563" }}
+                height={isMobile ? 100 : 80}
+                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
               />
-              <YAxis tick={{ fill: "#4b5563" }} />
+              <YAxis 
+                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
+              />
               <Tooltip />
-              {/* <Legend /> */}
               <Bar dataKey="has" fill="#10b981" name="उपलब्ध" />
               <Bar dataKey="not" fill="#f87171" name="उपलब्ध नाही" />
             </BarChart>

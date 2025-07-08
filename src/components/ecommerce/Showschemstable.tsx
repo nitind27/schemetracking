@@ -37,33 +37,38 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     return (
         <div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-2 mb-8 mt-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-8 mt-5">
                 <div>
                     <button
-                        className={`p-5 w-full  ${activeTab === 'documents' ? 'bg-blue-500' : 'bg-blue-300'
-                            } text-white`}
+                        className={`w-full py-3 px-2 sm:py-4 sm:px-4 rounded-lg text-sm sm:text-base font-medium transition-colors ${activeTab === 'documents'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                            }`}
                         onClick={() => setActiveTab('documents')}
                     >
-                        Document
+                        Document Status
                     </button>
                 </div>
                 <div>
                     <button
-                        className={`p-5 w-full  ${activeTab === 'farmers' ? 'bg-blue-500' : 'bg-blue-300'
-                            } text-white`}
+                        className={`w-full py-3 px-2 sm:py-4 sm:px-4 rounded-lg text-sm sm:text-base font-medium transition-colors ${activeTab === 'farmers'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                            }`}
                         onClick={() => setActiveTab('farmers')}
                     >
-                        IFR holders wise schemes
+                        IFR Holders by Scheme
                     </button>
                 </div>
                 <div>
                     <button
-                        className={`p-5 w-full  ${activeTab === 'schemes' ? 'bg-blue-500' : 'bg-blue-300'
-                            } text-white`}
+                        className={`w-full py-3 px-2 sm:py-4 sm:px-4 rounded-lg text-sm sm:text-base font-medium transition-colors ${activeTab === 'schemes'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                            }`}
                         onClick={() => setActiveTab('schemes')}
                     >
-
-                        Scheme wise IFR holders
+                        Schemes by IFR Holders
                     </button>
                 </div>
             </div>
