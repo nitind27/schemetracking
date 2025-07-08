@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -127,13 +127,24 @@ const SchemeStatusBarChart = ({
   const [selectedScheme, setSelectedScheme] = useState<SchemeBarData | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<"Applied" | "NotApplied" | "Benefited">("Benefited");
   const [page, setPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize(); // Set initial value
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // On bar click
   const handleBarClick = (
     scheme: SchemeBarData | undefined,
     status: "Applied" | "NotApplied" | "Benefited"
   ) => {
-    console.log("statusstatus",status)
+    console.log("statusstatus", status)
     if (scheme) {
       setSelectedScheme(scheme);
       setSelectedStatus("Benefited");
@@ -240,11 +251,17 @@ const SchemeStatusBarChart = ({
               </div>
             </div>
 
-            <div style={{ width: "100%", height: 400 }}>
-              <ResponsiveContainer>
+            <div className="h-[300px] md:h-[500px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={chartData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                  margin={{
+                    top: 20,
+                    right: isMobile ? 8 : 24,
+                    left: isMobile ? 8 : 16,
+                    bottom: isMobile ? 80 : 60
+                  }}
+                  barSize={isMobile ? 20 : 40}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
@@ -252,7 +269,7 @@ const SchemeStatusBarChart = ({
                     angle={-40}
                     textAnchor="end"
                     interval={0}
-                    fontSize={10}
+                    fontSize={isMobile ? 5 :10}
                     height={80}
                   />
                   <YAxis />

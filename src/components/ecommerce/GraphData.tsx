@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -249,11 +249,11 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const Modal = () =>
     modalOpen ? (
       <div
-        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-start p-4 z-99999"
+        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-99999"
         onClick={() => setModalOpen(false)}
       >
         <div
-          className="bg-white rounded-xl shadow-xl p-6 w-full max-w-4xl relative ml-[25%]"
+          className="bg-white rounded-lg md:rounded-xl shadow-xl p-2 md:p-6 w-full max-w-full md:max-w-4xl relative"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -312,8 +312,8 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
             </div>
 
           </div>
-          <div className="overflow-auto max-h-[60vh]">
-            <table className="min-w-full border text-sm">
+          <div className="overflow-x-auto max-h-[60vh]">
+            <table className="min-w-full border text-xs md:text-sm">
               <thead>
                 <tr className="bg-gray-100">
                   <th className="border px-2 py-1">#</th>
@@ -406,6 +406,17 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const [aadhaarModalTalukaName, setAadhaarModalTalukaName] = useState<string>("");
   const [aadhaarFilter, setAadhaarFilter] = useState<"all" | "with" | "without">("all");
   const [aadhaarPage, setAadhaarPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize(); // Set initial value
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // --- Aadhaar Modal Data (memoized) ---
   const aadhaarFilteredFarmers = useMemo(() => {
@@ -461,11 +472,11 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
     aadhaarModalOpen ? (
 
       <div
-        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-start p-4 z-99999"
+        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-99999"
         onClick={() => setAadhaarModalOpen(false)}
       >
         <div
-          className="bg-white rounded-xl shadow-xl p-6 w-full max-w-4xl relative ml-[25%]"
+          className="bg-white rounded-lg md:rounded-xl shadow-xl p-2 md:p-6 w-full max-w-full md:max-w-4xl relative"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -506,8 +517,8 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               </button>
             </div>
           </div>
-          <div className="overflow-auto max-h-[60vh]">
-            <table className="min-w-full border text-sm">
+          <div className="overflow-x-auto max-h-[60vh]">
+            <table className="min-w-full border text-xs md:text-sm">
               <thead>
                 <tr className="bg-gray-100">
                   <th className="border px-2 py-1">#</th>
@@ -643,21 +654,20 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
           </div>
         </div>
         {/* Bar chart */}
-        <div className="h-[500px]">
+        <div className="h-[300px] md:h-[500px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
-              margin={{ top: 24, right: 24, left: 16, bottom: 60 }}
+              margin={{
+                top: 24,
+                right: isMobile ? 8 : 24,
+                left: isMobile ? 8 : 16,
+                bottom: isMobile ? 80 : 60
+              }}
+              barSize={isMobile ? 20 : 40}
               onClick={(state) => {
-                if (
-                  state &&
-                  state.activeLabel &&
-                  state.activePayload &&
-                  state.activePayload.length > 0
-                ) {
-                  const talukaItem = chartData.find(
-                    (d) => d.taluka === state.activeLabel
-                  );
+                if (state?.activeLabel && state?.activePayload?.length) {
+                  const talukaItem = chartData.find(d => d.taluka === state.activeLabel);
                   if (talukaItem) openAadhaarModal(talukaItem.taluka_id, talukaItem.taluka);
                 }
               }}
@@ -665,17 +675,36 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="taluka"
-                angle={-35}
+                angle={isMobile ? -45 : -35}
                 textAnchor="end"
                 interval={0}
-                height={80}
-                tick={{ fill: "#4b5563" }}
+                height={isMobile ? 100 : 80}
+                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
               />
-              <YAxis tick={{ fill: "#4b5563" }} domain={[1000, "auto"]} ticks={ticks} />
+              <YAxis
+                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
+                domain={[1000, "auto"]}
+                ticks={ticks}
+              />
               <Tooltip />
-              <Bar dataKey="total" fill="#6366f1" name="Total IFR" />
-              <Bar dataKey="withAadhaar" fill="#10b981" name="Available" />
-              <Bar dataKey="withoutAadhaar" fill="#f87171" name="Not Availbale" />
+              <Bar
+                dataKey="total"
+                fill="#6366f1"
+                name="Total IFR"
+                radius={[4, 4, 0, 0]}
+              />
+              <Bar
+                dataKey="withAadhaar"
+                fill="#10b981"
+                name="Available"
+                radius={[4, 4, 0, 0]}
+              />
+              <Bar
+                dataKey="withoutAadhaar"
+                fill="#f87171"
+                name="Not Available"
+                radius={[4, 4, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -713,11 +742,17 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
             </div>
           </div>
         </div>
-        <div className="h-[500px]">
+        <div className="h-[300px] md:h-[500px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={documentChartData}
-              margin={{ top: 24, right: 24, left: 16, bottom: 60 }}
+             margin={{
+                top: 24,
+                right: isMobile ? 8 : 24,
+                left: isMobile ? 8 : 16,
+                bottom: isMobile ? 80 : 60
+              }}
+              barSize={isMobile ? 20 : 40}
               onClick={(state) => {
                 if (
                   state &&
@@ -739,7 +774,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 textAnchor="end"
                 interval={0}
                 height={80}
-                fontSize={12}
+                fontSize={isMobile ? 2 : 12}
                 tick={{ fill: "#4b5563" }}
               />
               <YAxis tick={{ fill: "#4b5563" }} />
