@@ -78,7 +78,7 @@ const farmerHasAvailableDocument = (farmer: FarmdersType, docId: number) => {
 };
 
 const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
-  const { taluka, farmers, documents } = farmersData;
+  const { taluka, farmers, documents, villages } = farmersData;
 
   // --- Aadhaar Chart Data ---
   const talukaId = sessionStorage.getItem('taluka_id');
@@ -224,7 +224,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
       FarmerID: farmer.farmer_id,
       Name: farmer.farmer_record?.split('|')[0] || "",
       Aadhaar: farmer.farmer_record?.split('|')[5] || "",
-      Taluka: taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))?.name || "",
+      Village: villages.find((v) => v.village_id === Number(farmer.village_id))?.name || "",
       HasDocument: farmerHasAvailableDocument(farmer, docId) ? "Yes" : "No",
     }));
 
@@ -311,7 +311,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                   <th className="border px-2 py-1">Claim ID</th>
                   <th className="border px-2 py-1">Name</th>
                   <th className="border px-2 py-1">Aadhaar</th>
-                  <th className="border px-2 py-1">Taluka</th>
+                  <th className="border px-2 py-1">Village</th>
                   <th className="border px-2 py-1">Has Document</th>
                 </tr>
               </thead>
@@ -339,8 +339,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                           {farmer.farmer_record?.split('|')[5] || ""}
                         </td>
                         <td className="border px-2 py-1">
-                          {taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))
-                            ?.name || ""}
+                          {villages.find((v) => v.village_id === Number(farmer.village_id))?.name || ""}
                         </td>
                         <td className="border px-2 py-1">
                           {hasDoc ? (
@@ -444,7 +443,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
       FarmerID: farmer.farmer_id,
       Name: farmer.farmer_record?.split('|')[0] || "",
       Aadhaar: farmer.farmer_record?.split('|')[5] || "" || "",
-      Taluka: aadhaarModalTalukaName,
+      Village: aadhaarModalTalukaName,
       HasAadhaar: farmer.farmer_record?.split('|')[5] && farmer.farmer_record?.split('|')[5].trim() !== "" ? "Yes" : "No",
     }));
 
@@ -513,7 +512,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                   <th className="border px-2 py-1">Claim ID</th>
                   <th className="border px-2 py-1">Name</th>
                   <th className="border px-2 py-1">Aadhaar</th>
-                  <th className="border px-2 py-1">Taluka</th>
+                  <th className="border px-2 py-1">Village</th>
                   <th className="border px-2 py-1">Availabilty</th>
                 </tr>
               </thead>
@@ -540,7 +539,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                           {farmer.farmer_record?.split('|')[5] || ""}
                         </td>
                         <td className="border px-2 py-1">
-                          {aadhaarModalTalukaName}
+                          {villages.find((v) => v.village_id === Number(farmer.village_id))?.marathi_name || ""}
                         </td>
                         <td className="border px-2 py-1">
                           {hasAadhaar ? (

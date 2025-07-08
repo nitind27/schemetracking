@@ -132,9 +132,10 @@ const SchemeStatusBarChart = ({
     scheme: SchemeBarData | undefined,
     status: "Applied" | "NotApplied" | "Benefited"
   ) => {
+    console.log(status)
     if (scheme) {
       setSelectedScheme(scheme);
-      setSelectedStatus(status);
+      setSelectedStatus("Benefited");
       setModalOpen(true);
       setPage(1);
     }
