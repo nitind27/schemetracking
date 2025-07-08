@@ -133,9 +133,10 @@ const SchemeStatusBarChart = ({
     scheme: SchemeBarData | undefined,
     status: "Applied" | "NotApplied" | "Benefited"
   ) => {
+    console.log("statusstatus",status)
     if (scheme) {
       setSelectedScheme(scheme);
-      setSelectedStatus(status);
+      setSelectedStatus("Benefited");
       setModalOpen(true);
       setPage(1);
     }
@@ -333,7 +334,7 @@ const SchemeStatusBarChart = ({
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="border px-2 py-1">#</th>
-                    <th className="border px-2 py-1">Farmer ID</th>
+                    <th className="border px-2 py-1">Claim ID</th>
                     <th className="border px-2 py-1">Name</th>
                     <th className="border px-2 py-1">Aadhaar</th>
                     <th className="border px-2 py-1">Taluka</th>
@@ -353,7 +354,7 @@ const SchemeStatusBarChart = ({
                           {(page - 1) * PAGE_SIZE + idx + 1}
                         </td>
                         <td className="border px-2 py-1">
-                          {farmer.farmer_id || ""}
+                          {farmer.farmer_record?.split('|')[15] || ""}
                         </td>
                         <td className="border px-2 py-1">{farmer.farmer_record?.split('|')[0] || ""}</td>
                         <td className="border px-2 py-1">

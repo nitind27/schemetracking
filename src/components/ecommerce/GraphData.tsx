@@ -264,7 +264,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
           </button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
             <h3 className="text-xl font-bold mb-2 md:mb-0">
-              Farmers for Document:{" "}
+              IFR Holders for Document:{" "}
               <span className="text-blue-600">{selectedDocName}</span>
             </h3>
 
@@ -317,7 +317,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <thead>
                 <tr className="bg-gray-100">
                   <th className="border px-2 py-1">#</th>
-                  <th className="border px-2 py-1">Farmer ID</th>
+                  <th className="border px-2 py-1">Claim ID</th>
                   <th className="border px-2 py-1">Name</th>
                   <th className="border px-2 py-1">Aadhaar</th>
                   <th className="border px-2 py-1">Taluka</th>
@@ -340,7 +340,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                         <td className="border px-2 py-1">
                           {(page - 1) * PAGE_SIZE + idx + 1}
                         </td>
-                        <td className="border px-2 py-1">{farmer.farmer_id}</td>
+                        <td className="border px-2 py-1"> {farmer.farmer_record?.split('|')[15] || ""}</td>
                         <td className="border px-2 py-1">
                           {farmer.farmer_record?.split('|')[0] || ""}
                         </td>
@@ -511,7 +511,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
               <thead>
                 <tr className="bg-gray-100">
                   <th className="border px-2 py-1">#</th>
-                  <th className="border px-2 py-1">ID</th>
+                  <th className="border px-2 py-1">Claim ID</th>
                   <th className="border px-2 py-1">Name</th>
                   <th className="border px-2 py-1">Aadhaar</th>
                   <th className="border px-2 py-1">Taluka</th>
@@ -533,7 +533,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                         <td className="border px-2 py-1">
                           {(aadhaarPage - 1) * PAGE_SIZE + idx + 1}
                         </td>
-                        <td className="border px-2 py-1">{farmer.farmer_id}</td>
+                        <td className="border px-2 py-1"> {farmer.farmer_record?.split('|')[15] || ""}</td>
                         <td className="border px-2 py-1">
                           {farmer.farmer_record?.split('|')[0] || ""}
                         </td>
