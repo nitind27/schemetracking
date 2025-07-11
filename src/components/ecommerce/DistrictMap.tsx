@@ -38,6 +38,7 @@ const talukaPropMap: Record<string, string> = {
 const DistrictMap: React.FC<FarmersdataProps> = ({
   data,
   datataluka,
+  datavillage
 }) => {
   const talukaCounts: TalukaCounts = {}
 
@@ -82,7 +83,12 @@ const DistrictMap: React.FC<FarmersdataProps> = ({
   return (
     <div className="flex flex-col md:flex-row bg-white mt-5">
       <div className="w-full md:w-1/2">
-        <Talukawiseserve talukaCounts={talukaCounts} />
+        <Talukawiseserve
+          talukaCounts={talukaCounts}
+          datataluka={datataluka}
+          datavillage={datavillage}
+          farmers={data}
+        />
       </div>
       <div className="w-full md:w-1/2 overflow-scroll">
         <Mapsvg {...mapProps} />
