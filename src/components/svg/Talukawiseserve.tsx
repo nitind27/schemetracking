@@ -87,41 +87,52 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                             : 0;
                     return (
                         <>
-                        <div className='flex'>
-                            <div
-                                key={talukaName}
-                                className="mb-4 p-2 bg-gray-100 rounded-lg shadow hover:bg-gray-200"
-                            >
-                                {/* Top Row: Taluka Name (left) and Data + Button (right) */}
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
-                                    {/* Left: Taluka Name */}
-                                    <span
-                                        className="font-semibold text-gray-700 cursor-pointer hover:underline"
-                                        onClick={() => setOpenTaluka(talukaName)}
-                                    >
-                                        {talukaName}
-                                    </span>
+                            <div className=''>
+                                <div
+                                    key={talukaName}
+                                    className="mb-4 p-2 bg-gray-100 rounded-lg shadow hover:bg-gray-200"
+                                >
+                                    {/* Top Row: Taluka Name (left) and Data + Button (right) */}
+                                    <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5'>
+                                        <div className='w-full'>
 
-                                    {/* Right: Data and Button */}
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
+                                                {/* Left: Taluka Name */}
+                                                <span
+                                                    className="font-semibold text-gray-700 cursor-pointer "
 
+                                                >
+                                                    {talukaName}
+                                                </span>
+
+                                                {/* Right: Data and Button */}
+                                                <span className="text-sm font-medium text-gray-600">
+                                                    {info.filledCount}/{info.total} ({percent}%)
+                                                </span>
+                                            </div>
+
+                                            {/* Progress Bar */}
+                                            <div className="w-[100%] bg-gray-200 rounded-full h-2">
+                                                <div
+                                                    className={`${colorClass[info.color]} h-2 rounded-full transition-all duration-300`}
+                                                    style={{ width: `${percent}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+
+                                            <button
+                                                type="button"
+                                                className={`text-white ${colorClass[info.color]} hover:opacity-90 focus:ring-2 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2`}
+                                                onClick={() => setOpenTaluka(talukaName)}
+                                            >
+                                                Villages
+                                            </button>
+
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Progress Bar */}
-                                <div className="w-[80%] bg-gray-200 rounded-full h-2">
-                                    <div
-                                        className={`${colorClass[info.color]} h-2 rounded-full transition-all duration-300`}
-                                        style={{ width: `${percent}%` }}
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
-                                {/* Data */}
-                                <span className="text-sm font-medium text-gray-600">
-                                    {info.filledCount}/{info.total} ({percent}%)
-                                </span>
-                                {/* Button */}
-                                <button type="button" className="text-white bg-gradient-to-r from-green-400 via-green-500 to-green-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Green</button>
-                            </div>
                             </div>
                         </>
 
