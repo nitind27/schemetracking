@@ -1,0 +1,81 @@
+/* DistrictMap.css */
+.map-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  font-family: Arial, sans-serif;
+}
+
+.map-header {
+  padding: 10px;
+  border-bottom: 1px solid #000;
+}
+
+.map-title {
+  display: inline-block;
+  border: 2px solid #000;
+  padding: 5px 15px;
+}
+
+.map-title h2, .map-title h3 {
+  margin: 0;
+  text-align: center;
+}
+
+.map-content {
+  position: relative;
+}
+
+.district-map {
+  width: 100%;
+  height: auto;
+}
+
+.tehsil-path {
+  transition: opacity 0.3s;
+}
+
+.tehsil-path:hover {
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.tehsil-label {
+  font-size: 14px;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.state-label {
+  font-size: 16px;
+  fill: #777;
+  font-style: italic;
+}
+
+.map-legend {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+}
+
+.legend-line, .legend-dash {
+  width: 30px;
+  height: 2px;
+  margin-right: 10px;
+  background: #000;
+}
+
+.legend-dash {
+  border-top: 2px dashed #000;
+  background: transparent;
+}
