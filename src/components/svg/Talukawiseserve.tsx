@@ -106,8 +106,15 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                                 </span>
 
                                                 {/* Right: Data and Button */}
-                                                <span className="text-sm font-medium text-gray-600">
-                                                    {info.filledCount}/{info.total} ({percent}%)
+                                                <span className="text-sm font-medium text-gray-600 flex gap-2">
+                                                    <div>
+
+                                                        {info.filledCount}/{info.total}
+                                                    </div>
+                                                    <div>
+
+                                                        (<span className='font-bold text-black'>{percent}%</span>)
+                                                    </div>
                                                 </span>
                                             </div>
 
