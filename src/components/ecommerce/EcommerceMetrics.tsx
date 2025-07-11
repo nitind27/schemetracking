@@ -92,7 +92,7 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
   ];
 
   return (
-    <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-3" : "sm:grid-cols-2"
+    <div className={`grid  grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-4" : "sm:grid-cols-2"
       }`}>
       {metricsConfig.map((metric, index) => metric.show && (
         <>{
@@ -117,7 +117,7 @@ const MetricCard = ({ icon, label, value, href }: {
     {
 
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] hover:shadow-sm transition-shadow items-center justify-center p-2 ">
         <Link href={href}>
           <PathHandler>
             <div className="flex items-center gap-3">
@@ -126,11 +126,11 @@ const MetricCard = ({ icon, label, value, href }: {
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  {label}
+                  {label} : <span className="font-bold text-[16px]">{value}</span>  
                 </span>
-                <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-                  {value}
-                </h4>
+                {/* <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+               
+                </h4> */}
               </div>
             </div>
           </PathHandler>

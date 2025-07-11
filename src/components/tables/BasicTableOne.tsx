@@ -112,7 +112,7 @@ export function ReusableTable<T extends object>({
   );
 
   return (
-    <div className="p-4  rounded-lg w-full border">
+    <div className="p-4  rounded-lg w-full border bg-white">
       <DataTable
         columns={reactColumns}
         data={filteredData}

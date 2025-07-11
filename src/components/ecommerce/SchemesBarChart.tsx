@@ -187,7 +187,7 @@ const SchemeStatusBarChart = ({
 
   return (
     <>
-      <div className="w-full max-w-6xl mt-5">
+      <div className="w-full mt-5">
         <div className="bg-white p-4 rounded-xl shadow-lg w-full overflow-x-auto">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
             <h2 className="text-lg md:text-2xl font-bold text-gray-800">

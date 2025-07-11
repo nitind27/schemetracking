@@ -592,7 +592,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
   // --- Render ---
   return (
-    <div className="w-full max-w-6xl  mt-5 ">
+    <div className="w-full  mt-5 ">
       {/* Aadhaar Chart */}
       <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full overflow-x-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
