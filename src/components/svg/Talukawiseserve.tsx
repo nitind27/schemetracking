@@ -221,7 +221,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
     return (
         <div className="p-5">
             <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-6">
-                Taluka Wise Serve
+                Taluka Wise Survey 
             </h2>
             <div className="space-y-6">
                 {Object.entries(talukaCounts).map(([talukaName, info]) => {
