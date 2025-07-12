@@ -302,7 +302,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                         }`}>
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold">
-                                {openTaluka} - Village Wise Serve
+                                {openTaluka} - Village Wise Survey
                             </h3>
                             <div className="flex items-center gap-4">
                                 {!selectedVillage && (
