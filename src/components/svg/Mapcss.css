@@ -1,0 +1,18 @@
+.shahdecss {
+  /* stroke-dasharray: 100; */
+  /* stroke-dashoffset: 100; */
+  stroke: white;
+  transition: 
+    stroke-dashoffset 0.5s,
+    stroke 0.3s,
+    stroke-width 0.3s,
+    filter 0.3s;
+  stroke-width: 2;
+}
+.shahdecss:hover {
+      opacity: 0.7;
+  stroke-dashoffset: 0;
+  stroke: #FF0000; /* Hover पर रंग बदल जाएगा */
+  stroke-width: 4; /* Hover पर मोटाई बढ़ जाएगी */
+  filter: drop-shadow(0 0 6px #0800ff); /* हल्का glow effect */
+}

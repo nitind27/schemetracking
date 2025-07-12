@@ -30,18 +30,18 @@ async function getData(): Promise<{
   schemes: Schemesdatas[];
   users: UserData[];
 }> {
-  // const [farmersRes, schemesRes, usersRes] = await Promise.all([
-  //   fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmers`, { cache: 'no-store' }),
-  //   fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescrud`, { cache: 'no-store' }),
-  //   fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, { cache: 'no-store' }),
-  // ]);
-
-
-    const [farmersRes, schemesRes,usersRes] = await Promise.all([
-    fetch(`https://fra.weclocks.online/api/farmers`, { cache: 'no-store' }),
-    fetch(`https://fra.weclocks.online/api/schemescrud`, { cache: 'no-store' }),
-    fetch(`https://fra.weclocks.online/api/users`, { cache: 'no-store' }),
+  const [farmersRes, schemesRes, usersRes] = await Promise.all([
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmers`, { cache: 'no-store' }),
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescrud`, { cache: 'no-store' }),
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, { cache: 'no-store' }),
   ]);
+
+
+  //   const [farmersRes, schemesRes,usersRes] = await Promise.all([
+  //   fetch(`https://fra.weclocks.online/api/farmers`, { cache: 'no-store' }),
+  //   fetch(`https://fra.weclocks.online/api/schemescrud`, { cache: 'no-store' }),
+  //   fetch(`https://fra.weclocks.online/api/users`, { cache: 'no-store' }),
+  // ]);
 
   const [farmers, schemes, users] = await Promise.all([
     farmersRes.json(),
