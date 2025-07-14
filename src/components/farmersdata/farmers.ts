@@ -21,6 +21,7 @@ export interface FarmdersType {
   gis: string;
   update_record: string;
   farmer_record: string;
+  geo_photo: string;
 }
 
 export interface FarmdersTypess {
