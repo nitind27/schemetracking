@@ -15,6 +15,7 @@ interface Taluka {
 interface Village {
     village_id: string | number;
     name: string;
+    marathi_name?: string; // <-- Added
     taluka_id: string | number;
 }
 interface Farmer {
@@ -473,7 +474,8 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                             >
                                                 <div className="flex justify-between items-center mb-2">
                                                     <span className="font-semibold text-gray-700">
-                                                        {village.name}
+                                                        {village.marathi_name}
+                                                        {village.name ? ` (${village.name})` : ""}
                                                     </span>
                                                     <span className="text-sm font-medium text-gray-600">
                                                         {village.filledCount}/{village.total} ({village.percent}%)
