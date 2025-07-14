@@ -377,7 +377,10 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                     <button
                                         type="button"
                                         className={`min-w-[120px] ${colorClassbtn[info.color]} hover:opacity-90 focus:ring-2 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2`}
-                                        onClick={() => setOpenTaluka(talukaName)}
+                                        onClick={() => {
+                                            setOpenTaluka(talukaName);
+                                            setVillageSearch(""); // <-- Reset search when opening a new taluka
+                                        }}
                                     >
                                         Villages
                                     </button>
@@ -420,6 +423,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                     onClick={() => {
                                         setOpenTaluka(null);
                                         setSelectedVillage(null);
+                                        setVillageSearch(""); // <-- Reset search when closing modal
                                     }}
                                 >
                                     &times;
