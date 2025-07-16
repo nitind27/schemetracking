@@ -724,10 +724,10 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                         return (
                             <div className="flex justify-center mb-4">
                                 <img
-                                    src={`http://localhost:3000/api/uploadsprofiles/${profilePhoto}`}
+                                    src={`https://fra.weclocks.online/api/uploadsprofiles/${profilePhoto}`}
                                     alt="Profile Photo"
                                     className="w-28 h-28 rounded-full object-cover border-4 border-blue-200 shadow cursor-pointer"
-                                    onClick={() => setFullImage(`http://localhost:3000/api/uploadsprofiles/${profilePhoto}`)}
+                                    onClick={() => setFullImage(`https://fra.weclocks.online/api/uploadsprofiles/${profilePhoto}`)}
                                 />
                             </div>
                         );
@@ -763,12 +763,12 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                                 {item.img.split('|').map((imgPath, imgIdx) => (
                                                     <img
                                                         key={imgIdx}
-                                                        src={`http://localhost:3000/api/uploadsgeophoto/${imgPath}`}
+                                                        src={`https://fra.weclocks.online/api/uploadsgeophoto/${imgPath}`}
                                                         alt={`Image ${imgIdx + 1}`}
                                                         width={200} // or your preferred width
                                                         height={100} // or your preferred height
                                                         className="my-1 max-h-24 rounded border cursor-pointer object-cover w-full"
-                                                        onClick={() => setFullImage(`http://localhost:3000/api/uploadsgeophoto/${imgPath}`)}
+                                                        onClick={() => setFullImage(`https://fra.weclocks.online/api/uploadsgeophoto/${imgPath}`)}
                                                     />
                                                 ))}
                                             </div>
