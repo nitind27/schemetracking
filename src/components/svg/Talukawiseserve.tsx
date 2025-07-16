@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import Ifrsmaplocations from '../farmersdata/Ifrsmaplocations';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import Image from 'next/image';
+// import Image from 'next/image';
 
 // Type definitions (adjust if your types are different)
 interface Taluka {
@@ -273,8 +273,8 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
             { label: "Kisan ID", value: record[8] || "" },
             { label: "DOB", value: record[9] || "" },
             { label: "Gender", value: record[10] || "" },
-            { label: "Profile Photo", value: record[11] || "" },
-            { label: "Aadhaar Photo", value: record[12] || "" },
+            // { label: "Profile Photo", value: record[11] || "" },
+            // { label: "Aadhaar Photo", value: record[12] || "" },
             { label: "Compartment Number", value: record[13] || "" },
             { label: "Schedule J", value: record[14] || "" },
             { label: "Claim ID", value: record[15] || "" },
@@ -284,6 +284,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
             { label: "Taluka", value: getTalukaName(farmer.taluka_id) },
             { label: "Status", value: farmer.status },
             { label: "Photo", img: farmer.geo_photo },
+            // { label: "profilephoto", profilephoto: record[11] || "" },
             { label: "GIS", gis: farmer.gis },
             // Add more fields as needed
         ];
@@ -403,410 +404,436 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                         : 'w-full max-w-6xl max-h-[90vh]'
                         }`}>
                         <div className="flex justify-between items-center mb-4">
+                            <div className='flex gap-5'>
+                                {selectedVillage &&
+                                    < button
+                                onClick={handleBackToVillages}
+                                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+                                >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Back to Villages
+                            </button>
+                                }
                             <h3 className="text-xl font-bold">
                                 {openTaluka} - Village Wise Survey
                             </h3>
-                            <div className="flex items-center gap-4">
-                                {!selectedVillage && (
-                                    <button
-                                        onClick={() => exportVillageProgressToExcel(openTaluka)}
-                                        className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        Download Excel
-                                    </button>
-                                )}
+                        </div>
+                        <div className="flex items-center gap-4">
+                            {!selectedVillage && (
                                 <button
-                                    className="text-gray-500 hover:text-gray-800 text-2xl"
-                                    onClick={() => {
-                                        setOpenTaluka(null);
-                                        setSelectedVillage(null);
-                                        setVillageSearch(""); // <-- Reset search when closing modal
-                                    }}
+                                    onClick={() => exportVillageProgressToExcel(openTaluka)}
+                                    className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2"
                                 >
-                                    &times;
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Download Excel
                                 </button>
+                            )}
+                            <button
+                                className="text-gray-500 hover:text-gray-800 text-2xl"
+                                onClick={() => {
+                                    setOpenTaluka(null);
+                                    setSelectedVillage(null);
+                                    setVillageSearch(""); // <-- Reset search when closing modal
+                                }}
+                            >
+                                &times;
+                            </button>
+                        </div>
+                    </div>
+
+                    {!selectedVillage ? (
+                        // --- CHANGED: Add search box and sorted, filtered villages ---
+                        <div>
+                            <div className="mb-4">
+                                <input
+                                    type="text"
+                                    placeholder="Search villages..."
+                                    value={villageSearch}
+                                    onChange={e => setVillageSearch(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div className="space-y-4">
+                                {(() => {
+                                    const taluka_id = getTalukaIdByName(openTaluka);
+                                    if (!taluka_id) return <div>No villages found.</div>;
+                                    let villages = getVillagesForTaluka(taluka_id);
+                                    // Filter by search
+                                    if (villageSearch.trim()) {
+                                        villages = villages.filter(v =>
+                                            v.name.toLowerCase().includes(villageSearch.trim().toLowerCase())
+                                        );
+                                    }
+                                    // Map to progress info
+                                    let villageProgressArr = villages.map((village) => {
+                                        const { total, filledCount, percent, color } = getVillageProgress(village.village_id);
+                                        return {
+                                            ...village,
+                                            total,
+                                            filledCount,
+                                            percent,
+                                            color,
+                                        };
+                                    });
+                                    // Sort by color and percent
+                                    villageProgressArr = sortByColorAndPercent(villageProgressArr);
+
+                                    if (villageProgressArr.length === 0)
+                                        return <div>No villages found.</div>;
+                                    return villageProgressArr.map((village) => (
+                                        <div
+                                            key={village.village_id}
+                                            className="mb-4 p-4 bg-gray-50 rounded-lg shadow hover:bg-gray-100 cursor-pointer transition-colors"
+                                            onClick={() => handleVillageClick(village)}
+                                        >
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="font-semibold text-gray-700">
+                                                    {village.marathi_name}
+                                                    {village.name ? ` (${village.name})` : ""}
+                                                </span>
+                                                <span className="text-sm font-medium text-gray-600">
+                                                    {village.filledCount}/{village.total} ({village.percent}%)
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-4">
+                                                <div
+                                                    className={`${colorClass[village.color]} h-4 rounded-full transition-all duration-300`}
+                                                    style={{ width: `${village.percent}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ));
+                                })()}
                             </div>
                         </div>
-
-                        {!selectedVillage ? (
-                            // --- CHANGED: Add search box and sorted, filtered villages ---
-                            <div>
-                                <div className="mb-4">
-                                    <input
-                                        type="text"
-                                        placeholder="Search villages..."
-                                        value={villageSearch}
-                                        onChange={e => setVillageSearch(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <div className="space-y-4">
-                                    {(() => {
-                                        const taluka_id = getTalukaIdByName(openTaluka);
-                                        if (!taluka_id) return <div>No villages found.</div>;
-                                        let villages = getVillagesForTaluka(taluka_id);
-                                        // Filter by search
-                                        if (villageSearch.trim()) {
-                                            villages = villages.filter(v =>
-                                                v.name.toLowerCase().includes(villageSearch.trim().toLowerCase())
-                                            );
-                                        }
-                                        // Map to progress info
-                                        let villageProgressArr = villages.map((village) => {
-                                            const { total, filledCount, percent, color } = getVillageProgress(village.village_id);
-                                            return {
-                                                ...village,
-                                                total,
-                                                filledCount,
-                                                percent,
-                                                color,
-                                            };
-                                        });
-                                        // Sort by color and percent
-                                        villageProgressArr = sortByColorAndPercent(villageProgressArr);
-
-                                        if (villageProgressArr.length === 0)
-                                            return <div>No villages found.</div>;
-                                        return villageProgressArr.map((village) => (
-                                            <div
-                                                key={village.village_id}
-                                                className="mb-4 p-4 bg-gray-50 rounded-lg shadow hover:bg-gray-100 cursor-pointer transition-colors"
-                                                onClick={() => handleVillageClick(village)}
-                                            >
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-semibold text-gray-700">
-                                                        {village.marathi_name}
-                                                        {village.name ? ` (${village.name})` : ""}
-                                                    </span>
-                                                    <span className="text-sm font-medium text-gray-600">
-                                                        {village.filledCount}/{village.total} ({village.percent}%)
-                                                    </span>
-                                                </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-4">
-                                                    <div
-                                                        className={`${colorClass[village.color]} h-4 rounded-full transition-all duration-300`}
-                                                        style={{ width: `${village.percent}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ));
-                                    })()}
-                                </div>
+                    ) : (
+                        // Show farmer data for selected village
+                        <div>
+                            {/* Village header */}
+                            <div className="mb-6">
+                                <h4 className="text-xl font-bold text-gray-800 text-center">
+                                    {selectedVillage.name} - IFR Holders Data
+                                </h4>
                             </div>
-                        ) : (
-                            // Show farmer data for selected village
-                            <div>
-                                {/* Back button */}
-                                <div className="mb-4">
-                                    <button
-                                        onClick={handleBackToVillages}
-                                        className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                        </svg>
-                                        Back to Villages
-                                    </button>
-                                </div>
 
-                                {/* Village header */}
-                                <div className="mb-6">
-                                    <h4 className="text-lg font-semibold text-gray-800">
-                                        {selectedVillage.name} - IFR Holders Data
-                                    </h4>
-                                </div>
+                            {/* --- NEW: Farmer search box --- */}
+                            <div className="mb-4">
+                                <input
+                                    type="text"
+                                    placeholder="Search by name, Aadhaar, or contact..."
+                                    value={farmerSearch}
+                                    onChange={e => setFarmerSearch(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
 
-                                {/* --- NEW: Farmer search box --- */}
-                                <div className="mb-4">
-                                    <input
-                                        type="text"
-                                        placeholder="Search by name, Aadhaar, or contact..."
-                                        value={farmerSearch}
-                                        onChange={e => setFarmerSearch(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
+                            {/* Tab Buttons */}
+                            <div className="flex space-x-4 mb-6">
+                                <button
+                                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'surveyed'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                    onClick={() => handleTabChange('surveyed')}
+                                >
+                                    Surveyed Beneficiaries
+                                </button>
+                                <button
+                                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'yet-to-be-surveyed'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                    onClick={() => handleTabChange('yet-to-be-surveyed')}
+                                >
+                                    Yet-to-be-surveyed IFR Holders
+                                </button>
+                            </div>
 
-                                {/* Tab Buttons */}
-                                <div className="flex space-x-4 mb-6">
-                                    <button
-                                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'surveyed'
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
-                                        onClick={() => handleTabChange('surveyed')}
-                                    >
-                                        Surveyed Beneficiaries
-                                    </button>
-                                    <button
-                                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'yet-to-be-surveyed'
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
-                                        onClick={() => handleTabChange('yet-to-be-surveyed')}
-                                    >
-                                        Yet-to-be-surveyed IFR Holders
-                                    </button>
-                                </div>
+                            {/* Tab Content */}
+                            <div className="space-y-4">
+                                {(() => {
+                                    const surveyedFarmers = getSurveyedFarmers(selectedVillage.village_id);
+                                    const yetToBeSurveyedFarmers = getYetToBeSurveyedFarmers(selectedVillage.village_id);
 
-                                {/* Tab Content */}
-                                <div className="space-y-4">
-                                    {(() => {
-                                        const surveyedFarmers = getSurveyedFarmers(selectedVillage.village_id);
-                                        const yetToBeSurveyedFarmers = getYetToBeSurveyedFarmers(selectedVillage.village_id);
+                                    const currentData = activeTab === 'surveyed' ? surveyedFarmers : yetToBeSurveyedFarmers;
+                                    // --- NEW: Filter currentData by farmerSearch ---
+                                    const filteredData = farmerSearch.trim()
+                                        ? currentData.filter(farmer => {
+                                            const name = farmer.farmer_record?.split('|')[0] || "";
+                                            const contact = farmer.farmer_record?.split('|')[6] || "";
+                                            const aadhaar = farmer.farmer_record?.split('|')[5] || "";
+                                            return (
+                                                name.toLowerCase().includes(farmerSearch.toLowerCase()) ||
+                                                contact.includes(farmerSearch) ||
+                                                aadhaar.includes(farmerSearch)
+                                            );
+                                        })
+                                        : currentData;
 
-                                        const currentData = activeTab === 'surveyed' ? surveyedFarmers : yetToBeSurveyedFarmers;
-                                        // --- NEW: Filter currentData by farmerSearch ---
-                                        const filteredData = farmerSearch.trim()
-                                            ? currentData.filter(farmer => {
-                                                const name = farmer.farmer_record?.split('|')[0] || "";
-                                                const contact = farmer.farmer_record?.split('|')[6] || "";
-                                                const aadhaar = farmer.farmer_record?.split('|')[5] || "";
-                                                return (
-                                                    name.toLowerCase().includes(farmerSearch.toLowerCase()) ||
-                                                    contact.includes(farmerSearch) ||
-                                                    aadhaar.includes(farmerSearch)
-                                                );
-                                            })
-                                            : currentData;
+                                    const tabType = activeTab === 'surveyed' ? 'Surveyed' : 'YetToBeSurveyed';
+                                    const paginatedData = getPaginatedData(filteredData);
+                                    const totalPages = getTotalPages(filteredData);
 
-                                        const tabType = activeTab === 'surveyed' ? 'Surveyed' : 'YetToBeSurveyed';
-                                        const paginatedData = getPaginatedData(filteredData);
-                                        const totalPages = getTotalPages(filteredData);
+                                    return (
+                                        <>
+                                            {/* Download Button */}
+                                            <div className="flex justify-end mb-4">
+                                                <button
+                                                    onClick={() => exportToExcel(filteredData, selectedVillage.name, openTaluka, tabType)}
+                                                    className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    Download Excel
+                                                </button>
+                                            </div>
 
-                                        return (
-                                            <>
-                                                {/* Download Button */}
-                                                <div className="flex justify-end mb-4">
-                                                    <button
-                                                        onClick={() => exportToExcel(filteredData, selectedVillage.name, openTaluka, tabType)}
-                                                        className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                        </svg>
-                                                        Download Excel
-                                                    </button>
-                                                </div>
-
-                                                {/* Data Count */}
-                                                <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                                                    <p className="text-lg font-semibold text-gray-700">
-                                                        Total {activeTab === 'surveyed' ? 'Surveyed' : 'Yet-to-be-surveyed'} IFR Holders: {filteredData.length}
-                                                    </p>
-                                                </div>
-                                                {/* Data Table */}
-                                                <div className="overflow-x-auto">
-                                                    <table className="min-w-full bg-white border border-gray-300">
-                                                        <thead className="bg-gray-50">
-                                                            <tr>
-                                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">
-                                                                    Sr No
-                                                                </th>
-                                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">
-                                                                    IFR Name
-                                                                </th>
-                                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">
-                                                                    Contact Number
-                                                                </th>
-                                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">
-                                                                    Aadhaar Card Number
-                                                                </th>
+                                            {/* Data Count */}
+                                            <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                                                <p className="text-lg font-semibold text-gray-700">
+                                                    Total {activeTab === 'surveyed' ? 'Surveyed' : 'Yet-to-be-surveyed'} IFR Holders: {filteredData.length}
+                                                </p>
+                                            </div>
+                                            {/* Data Table */}
+                                            <div className="overflow-x-auto">
+                                                <table className="min-w-full bg-white border border-gray-300">
+                                                    <thead className="bg-gray-50">
+                                                        <tr>
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">
+                                                                Sr No
+                                                            </th>
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">
+                                                                IFR Name
+                                                            </th>
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">
+                                                                Contact Number
+                                                            </th>
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border border-gray-300">
+                                                                Aadhaar Card Number
+                                                            </th>
 
 
+
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="bg-white divide-y divide-gray-200">
+                                                        {paginatedData.map((farmer, index) => (
+                                                            <tr key={farmer.farmer_id} className="hover:bg-gray-50">
+                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
+                                                                    {(currentPage - 1) * itemsPerPage + index + 1}
+                                                                </td>
+                                                                <td
+                                                                    className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-700 border border-gray-300 cursor-pointer hover:underline"
+                                                                    onClick={() => {
+                                                                        setSelectedFarmer(farmer);
+                                                                        setShowFarmerModal(true);
+                                                                    }}
+                                                                >
+                                                                    {farmer.farmer_record?.split('|')[0] || ""}
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
+                                                                    {farmer.farmer_record?.split('|')[6] || ""}
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
+                                                                    {farmer.farmer_record?.split('|')[5] || ""}
+                                                                </td>
 
                                                             </tr>
-                                                        </thead>
-                                                        <tbody className="bg-white divide-y divide-gray-200">
-                                                            {paginatedData.map((farmer, index) => (
-                                                                <tr key={farmer.farmer_id} className="hover:bg-gray-50">
-                                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
-                                                                        {(currentPage - 1) * itemsPerPage + index + 1}
-                                                                    </td>
-                                                                    <td
-                                                                        className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-700 border border-gray-300 cursor-pointer hover:underline"
-                                                                        onClick={() => {
-                                                                            setSelectedFarmer(farmer);
-                                                                            setShowFarmerModal(true);
-                                                                        }}
-                                                                    >
-                                                                        {farmer.farmer_record?.split('|')[0] || ""}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
-                                                                        {farmer.farmer_record?.split('|')[6] || ""}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border border-gray-300">
-                                                                        {farmer.farmer_record?.split('|')[5] || ""}
-                                                                    </td>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
 
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
+                                            {/* Pagination */}
+                                            {totalPages > 1 && (
+                                                <div className="flex justify-center items-center space-x-4 mt-6">
+                                                    <button
+                                                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                                        disabled={currentPage === 1}
+                                                        className={`px-4 py-2 rounded-lg font-medium ${currentPage === 1
+                                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                            }`}
+                                                    >
+                                                        Previous
+                                                    </button>
+
+                                                    <span className="px-4 py-2 text-gray-700 font-medium">
+                                                        Page {currentPage} of {totalPages}
+                                                    </span>
+
+                                                    <button
+                                                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                                        disabled={currentPage === totalPages}
+                                                        className={`px-4 py-2 rounded-lg font-medium ${currentPage === totalPages
+                                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                            }`}
+                                                    >
+                                                        Next
+                                                    </button>
                                                 </div>
+                                            )}
 
-                                                {/* Pagination */}
-                                                {totalPages > 1 && (
-                                                    <div className="flex justify-center items-center space-x-4 mt-6">
-                                                        <button
-                                                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                                            disabled={currentPage === 1}
-                                                            className={`px-4 py-2 rounded-lg font-medium ${currentPage === 1
-                                                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                                                                }`}
-                                                        >
-                                                            Previous
-                                                        </button>
-
-                                                        <span className="px-4 py-2 text-gray-700 font-medium">
-                                                            Page {currentPage} of {totalPages}
-                                                        </span>
-
-                                                        <button
-                                                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                                                            disabled={currentPage === totalPages}
-                                                            className={`px-4 py-2 rounded-lg font-medium ${currentPage === totalPages
-                                                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                                                                }`}
-                                                        >
-                                                            Next
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                {filteredData.length === 0 && (
-                                                    <div className="text-center py-8 text-gray-500">
-                                                        No {activeTab === 'surveyed' ? 'surveyed' : 'yet-to-be-surveyed'} IFR holders found for this village.
-                                                    </div>
-                                                )}
-                                            </>
-                                        );
-                                    })()}
-                                </div>
+                                            {filteredData.length === 0 && (
+                                                <div className="text-center py-8 text-gray-500">
+                                                    No {activeTab === 'surveyed' ? 'surveyed' : 'yet-to-be-surveyed'} IFR holders found for this village.
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
-            )}
-            {/* --- Farmer Details Modal --- */}
-            {showFarmerModal && selectedFarmer && (
-                <div className="fixed inset-0 bg-[#0303033f] z-[10000] flex items-center justify-center bg-opacity-40 ">
-                    <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative animate-fade-in h-[550px] overflow-scroll">
+                </div>
+    )
+}
+{/* --- Farmer Details Modal --- */ }
+{
+    showFarmerModal && selectedFarmer && (
+        <div className="fixed inset-0 bg-[#0303033f] z-[10000] flex items-center justify-center bg-opacity-40 ">
+            <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative animate-fade-in h-[550px] overflow-scroll">
+                <button
+                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl"
+                    onClick={() => setShowFarmerModal(false)}
+                >
+                    &times;
+                </button>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-center text-blue-700 flex-1">IFR Holder Details</h2>
+                    {/* --- PDF Download Button --- */}
+                    <button
+                        className="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm mr-2"
+                        onClick={() => downloadFarmerDetailsPDF(selectedFarmer)}
+                    >
+                        Download PDF
+                    </button>
+                </div>
+                {/* --- Profile Photo Centered at Top --- */}
+                {(() => {
+                    const record = selectedFarmer.farmer_record?.split('|') || [];
+                    const profilePhoto = record[11] || "";
+                    if (profilePhoto) {
+                        return (
+                            <div className="flex justify-center mb-4">
+                                <img
+                                    src={`http://localhost:3000/api/uploadsprofiles/${profilePhoto}`}
+                                    alt="Profile Photo"
+                                    className="w-28 h-28 rounded-full object-cover border-4 border-blue-200 shadow cursor-pointer"
+                                    onClick={() => setFullImage(`http://localhost:3000/api/uploadsprofiles/${profilePhoto}`)}
+                                />
+                            </div>
+                        );
+                    }
+                    return null;
+                })()}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {getFarmerDetails(selectedFarmer).map((item, idx) => (
+                        <>
+
+                            <div key={item.label + idx} className="flex flex-col border rounded p-2 bg-gray-50">
+
+                                <span className="text-xs text-gray-500">{item.label}</span>
+                                <span className="font-semibold text-gray-800">{item.value}</span>
+
+                                {/* Image display logic */}
+                                {item.img && (
+                                    <>
+                                        <button
+                                            className="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs w-fit"
+                                            onClick={() =>
+                                                setPhotoOpenIndexes(prev => ({
+                                                    ...prev,
+                                                    [idx]: !prev[idx]
+                                                }))
+                                            }
+                                        >
+                                            {photoOpenIndexes[idx] ? "Hide Photo" : "Show Photo"}
+                                        </button>
+
+                                        {photoOpenIndexes[idx] && (
+                                            <div className="mt-2 grid grid-cols-2 gap-2">
+                                                {item.img.split('|').map((imgPath, imgIdx) => (
+                                                    <img
+                                                        key={imgIdx}
+                                                        src={`http://localhost:3000/api/uploadsgeophoto/${imgPath}`}
+                                                        alt={`Image ${imgIdx + 1}`}
+                                                        width={200} // or your preferred width
+                                                        height={100} // or your preferred height
+                                                        className="my-1 max-h-24 rounded border cursor-pointer object-cover w-full"
+                                                        onClick={() => setFullImage(`http://localhost:3000/api/uploadsgeophoto/${imgPath}`)}
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
+                                {/* GIS display logic */}
+                                {item.gis && (() => {
+                                    const coordinates = item.gis
+                                        .split('|')
+                                        .map(entry => {
+                                            const parts = entry.split('}');
+                                            if (parts.length >= 2) {
+                                                const lat = parseFloat(parts[0]);
+                                                const lng = parseFloat(parts[1]);
+                                                if (!isNaN(lat) && !isNaN(lng)) {
+                                                    return { lat, lng };
+                                                }
+                                            }
+                                            return null;
+                                        })
+                                        .filter(coord => coord !== null);
+
+                                    return coordinates.length > 0 ? (
+                                        <div className="mt-2">
+                                            <Ifrsmaplocations coordinates={coordinates} />
+                                        </div>
+                                    ) : null;
+                                })()}
+                            </div>
+                        </>
+                    ))}
+
+
+                </div>
+                {fullImage && (
+                    <div
+                        className="fixed inset-0 z-[11000] bg-black bg-opacity-80 flex items-center justify-center"
+                        onClick={() => setFullImage(null)}
+                    >
+                        <img
+                            src={fullImage}
+                            alt="Full"
+                            className="max-w-full max-h-full rounded shadow-lg"
+                            style={{ objectFit: 'contain' }}
+                        />
                         <button
-                            className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl"
-                            onClick={() => setShowFarmerModal(false)}
+                            className="absolute top-5 right-5 text-white text-3xl font-bold"
+                            onClick={() => setFullImage(null)}
                         >
                             &times;
                         </button>
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-center text-blue-700 flex-1">IFR Holder Details</h2>
-                            {/* --- PDF Download Button --- */}
-                            <button
-                                className="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm mr-2"
-                                onClick={() => downloadFarmerDetailsPDF(selectedFarmer)}
-                            >
-                                Download PDF
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                         {getFarmerDetails(selectedFarmer).map((item, idx) => (
-  <div key={item.label + idx} className="flex flex-col border rounded p-2 bg-gray-50">
-    <span className="text-xs text-gray-500">{item.label}</span>
-    <span className="font-semibold text-gray-800">{item.value}</span>
-
-    {/* Image display logic */}
-    {item.img && (
-      <>
-        <button
-          className="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs w-fit"
-          onClick={() =>
-            setPhotoOpenIndexes(prev => ({
-              ...prev,
-              [idx]: !prev[idx]
-            }))
-          }
-        >
-          {photoOpenIndexes[idx] ? "Hide Photo" : "Show Photo"}
-        </button>
-        {photoOpenIndexes[idx] && (
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {item.img.split('|').map((imgPath, imgIdx) => (
-              <Image
-                key={imgIdx}
-                src={`http://localhost:3000/api/uploadsgeophoto/${imgPath}`}
-                alt={`Image ${imgIdx + 1}`}
-                width={200} // or your preferred width
-                height={100} // or your preferred height
-                className="my-1 max-h-24 rounded border cursor-pointer object-cover w-full"
-                onClick={() => setFullImage(`http://localhost:3000/api/uploadsgeophoto/${imgPath}`)}
-              />
-            ))}
-          </div>
-        )}
-      </>
-    )}
-
-    {/* GIS display logic */}
-    {item.gis && (() => {
-      const coordinates = item.gis
-        .split('|')
-        .map(entry => {
-          const parts = entry.split('}');
-          if (parts.length >= 2) {
-            const lat = parseFloat(parts[0]);
-            const lng = parseFloat(parts[1]);
-            if (!isNaN(lat) && !isNaN(lng)) {
-              return { lat, lng };
-            }
-          }
-          return null;
-        })
-        .filter(coord => coord !== null);
-
-      return coordinates.length > 0 ? (
-        <div className="mt-2">
-          <Ifrsmaplocations coordinates={coordinates} />
-        </div>
-      ) : null;
-    })()}
-  </div>
-))}
-
-
-                        </div>
-                        {fullImage && (
-                            <div
-                                className="fixed inset-0 z-[11000] bg-black bg-opacity-80 flex items-center justify-center"
-                                onClick={() => setFullImage(null)}
-                            >
-                                <Image
-                                    src={fullImage}
-                                    alt="Full"
-                                    className="max-w-full max-h-full rounded shadow-lg"
-                                    style={{ objectFit: 'contain' }}
-                                />
-                                <button
-                                    className="absolute top-5 right-5 text-white text-3xl font-bold"
-                                    onClick={() => setFullImage(null)}
-                                >
-                                    &times;
-                                </button>
-                            </div>
-                        )}
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
+    )
+}
+        </div >
     );
 };
 
 export default Talukawiseserve;
 
 interface jsPDFWithAutoTable extends jsPDF {
-  lastAutoTable?: { finalY: number };
+    lastAutoTable?: { finalY: number };
 }

@@ -25,6 +25,22 @@ import { Taluka } from "../Taluka/Taluka";
 import { Village } from "../Village/village";
 import { Schemesubcategorytype } from "../Schemesubcategory/Schemesubcategory";
 
+type ActivePayloadItem = {
+  payload: {
+    [key: string]: unknown; // or your actual data type
+  };
+  // Add more fields if you use them
+};
+
+type CategoricalChartState = {
+  activeTooltipIndex?: number;
+  activeLabel?: string;
+  activePayload?: ActivePayloadItem[];
+  chartX?: number;
+  chartY?: number;
+  // ...other properties as needed
+};
+
 interface AllFarmersData {
   users: UserCategory[];
   schemes: Schemesdatas[];
@@ -53,6 +69,7 @@ type DocumentBar = {
 };
 
 const PAGE_SIZE = 50;
+const PAGE_SIZE_FARMERS = 10;
 
 const parseFarmerDocuments = (docString: string | undefined): Record<string, { check: string, updation: string, available: string }> => {
   const result: Record<string, { check: string, updation: string, available: string }> = {};
@@ -160,7 +177,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
   // --- Modal State for Documents ---
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
+  const [selectedDocId] = useState<number | null>(null);
   const [selectedDocName, setSelectedDocName] = useState<string>("");
   const [docFilter, setDocFilter] = useState<"all" | "has" | "not">("all");
   const [selectedDocDropdown, setSelectedDocDropdown] = useState<number | null>(null);
@@ -180,20 +197,20 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
   // Pagination logic for document modal
   const totalPages = Math.ceil(filteredFarmers.length / PAGE_SIZE);
-  const paginatedFarmers = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filteredFarmers.slice(start, start + PAGE_SIZE);
-  }, [filteredFarmers, page]);
+  // const paginatedFarmers = useMemo(() => {
+  //   const start = (page - 1) * PAGE_SIZE;
+  //   return filteredFarmers.slice(start, start + PAGE_SIZE);
+  // }, [filteredFarmers, page]);
 
   // --- Modal Open Handler for Documents ---
-  const openModal = (docId: number, docName: string) => {
-    setSelectedDocId(docId);
-    setSelectedDocName(docName);
-    setSelectedDocDropdown(docId);
-    setDocFilter("all");
-    setPage(1);
-    setModalOpen(true);
-  };
+  // const openModal = (docId: number, docName: string) => {
+  //   setSelectedDocId(docId);
+  //   setSelectedDocName(docName);
+  //   setSelectedDocDropdown(docId);
+  //   setDocFilter("all");
+  //   setPage(1);
+  //   setModalOpen(true);
+  // };
 
   // --- Document Dropdown Change Handler ---
   const handleDocDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -316,14 +333,14 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedFarmers.length === 0 ? (
+                {filteredFarmers.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-4">
                       No data found.
                     </td>
                   </tr>
                 ) : (
-                  paginatedFarmers.map((farmer, idx) => {
+                  filteredFarmers.map((farmer, idx) => {
                     const docId = selectedDocDropdown ?? selectedDocId;
                     const hasDoc = farmerHasAvailableDocument(farmer, docId!);
                     return (
@@ -590,6 +607,363 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
       </div>
     ) : null;
 
+  // --- New State for Drilldown ---
+  const [drillLevel, setDrillLevel] = useState<"none" | "taluka" | "village" | "farmers">("none");
+  const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null);
+  const [selectedTalukaId, setSelectedTalukaId] = useState<number | null>(null);
+  const [selectedVillageId, setSelectedVillageId] = useState<number | null>(null);
+  const [farmerDocFilter, setFarmerDocFilter] = useState<"all" | "has" | "not">("all");
+  const [farmerPage, setFarmerPage] = useState(1);
+
+  // useEffect(() => {
+  //   setFarmerPage(1); // Reset to first page when filter/search changes
+  // }, [farmerDocFilter, farmerSearch, farmersInVillage]);
+
+  // useEffect(() => {
+  //   if (farmerPage > totalPagesFarmers) setFarmerPage(1);
+  //   // eslint-disable-next-line
+  // }, [totalPagesFarmers]);
+
+  // --- Handlers ---
+  const openTalukaModal = (docId: number) => {
+    setSelectedDocumentId(docId);
+    setDrillLevel("taluka");
+  };
+  const openVillageModal = (talukaId: number) => {
+    setSelectedTalukaId(talukaId);
+    setDrillLevel("village");
+  };
+  const openFarmersModal = (villageId: number, filter: "all" | "has" | "not" = "all") => {
+    setSelectedVillageId(villageId);
+    setFarmerDocFilter(filter);
+    setDrillLevel("farmers");
+  };
+  const closeModal = () => {
+    setDrillLevel("none");
+    setSelectedDocumentId(null);
+    setSelectedTalukaId(null);
+    setSelectedVillageId(null);
+  };
+
+  // --- Sorting and Search State ---
+  const [villageSearch, setVillageSearch] = useState("");
+  const [farmerSearch, setFarmerSearch] = useState("");
+
+  // --- Sorted and Filtered Progress ---
+  const talukaProgress = useMemo(() => {
+    if (!selectedDocumentId) return [];
+    return taluka
+      .map(t => {
+        const talukaFarmers = farmers.filter(f => Number(f.taluka_id) === Number(t.taluka_id));
+        const withDoc = talukaFarmers.filter(f => farmerHasAvailableDocument(f, selectedDocumentId)).length;
+        return {
+          ...t,
+          total: talukaFarmers.length,
+          withDoc,
+          percent: talukaFarmers.length ? (withDoc / talukaFarmers.length) * 100 : 0,
+        };
+      })
+      .sort((a, b) => b.percent - a.percent);
+  }, [selectedDocumentId, taluka, farmers]);
+
+  const villageProgress = useMemo(() => {
+    if (!selectedDocumentId || !selectedTalukaId) return [];
+    const villagesInTaluka = villages.filter(v => Number(v.taluka_id) === Number(selectedTalukaId));
+    return villagesInTaluka
+      .map(v => {
+        const villageFarmers = farmers.filter(
+          f => Number(f.village_id) === Number(v.village_id) && Number(f.taluka_id) === Number(selectedTalukaId)
+        );
+        const withDoc = villageFarmers.filter(f => farmerHasAvailableDocument(f, selectedDocumentId)).length;
+        return {
+          ...v,
+          total: villageFarmers.length,
+          withDoc,
+          percent: villageFarmers.length ? (withDoc / villageFarmers.length) * 100 : 0,
+        };
+      })
+      .sort((a, b) => b.percent - a.percent);
+  }, [selectedDocumentId, selectedTalukaId, villages, farmers]);
+
+  const filteredVillageProgress = useMemo(() => {
+    if (!villageSearch) return villageProgress;
+    return villageProgress.filter(v =>
+      v.name.toLowerCase().includes(villageSearch.toLowerCase()) ||
+      (v.marathi_name && v.marathi_name.toLowerCase().includes(villageSearch.toLowerCase()))
+    );
+  }, [villageProgress, villageSearch]);
+
+  const farmersInVillage = useMemo(() => {
+    if (!selectedDocumentId || !selectedVillageId || !selectedTalukaId) return [];
+    return farmers.filter(
+      f => Number(f.village_id) === Number(selectedVillageId) && Number(f.taluka_id) === Number(selectedTalukaId)
+    );
+  }, [selectedDocumentId, selectedVillageId, selectedTalukaId, farmers]);
+
+  const filteredFarmersInVillage = useMemo(() => {
+    if (!selectedDocumentId) return [];
+    let filtered = farmersInVillage;
+    if (farmerDocFilter === "has") {
+      filtered = filtered.filter(f => farmerHasAvailableDocument(f, selectedDocumentId!));
+    } else if (farmerDocFilter === "not") {
+      filtered = filtered.filter(f => !farmerHasAvailableDocument(f, selectedDocumentId!));
+    }
+    if (farmerSearch) {
+      filtered = filtered.filter(f =>
+        (f.farmer_record?.split('|')[0] || "").toLowerCase().includes(farmerSearch.toLowerCase())
+      );
+    }
+    return filtered;
+  }, [farmersInVillage, farmerDocFilter, farmerSearch, selectedDocumentId]);
+
+  const paginatedFarmers = useMemo(() => {
+    const start = (farmerPage - 1) * PAGE_SIZE_FARMERS;
+    return filteredFarmersInVillage.slice(start, start + PAGE_SIZE_FARMERS);
+  }, [filteredFarmersInVillage, farmerPage]);
+  const totalPagesFarmers = Math.ceil(filteredFarmersInVillage.length / PAGE_SIZE_FARMERS);
+
+  const selectedDocumentName = useMemo(() => {
+    return documents.find(d => d.id === selectedDocumentId)?.document_name || "";
+  }, [documents, selectedDocumentId]);
+
+  const handleDownloadFarmersExcel = () => {
+    if (!selectedDocumentId) return;
+    const docName = selectedDocumentName || "Document";
+    const data = filteredFarmersInVillage.map(farmer => ({
+      FarmerID: farmer.farmer_id,
+      ClaimID: farmer.farmer_record?.split('|')[15] || "",
+      Name: farmer.farmer_record?.split('|')[0] || "",
+      Aadhaar: farmer.farmer_record?.split('|')[5] || "",
+      Village: villages.find(v => Number(v.village_id) === Number(farmer.village_id))?.name || "",
+      HasDocument: farmerHasAvailableDocument(farmer, selectedDocumentId) ? "Yes" : "No",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Farmers");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    saveAs(
+      new Blob([excelBuffer], { type: "application/octet-stream" }),
+      `${docName.replace(/\s+/g, "_")}_Farmers.xlsx`
+    );
+  };
+
+  // --- Drilldown Modals ---
+  const handleCloseModal = () => {
+    if (drillLevel === "village") {
+      setDrillLevel("taluka");
+    } else {
+      setDrillLevel("none");
+      setSelectedDocumentId(null);
+      setSelectedTalukaId(null);
+      setSelectedVillageId(null);
+    }
+  };
+
+  // --- TalukaModal ---
+  const TalukaModal = () => drillLevel === "taluka" && (
+    <div className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-50" onClick={handleCloseModal}>
+      <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-2xl relative" onClick={e => e.stopPropagation()}>
+        {/* Close Icon */}
+        <button
+          className="absolute top-2 right-3 text-2xl text-gray-500 hover:text-gray-900"
+          onClick={handleCloseModal}
+        >
+          &times;
+        </button>
+        <h3 className="text-lg font-bold mb-4">Taluka wise document availability</h3>
+        {talukaProgress.map(t => (
+          <div key={t.taluka_id} className="mb-2">
+            <div className="flex justify-between">
+              <span>{t.name}</span>
+              <span>{t.withDoc}/{t.total} ({t.percent.toFixed(1)}%)</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded h-4 cursor-pointer" onClick={() => openVillageModal(t.taluka_id)}>
+              <div className="bg-blue-500 h-4 rounded" style={{ width: `${t.percent}%` }} />
+            </div>
+          </div>
+        ))}
+        <button className="mt-4 px-4 py-2 bg-gray-300 rounded" onClick={closeModal}>Close</button>
+      </div>
+    </div>
+  );
+
+  // --- VillageModal ---
+  const VillageModal = () => drillLevel === "village" && (
+    <div className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-50 " onClick={handleCloseModal}>
+      <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-2xl relative h-96 overflow-scroll" onClick={e => e.stopPropagation()}>
+        {/* Close Icon */}
+        <button
+          className="absolute top-2 right-3 text-2xl text-gray-500 hover:text-gray-900"
+          onClick={handleCloseModal}
+        >
+          &times;
+        </button>
+        <h3 className="text-lg font-bold mb-4">Village wise document availability</h3>
+        <input
+          type="text"
+          placeholder="Search village..."
+          className="mb-3 p-2 border rounded w-full"
+          value={villageSearch}
+          onChange={e => setVillageSearch(e.target.value)}
+        />
+        {filteredVillageProgress.map(v => (
+          <div key={v.village_id} className="mb-2">
+            <div className="flex justify-between">
+              <span>{v.name} {v.marathi_name ? `(${v.marathi_name})` : ""}</span>
+              <span>{v.withDoc}/{v.total} ({v.percent.toFixed(1)}%)</span>
+            </div>
+            <div
+              className="w-full h-4 rounded cursor-pointer bg-gray-200"
+              style={{
+                width: "100%",
+                position: "relative",
+                overflow: "hidden"
+              }}
+              onClick={() => openFarmersModal(v.village_id, "all")}
+            >
+              <div
+                style={{
+                  backgroundColor: v.percent > 0 ? "#10b981" : "#f87171", // green if available, red if not
+                  width: `${v.percent}%`,
+                  height: "100%",
+                  borderRadius: "inherit",
+                  transition: "width 0.3s"
+                }}
+              />
+            </div>
+          </div>
+        ))}
+        <button className="mt-4 px-4 py-2 bg-gray-300 rounded" onClick={closeModal}>Back</button>
+      </div>
+    </div>
+  );
+
+  const FarmersModal = () => {
+    if (drillLevel !== "farmers" || !selectedDocumentId) return null;
+    return (
+      <div className="fixed inset-0 bg-[#0303033f] z-9999 bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-50" onClick={closeModal}>
+        <div
+          className="bg-white rounded-lg shadow-xl p-4 w-full max-w-2xl relative flex flex-col"
+          style={{ maxHeight: '90vh', width: '100%', maxWidth: '600px' }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Close Icon */}
+          <button
+            className="absolute top-2 right-3 text-2xl text-gray-500 hover:text-gray-900"
+            onClick={closeModal}
+          >
+            &times;
+          </button>
+          <h3 className="text-lg font-bold mb-2">Farmers in village</h3>
+          <div className="mb-2 font-semibold">
+            Document: <span className="text-blue-600">{selectedDocumentName}</span>
+          </div>
+          <div className="flex flex-col md:flex-row gap-2 mb-3">
+            <input
+              type="text"
+              placeholder="Search farmer name..."
+              className="p-2 border rounded w-full md:w-1/2"
+              value={farmerSearch}
+              onChange={e => setFarmerSearch(e.target.value)}
+            />
+            <button
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 w-full md:w-auto"
+              onClick={handleDownloadFarmersExcel}
+            >
+              Download Excel
+            </button>
+          </div>
+          <select
+            className="mb-3 p-2 border rounded w-full"
+            value={farmerDocFilter}
+            onChange={e => {
+              setFarmerDocFilter(e.target.value as "all" | "has" | "not");
+              setFarmerPage(1); // reset to first page on filter change
+            }}
+          >
+            <option value="all">All</option>
+            <option value="has">Available</option>
+            <option value="not">Not Available</option>
+          </select>
+          <div className="overflow-auto flex-1" style={{ maxHeight: '50vh' }}>
+            <table className="min-w-full border text-xs md:text-sm table-fixed">
+              <thead>
+                <tr>
+                  <th className="border px-2 py-1">#</th>
+                  <th className="border px-2 py-1">Claim ID</th>
+                  <th className="border px-2 py-1">Name</th>
+                  <th className="border px-2 py-1">Aadhaar</th>
+                  <th className="border px-2 py-1">Village</th>
+                  <th className="border px-2 py-1">Has Document</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedFarmers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-4">No data found.</td>
+                  </tr>
+                ) : (
+                  paginatedFarmers.map((f, idx) => (
+                    <tr key={f.farmer_id}>
+                      <td className="border px-2 py-1">{(farmerPage - 1) * PAGE_SIZE_FARMERS + idx + 1}</td>
+                      <td className="border px-2 py-1">{f.farmer_record?.split('|')[15] || ""}</td>
+                      <td className="border px-2 py-1">{f.farmer_record?.split('|')[0]}</td>
+                      <td className="border px-2 py-1">{f.farmer_record?.split('|')[5]}</td>
+                      <td className="border px-2 py-1">{villages.find(v => Number(v.village_id) === Number(f.village_id))?.name || ""}</td>
+                      <td className="border px-2 py-1">{farmerHasAvailableDocument(f, selectedDocumentId) ? "Yes" : "No"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Pagination Controls */}
+          <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-2">
+            <span className="text-sm">
+              Showing {(farmerPage - 1) * PAGE_SIZE_FARMERS + 1}-
+              {Math.min(farmerPage * PAGE_SIZE_FARMERS, filteredFarmersInVillage.length)} of{" "}
+              {filteredFarmersInVillage.length}
+            </span>
+            <div className="flex gap-2">
+              <button
+                className="px-3 py-1 border rounded disabled:opacity-50 text-sm"
+                onClick={() => setFarmerPage((p) => Math.max(1, p - 1))}
+                disabled={farmerPage === 1}
+              >
+                Prev
+              </button>
+              <span className="text-sm">
+                Page {farmerPage} of {totalPagesFarmers}
+              </span>
+              <button
+                className="px-3 py-1 border rounded disabled:opacity-50 text-sm"
+                onClick={() => setFarmerPage((p) => Math.min(totalPagesFarmers, p + 1))}
+                disabled={farmerPage === totalPagesFarmers}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // --- Update BarChart onClick for Document Chart ---
+  const handleDocumentBarClick = (state: CategoricalChartState) => {
+    if (
+      state &&
+      state.activeLabel &&
+      state.activePayload &&
+      state.activePayload.length > 0
+    ) {
+      const doc = documentChartData.find(
+        (d) => d.document === state.activeLabel
+      );
+      if (doc) openTalukaModal(doc.id);
+    }
+  };
+
   // --- Render ---
   return (
     <div className="w-full  mt-5 ">
@@ -731,19 +1105,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 bottom: isMobile ? 80 : 60
               }}
               barSize={isMobile ? 20 : 40}
-              onClick={(state) => {
-                if (
-                  state &&
-                  state.activeLabel &&
-                  state.activePayload &&
-                  state.activePayload.length > 0
-                ) {
-                  const doc = documentChartData.find(
-                    (d) => d.document === state.activeLabel
-                  );
-                  if (doc) openModal(doc.id, doc.document);
-                }
-              }}
+              onClick={handleDocumentBarClick}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
@@ -766,6 +1128,9 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
       </div>
       <AadhaarModal />
       <Modal />
+      {TalukaModal()}
+      {VillageModal()}
+      {FarmersModal()}
     </div>
   );
 };

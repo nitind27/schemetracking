@@ -30,6 +30,7 @@ type SchemeBarData = {
   Applied: number;
   NotApplied: number;
   Benefited: number;
+  benefitedPercent?: number; // <-- add this
 };
 
 const STATUS_LABELS = [
@@ -58,7 +59,7 @@ function getLatestSchemeStatuses(schemesString: string | undefined) {
 }
 
 function getSchemeStats(farmers: FarmdersType[], schemes: Schemesdatas[]): SchemeBarData[] {
-  const stats: Record<number, SchemeBarData> = {};
+  const stats: Record<number, SchemeBarData & { total: number }> = {};
   schemes.forEach((scheme) => {
     stats[scheme.scheme_id] = {
       schemeName: scheme.scheme_name,
@@ -66,18 +67,24 @@ function getSchemeStats(farmers: FarmdersType[], schemes: Schemesdatas[]): Schem
       Applied: 0,
       NotApplied: 0,
       Benefited: 0,
+      total: 0,
     };
   });
   farmers.forEach((farmer) => {
     const statuses = getLatestSchemeStatuses(farmer.schemes);
     schemes.forEach((scheme) => {
       const status = statuses[String(scheme.scheme_id)];
+      stats[scheme.scheme_id].total += 1;
       if (!status || status === "NotApplied") stats[scheme.scheme_id].NotApplied += 1;
       else if (status === "Applied") stats[scheme.scheme_id].Applied += 1;
       else if (status === "Benefited") stats[scheme.scheme_id].Benefited += 1;
     });
   });
-  return Object.values(stats);
+  // Add benefitedPercent and sort
+  return Object.values(stats).map(s => ({
+    ...s,
+    benefitedPercent: s.total ? (s.Benefited / s.total) * 100 : 0,
+  }));
 }
 
 const SchemeStatusBarChart = ({
@@ -94,55 +101,63 @@ const SchemeStatusBarChart = ({
   const [page, setPage] = useState(1);
 
   // Chart Data
-  const chartData = useMemo(() => getSchemeStats(farmers, schemes), [farmers, schemes]);
+  const chartData = useMemo(() => {
+    const stats = getSchemeStats(farmers, schemes);
+    // Sort descending by benefitedPercent
+    return stats.sort((a, b) => b.benefitedPercent! - a.benefitedPercent!);
+  }, [farmers, schemes]);
 
   // Taluka-wise stats for selected scheme and status
   const talukaStats = useMemo(() => {
     if (!selectedScheme) return [];
-    return taluka.map((t) => {
-      const farmersInTaluka = farmers.filter((f) => Number(f.taluka_id) === t.taluka_id);
-      let count = 0;
-      farmersInTaluka.forEach((farmer) => {
-        const statuses = getLatestSchemeStatuses(farmer.schemes);
-        const status = statuses[String(selectedScheme.scheme_id)];
-        if (selectedStatus === "NotApplied") {
-          if (!status || status === "NotApplied") count++;
-        } else {
-          if (status === selectedStatus) count++;
-        }
-      });
-      return {
-        ...t,
-        count,
-        total: farmersInTaluka.length,
-        percent: farmersInTaluka.length ? (count / farmersInTaluka.length) * 100 : 0,
-      };
-    });
+    return taluka
+      .map((t) => {
+        const farmersInTaluka = farmers.filter((f) => Number(f.taluka_id) === t.taluka_id);
+        let count = 0;
+        farmersInTaluka.forEach((farmer) => {
+          const statuses = getLatestSchemeStatuses(farmer.schemes);
+          const status = statuses[String(selectedScheme.scheme_id)];
+          if (selectedStatus === "NotApplied") {
+            if (!status || status === "NotApplied") count++;
+          } else {
+            if (status === selectedStatus) count++;
+          }
+        });
+        return {
+          ...t,
+          count,
+          total: farmersInTaluka.length,
+          percent: farmersInTaluka.length ? (count / farmersInTaluka.length) * 100 : 0,
+        };
+      })
+      .sort((a, b) => b.percent - a.percent); // <-- sort descending
   }, [selectedScheme, selectedStatus, farmers, taluka]);
 
   // Village-wise stats for selected taluka+scheme+status
   const villageStats = useMemo(() => {
     if (!selectedScheme || !selectedTaluka) return [];
     const villagesInTaluka = villages.filter((v) => Number(v.taluka_id) === selectedTaluka.taluka_id);
-    return villagesInTaluka.map((v) => {
-      const farmersInVillage = farmers.filter((f) => Number(f.village_id) === v.village_id);
-      let count = 0;
-      farmersInVillage.forEach((farmer) => {
-        const statuses = getLatestSchemeStatuses(farmer.schemes);
-        const status = statuses[String(selectedScheme.scheme_id)];
-        if (selectedStatus === "NotApplied") {
-          if (!status || status === "NotApplied") count++;
-        } else {
-          if (status === selectedStatus) count++;
-        }
-      });
-      return {
-        ...v,
-        count,
-        total: farmersInVillage.length,
-        percent: farmersInVillage.length ? (count / farmersInVillage.length) * 100 : 0,
-      };
-    });
+    return villagesInTaluka
+      .map((v) => {
+        const farmersInVillage = farmers.filter((f) => Number(f.village_id) === v.village_id);
+        let count = 0;
+        farmersInVillage.forEach((farmer) => {
+          const statuses = getLatestSchemeStatuses(farmer.schemes);
+          const status = statuses[String(selectedScheme.scheme_id)];
+          if (selectedStatus === "NotApplied") {
+            if (!status || status === "NotApplied") count++;
+          } else {
+            if (status === selectedStatus) count++;
+          }
+        });
+        return {
+          ...v,
+          count,
+          total: farmersInVillage.length,
+          percent: farmersInVillage.length ? (count / farmersInVillage.length) * 100 : 0,
+        };
+      })
+      .sort((a, b) => b.percent - a.percent); // <-- sort descending
   }, [selectedScheme, selectedTaluka, selectedStatus, farmers, villages]);
 
   // Beneficiaries list for selected village+scheme+status
@@ -236,8 +251,8 @@ const SchemeStatusBarChart = ({
               <BarChart
                 data={chartData}
                 margin={{ top: 20, right: 24, left: 16, bottom: 60 }}
-                barCategoryGap="5%"   // less gap between groups
-                barGap={2}            // small gap between bars in a group
+                barCategoryGap="5%"
+                barGap={2}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
@@ -250,19 +265,6 @@ const SchemeStatusBarChart = ({
                 />
                 <YAxis tick={{ fill: "#4b5563", fontSize: 12 }} />
                 <Tooltip />
-                {/* Applied */}
-                <Bar
-                  dataKey="Applied"
-                  fill="#3b82f6"
-                  name="Applied"
-                  onClick={(_data, idx) => {
-                    setSelectedScheme(schemes[idx]);
-                    setSelectedStatus("Applied");
-                    setModalLevel("scheme");
-                  }}
-                  cursor="pointer"
-                  barSize={48}   // <-- Increase bar thickness here
-                />
                 {/* Benefited */}
                 <Bar
                   dataKey="Benefited"
@@ -274,7 +276,7 @@ const SchemeStatusBarChart = ({
                     setModalLevel("scheme");
                   }}
                   cursor="pointer"
-                  barSize={48}   // <-- Increase bar thickness here
+                  barSize={48}
                 />
                 {/* Not Benefited */}
                 <Bar
@@ -287,7 +289,20 @@ const SchemeStatusBarChart = ({
                     setModalLevel("scheme");
                   }}
                   cursor="pointer"
-                  barSize={48}   // <-- Increase bar thickness here
+                  barSize={48}
+                />
+                {/* Applied */}
+                <Bar
+                  dataKey="Applied"
+                  fill="#3b82f6"
+                  name="Applied"
+                  onClick={(_data, idx) => {
+                    setSelectedScheme(schemes[idx]);
+                    setSelectedStatus("Applied");
+                    setModalLevel("scheme");
+                  }}
+                  cursor="pointer"
+                  barSize={48}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -297,7 +312,7 @@ const SchemeStatusBarChart = ({
 
       {/* Modal: Taluka-wise Progress */}
       {modalLevel === "scheme" && selectedScheme && (
-        <Modal onClose={() => setModalLevel("none")}>
+        <Modal onClose={() => setModalLevel("none")} size="md">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
             <h3 className="text-lg font-bold">
               {selectedScheme.scheme_name} - Taluka wise
@@ -349,7 +364,7 @@ const SchemeStatusBarChart = ({
 
       {/* Modal: Village-wise Progress */}
       {modalLevel === "taluka" && selectedTaluka && (
-        <Modal onClose={() => setModalLevel("scheme")}>
+        <Modal onClose={() => setModalLevel("scheme")} size="md">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
             <h3 className="text-lg font-bold">
               {selectedScheme?.scheme_name} - {selectedTaluka.name} - Village wise
@@ -402,7 +417,7 @@ const SchemeStatusBarChart = ({
 
       {/* Modal: Village Beneficiaries List */}
       {modalLevel === "village" && selectedVillage && (
-        <Modal onClose={() => setModalLevel("taluka")}>
+        <Modal onClose={() => setModalLevel("taluka")} size="xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
             <h3 className="text-lg font-bold">
               {selectedScheme?.scheme_name} - {selectedTaluka?.name} - {selectedVillage.name}
@@ -492,17 +507,31 @@ const SchemeStatusBarChart = ({
 };
 
 // --- Modal Component ---
-function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+function Modal({
+  children,
+  onClose,
+  size = "md",
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+  size?: "sm" | "md" | "xl";
+}) {
+  const sizeClass =
+    size === "sm"
+      ? "md:max-w-md"
+      : size === "xl"
+      ? "md:max-w-4xl"
+      : "md:max-w-xl";
   return (
     <div
       className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-[99999] overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-xl p-4 md:p-6 w-full max-w-full md:max-w-4xl relative mx-2 my-4 pt-12"
+        className={`bg-white rounded-xl shadow-xl p-4 md:p-6 w-full max-w-full ${sizeClass} relative mx-2 my-4 pt-12`}
         onClick={e => e.stopPropagation()}
       >
-        {/* Close button at the top right, always */}
+        {/* Close button */}
         <button
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl z-10"
           onClick={onClose}
