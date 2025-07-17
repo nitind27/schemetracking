@@ -270,7 +270,7 @@ const SchemeStatusBarChart = ({
                   dataKey="Benefited"
                   fill="#22c55e"
                   name="Benefited"
-                  onClick={(_data, _idx) => {
+                  onClick={(_data) => {
                     const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
                     setSelectedScheme(scheme || null);
                     setSelectedStatus("Benefited");
@@ -284,7 +284,7 @@ const SchemeStatusBarChart = ({
                   dataKey="NotApplied"
                   fill="#facc15"
                   name="Not Benefited"
-                  onClick={(_data, _idx) => {
+                  onClick={(_data) => {
                     const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
                     setSelectedScheme(scheme || null);
                     setSelectedStatus("NotApplied");
@@ -298,7 +298,7 @@ const SchemeStatusBarChart = ({
                   dataKey="Applied"
                   fill="#3b82f6"
                   name="Applied"
-                  onClick={(_data, _idx) => {
+                  onClick={(_data) => {
                     const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
                     setSelectedScheme(scheme || null);
                     setSelectedStatus("Applied");
