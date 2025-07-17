@@ -48,11 +48,9 @@ async function getData(): Promise<{
     schemesRes.json(),
     usersRes.json(),
   ]);
-
   return { farmers, schemes, users };
 }
 const { farmers, schemes, users } = await getData();
-
 const filtervanaksetra = farmers.filter((data) => data.vanksetra != "")
 const schemesfilter = schemes.filter((data) => data.status == 'Active')
 

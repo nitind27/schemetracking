@@ -270,8 +270,9 @@ const SchemeStatusBarChart = ({
                   dataKey="Benefited"
                   fill="#22c55e"
                   name="Benefited"
-                  onClick={(_data, idx) => {
-                    setSelectedScheme(schemes[idx]);
+                  onClick={(_data, _idx) => {
+                    const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
+                    setSelectedScheme(scheme || null);
                     setSelectedStatus("Benefited");
                     setModalLevel("scheme");
                   }}
@@ -283,8 +284,9 @@ const SchemeStatusBarChart = ({
                   dataKey="NotApplied"
                   fill="#facc15"
                   name="Not Benefited"
-                  onClick={(_data, idx) => {
-                    setSelectedScheme(schemes[idx]);
+                  onClick={(_data, _idx) => {
+                    const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
+                    setSelectedScheme(scheme || null);
                     setSelectedStatus("NotApplied");
                     setModalLevel("scheme");
                   }}
@@ -296,8 +298,9 @@ const SchemeStatusBarChart = ({
                   dataKey="Applied"
                   fill="#3b82f6"
                   name="Applied"
-                  onClick={(_data, idx) => {
-                    setSelectedScheme(schemes[idx]);
+                  onClick={(_data, _idx) => {
+                    const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
+                    setSelectedScheme(scheme || null);
                     setSelectedStatus("Applied");
                     setModalLevel("scheme");
                   }}
