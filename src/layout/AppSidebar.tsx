@@ -50,7 +50,8 @@ async function getData(): Promise<{
   return { farmers, schemes, users };
 }
 const { farmers, schemes, users } = await getData();
-const filtervanaksetra = farmers.filter((data) => data.vanksetra != "")
+const filtervanaksetra = farmers.filter((data) => data.farmer_record?.split('|')[3] != "")
+const filterclaimid = farmers.filter((data) => data.farmer_record?.split('|')[15] != "")
 const schemesfilter = schemes.filter((data) => data.status == 'Active')
 
 type NavItem = {
@@ -143,7 +144,12 @@ const dopodashboard: NavItem[] = [
   },
   {
     icon: <RxDashboard />,
-    name: `Serve`,
+    name: `Vanksetra (${filterclaimid.length}/${farmers.length})`,
+    path: "/farmerspage",
+  },
+  {
+    icon: <RxDashboard />,
+    name: `Survey`,
     path: "/servepage",
   },
 
