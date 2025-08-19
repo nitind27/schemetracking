@@ -42,7 +42,7 @@ export function Simpletableshowdata<T extends object>({
   searchKey,
   inputfiled,
   submitbutton,
-  classname,
+  
 }: Props<T>) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");

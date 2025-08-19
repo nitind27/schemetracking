@@ -56,7 +56,6 @@ export function Tabviewtable<T extends object>({
   searchKey,
   inputfiled,
   submitbutton,
-  classname,
   tabFilter,
 }: Props<T>) {
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -98,8 +97,10 @@ export function Tabviewtable<T extends object>({
       const targets = [tabFilter.field, ...(tabFilter.fallbackFields ?? [])];
       const targetVal = tabFilter.normalize ? normalize(String(activeTab)) : String(activeTab);
       tempData = tempData.filter((row) => {
+        const r = row as Record<string, unknown>;
         return targets.some((key) => {
-          const value = String((row as any)[key] ?? "");
+          const raw = r[key as string];
+          const value = raw == null ? "" : String(raw);
           const comp = tabFilter.normalize ? normalize(value) : value;
           return comp === targetVal;
         });
@@ -109,33 +110,33 @@ export function Tabviewtable<T extends object>({
     // Apply multiple dropdown filters
     if (filterOptions.length > 0) {
       tempData = tempData.filter((row) => {
+        const r = row as Record<string, unknown>;
         return Object.entries(filters).every(([key, value]) => {
           if (!value) return true;
-          return String((row as any)[key]) === String(value);
+          return String(r[key]) === String(value);
         });
       });
     }
 
     // Column-specific search
     if (search && searchKey) {
-      tempData = tempData.filter((row) =>
-        String((row as any)[searchKey])
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      );
+      tempData = tempData.filter((row) => {
+        const r = row as Record<string, unknown>;
+        const s = r[searchKey as string];
+        return String(s ?? "").toLowerCase().includes(search.toLowerCase());
+      });
     }
     // Global search
     else if (search) {
       tempData = tempData.filter((row) =>
-        Object.values(row as any).some((value) =>
-          String(value).toLowerCase().includes(search.toLowerCase())
+        Object.values(row as Record<string, unknown>).some((v) =>
+          String(v ?? "").toLowerCase().includes(search.toLowerCase())
         )
       );
     }
 
     return tempData;
   }, [data, filters, search, searchKey, filterOptions, tabFilter, activeTab]);
-
   const handleFilterChange = (filterKey: string, value: string) => {
     setFilters((prev) => ({ ...prev, [filterKey]: value }));
   };

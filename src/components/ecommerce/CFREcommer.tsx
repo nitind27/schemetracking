@@ -95,7 +95,7 @@ export const CFREcommer = ({ metrics }: { metrics: Metrics }) => {
   );
 };
 
-const MetricCard = ({ icon, label, value, href }: {
+const MetricCard = ({ icon, label, href }: {
   icon: React.ReactNode;
   label: string;
   value: number | string;

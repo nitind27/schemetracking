@@ -8,7 +8,7 @@ import React from 'react';
 
 // import { Scheme_year } from '../Yearmaster/yearmaster';
 import { Futureworktype } from './Cfrtype/futurework';
-import { Simpletableshowdata } from '../tables/Simpletableshowdata';
+// import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import { Tabviewtable } from '../tables/Tabviewtable';
 
 
