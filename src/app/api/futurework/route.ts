@@ -36,10 +36,10 @@ export async function POST(request: Request) {
             [work_name, total_area, department_name, estimated_amount, implementing_method, work_status, user_id]
         );
 
-        return NextResponse.json({ error: "true", message: 'Inserted successfully', id: result.insertId });
+        return NextResponse.json({ error: false, message: 'Inserted successfully', id: result.insertId });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({ message: "Failed to insert record", error: 'false' }, { status: 500 });
+        return NextResponse.json({ message: "Failed to insert record", error: true }, { status: 500 });
     }
 }
 
@@ -76,10 +76,10 @@ export async function PUT(request: Request) {
             ]
         );
 
-        return NextResponse.json({ error: "true", message: 'Updated successfully' });
+        return NextResponse.json({ error: false, message: 'Updated successfully' });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({ error: "false", message: 'Failed to update record' }, { status: 500 });
+        return NextResponse.json({ error: true, message: 'Failed to update record' }, { status: 500 });
     }
 }
 
@@ -94,9 +94,9 @@ export async function DELETE(request: Request) {
             [future_work_id]
         );
 
-        return NextResponse.json({ error: "true", message: 'Deleted successfully' });
+        return NextResponse.json({ error: false, message: 'Deleted successfully' });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({ error: "false", message: 'Failed to delete record' }, { status: 500 });
+        return NextResponse.json({ error: true, message: 'Failed to delete record' }, { status: 500 });
     }
 }
