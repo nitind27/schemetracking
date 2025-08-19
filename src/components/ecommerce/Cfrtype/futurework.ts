@@ -5,6 +5,7 @@ export interface Futureworktype {
     estimated_amount: string;
     department_name: string;
     implementing_method: string;
+    username: string;
     work_status: string;
     user_id: string;
     status: string;
@@ -26,6 +27,7 @@ export interface presentworktype {
     start_date: string;
     end_date: string;
     worker_number: string;
+    username: string;
     user_id: string;
     status: string;
     created_at: string;
@@ -45,6 +47,9 @@ export interface basicdetailsofvillagetype {
     bank_details: string;
     cfr_boundary_map: string;
     cfr_work_info: string;
+    taluka_name: string;
+    village_name: string;
+    gp_name: string;
     status: string;
     created_at: string;
     updated_at: string;

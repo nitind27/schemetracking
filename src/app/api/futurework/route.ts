@@ -7,7 +7,15 @@ import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 export async function GET() {
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
-            'SELECT * FROM future_work WHERE status = "Active"'
+            // 'SELECT * FROM future_work WHERE status = "Active"'
+
+
+             `SELECT 
+                future_work.*, 
+                users.name AS username
+             FROM future_work
+             INNER JOIN users ON future_work.user_id = users.user_id 
+             WHERE future_work.status = "Active"`
         );
         return NextResponse.json(rows);
     } catch (error) {

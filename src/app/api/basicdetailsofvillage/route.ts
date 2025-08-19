@@ -4,15 +4,26 @@ import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 
 // GET all active future work records
 export async function GET() {
-    try {
-        const [rows] = await pool.query<RowDataPacket[]>(
-            'SELECT * FROM basic_village_details WHERE status = "Active"'
-        );
-        return NextResponse.json(rows);
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: 'Failed to fetch records' }, { status: 500 });
-    }
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT
+             basic_village_details.*,
+             taluka.name AS taluka_name,
+              grampanchyat.gpname AS gp_name,
+               village.marathi_name AS village_name
+                FROM 
+                basic_village_details 
+             INNER JOIN taluka ON basic_village_details.taluka_id = taluka.taluka_id 
+             INNER JOIN grampanchyat ON basic_village_details.gp_id = grampanchyat.gp_id 
+             INNER JOIN village ON basic_village_details.village_id = village.village_id
+              WHERE 
+              basic_village_details.status = "Active"`
+        );
+        return NextResponse.json(rows);
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({ error: 'Failed to fetch records' }, { status: 500 });
+    }
 }
 
 // POST: Insert new record
@@ -43,10 +54,10 @@ export async function POST(request: Request) {
                 bank_details, cfr_boundary_map, cfr_work_info, 'Active'
             ]
         );
-        return NextResponse.json({ error: false,message: "Village details inserted successfully", insertId: result.insertId });
+        return NextResponse.json({ error: false, message: "Village details inserted successfully", insertId: result.insertId });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({error: true, message: 'Failed to insert record' }, { status: 500 });
+        return NextResponse.json({ error: true, message: 'Failed to insert record' }, { status: 500 });
     }
 }
 
@@ -80,26 +91,26 @@ export async function PUT(request: Request) {
                 cfr_boundary_map, cfr_work_info, village_detail_id
             ]
         );
-        return NextResponse.json({ error: false, message: "Village details updated successfully",affectedRows: result.affectedRows });
+        return NextResponse.json({ error: false, message: "Village details updated successfully", affectedRows: result.affectedRows });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({error: true, message: 'Failed to update record' }, { status: 500 });
+        return NextResponse.json({ error: true, message: 'Failed to update record' }, { status: 500 });
     }
 }
 
 // DELETE: Mark as inactive (by village_detail_id)
 export async function DELETE(request: Request) {
-    try {
-        const formData = await request.formData();
-        const village_detail_id = formData.get('village_detail_id');
+    try {
+        const formData = await request.formData();
+        const village_detail_id = formData.get('village_detail_id');
 
-        const [result] = await pool.query<ResultSetHeader>(
-            `UPDATE basic_village_details SET status = 'Inactive' WHERE village_detail_id = ?`,
-            [village_detail_id]
-        );
-        return NextResponse.json({ error: false,message: "Village details deleted successfully", affectedRows: result.affectedRows });
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({error: true, message: 'Failed to delete record' }, { status: 500 });
-    }
+        const [result] = await pool.query<ResultSetHeader>(
+            `UPDATE basic_village_details SET status = 'Inactive' WHERE village_detail_id = ?`,
+            [village_detail_id]
+        );
+        return NextResponse.json({ error: false, message: "Village details deleted successfully", affectedRows: result.affectedRows });
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({ error: true, message: 'Failed to delete record' }, { status: 500 });
+    }
 }

@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 
-import { ReusableTable } from "../tables/BasicTableOne";
 import { Column } from "../tables/tabletype";
 
 import React from 'react';
 import { basicdetailsofvillagetype } from '../ecommerce/Cfrtype/futurework';
+import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 
 // import { Scheme_year } from '../Yearmaster/yearmaster';
 // import { Futureworktype } from './Cfrtype/futurework';
@@ -18,25 +18,25 @@ interface Props {
 
 const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
     const [data] = useState<basicdetailsofvillagetype[]>(serverData || []);
-
+console.log("serverData",serverData)
     const columns: Column<basicdetailsofvillagetype>[] = [
         {
             key: 'year',
             label: 'Taluka',
-            accessor: 'taluka_id',
-            render: (data) => <span>{data.taluka_id}</span>
+            accessor: 'taluka_name',
+            render: (data) => <span>{data.taluka_name}</span>
         },
         {
             key: 'year',
             label: 'Grampanchayat',
-            accessor: 'gp_id',
-            render: (data) => <span>{data.gp_id}</span>
+            accessor: 'gp_name',
+            render: (data) => <span>{data.gp_name}</span>
         },
         {
             key: 'year',
             label: 'Village',
-            accessor: 'village_id',
-            render: (data) => <span>{data.village_id}</span>
+            accessor: 'village_name',
+            render: (data) => <span>{data.village_name}</span>
         },
         {
             key: 'year',
@@ -98,7 +98,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
     return (
         <div className="">
 
-            <ReusableTable
+            <Simpletableshowdata
                 data={data}
                 inputfiled={
                     []

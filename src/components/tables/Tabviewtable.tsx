@@ -15,6 +15,19 @@ type FilterGroup = {
   onChange?: (value: string) => void;
 };
 
+type TabOption = {
+  label: string;
+  value: string;
+};
+
+type TabFilter<T> = {
+  field: keyof T | string;
+  tabs: TabOption[];
+  defaultValue?: string;
+  normalize?: boolean;
+  fallbackFields?: (keyof T | string)[];
+};
+
 type Column<T> = {
   key: string;
   label: string;
@@ -33,9 +46,10 @@ type Props<T> = {
   title?: string;
   searchKey?: string;
   classname?: string;
+  tabFilter?: TabFilter<T>;
 };
 
-export function Simpletableshowdata<T extends object>({
+export function Tabviewtable<T extends object>({
   data,
   columns,
   filterOptions = [],
@@ -43,11 +57,18 @@ export function Simpletableshowdata<T extends object>({
   inputfiled,
   submitbutton,
   classname,
+  tabFilter,
 }: Props<T>) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [activeTab, setActiveTab] = useState<string>(
+    tabFilter?.defaultValue ?? (tabFilter?.tabs?.[0]?.value ?? "")
+  );
+
+  const normalize = (s: string) =>
+    s.toLowerCase().replace(/\s+/g, "");
 
   const reactColumns = useMemo(() => {
     return [
@@ -72,12 +93,25 @@ export function Simpletableshowdata<T extends object>({
   const filteredData = useMemo(() => {
     let tempData = [...data];
 
-    // Apply multiple filters
+    // Apply tab filter first (if configured and not "All")
+    if (tabFilter && activeTab !== "") {
+      const targets = [tabFilter.field, ...(tabFilter.fallbackFields ?? [])];
+      const targetVal = tabFilter.normalize ? normalize(String(activeTab)) : String(activeTab);
+      tempData = tempData.filter((row) => {
+        return targets.some((key) => {
+          const value = String((row as any)[key] ?? "");
+          const comp = tabFilter.normalize ? normalize(value) : value;
+          return comp === targetVal;
+        });
+      });
+    }
+
+    // Apply multiple dropdown filters
     if (filterOptions.length > 0) {
       tempData = tempData.filter((row) => {
         return Object.entries(filters).every(([key, value]) => {
           if (!value) return true;
-          return String(row[key as keyof T]) === String(value);
+          return String((row as any)[key]) === String(value);
         });
       });
     }
@@ -85,7 +119,7 @@ export function Simpletableshowdata<T extends object>({
     // Column-specific search
     if (search && searchKey) {
       tempData = tempData.filter((row) =>
-        String(row[searchKey as keyof T])
+        String((row as any)[searchKey])
           .toLowerCase()
           .includes(search.toLowerCase())
       );
@@ -93,23 +127,45 @@ export function Simpletableshowdata<T extends object>({
     // Global search
     else if (search) {
       tempData = tempData.filter((row) =>
-        Object.values(row).some((value) =>
+        Object.values(row as any).some((value) =>
           String(value).toLowerCase().includes(search.toLowerCase())
         )
       );
     }
 
     return tempData;
-  }, [data, filters, search, searchKey, filterOptions]);
+  }, [data, filters, search, searchKey, filterOptions, tabFilter, activeTab]);
 
   const handleFilterChange = (filterKey: string, value: string) => {
     setFilters((prev) => ({ ...prev, [filterKey]: value }));
   };
 
-  const SubHeaderComponent = (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex flex-col md:flex-row gap-2 flex-1">
+const SubHeaderComponent = (
+  <div className="space-y-4 w-full">
+    {tabFilter?.tabs?.length ? (
+      <div className="flex justify-between items-center flex-wrap gap-4">
+        {/* Tabs on the left */}
+        <div className="flex gap-2 flex-wrap">
+          {tabFilter.tabs.map((t) => (
+            <button
+              key={t.label}
+              onClick={() => {
+                setActiveTab(t.value);
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1 rounded border transition-colors ${
+                activeTab === t.value
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Filters + Search + Submit button on the right */}
+        <div className="flex flex-col md:flex-row gap-2 items-center">
           {filterOptions.map((group, index) => (
             <select
               key={`${group.label}-${index}`}
@@ -136,22 +192,17 @@ export function Simpletableshowdata<T extends object>({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
 
-        {submitbutton && (
-          <div className="flex items-center">
-            {submitbutton}
-          </div>
-        )}
+          {submitbutton && <div>{submitbutton}</div>}
+        </div>
       </div>
+    ) : null}
 
-      {inputfiled && (
-        <div className="mt-4">
-          {inputfiled}
-        </div>
-      )}
-    </div>
-  );
+    {inputfiled && (
+      <div className="mt-4 w-full">{inputfiled}</div>
+    )}
+  </div>
+);
 
   return (
    <div className="p-4  rounded-lg w-full border bg-white">

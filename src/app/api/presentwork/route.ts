@@ -8,14 +8,21 @@ import path from 'path';
 export async function GET() {
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
-            'SELECT * FROM works WHERE status = "Active"'
+            `SELECT 
+                works.*, 
+                users.name AS username
+             FROM works
+             INNER JOIN users ON works.user_id = users.user_id 
+             WHERE works.status = "Active"`
         );
+
         return NextResponse.json(rows);
     } catch (error) {
         console.error(error);
         return NextResponse.json({ error: 'Failed to fetch records' }, { status: 500 });
     }
 }
+
 
 // Insert new work record
 export async function POST(request: Request) {
@@ -30,13 +37,13 @@ export async function POST(request: Request) {
         const end_date = formData.get('end_date');
         const worker_number = formData.get('worker_number');
         const user_id = formData.get('user_id');
-        
+
         // File upload
         const file = formData.get('work_photo');
         let photoPath = null;
         if (file && typeof file === 'object' && 'arrayBuffer' in file) {
             const buffer = Buffer.from(await file.arrayBuffer());
-          
+
             const filename = `${file.name}`;
             const folder = path.join(process.cwd(), 'public', 'uploads', 'presentwork');
             const fullPath = path.join(folder, filename);
@@ -56,10 +63,10 @@ export async function POST(request: Request) {
                 work_status, photoPath, start_date, end_date, worker_number, user_id, 'Active'
             ]
         );
-        return NextResponse.json({ error: false,message: "Work inserted successfully", insertId: result.insertId });
+        return NextResponse.json({ error: false, message: "Work inserted successfully", insertId: result.insertId });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({ error: true,message: 'Failed to insert record' }, { status: 500 });
+        return NextResponse.json({ error: true, message: 'Failed to insert record' }, { status: 500 });
     }
 }
 
@@ -77,7 +84,7 @@ export async function PUT(request: Request) {
         const end_date = formData.get('end_date');
         const worker_number = formData.get('worker_number');
         const user_id = formData.get('user_id');
-        
+
         // File upload
         const file = formData.get('work_photo');
         let photoPath = null;
@@ -102,10 +109,10 @@ export async function PUT(request: Request) {
                 work_status, photoPath, start_date, end_date, worker_number, user_id, work_id
             ]
         );
-        return NextResponse.json({ error: false, message: "Work updated successfully",affectedRows: result.affectedRows });
+        return NextResponse.json({ error: false, message: "Work updated successfully", affectedRows: result.affectedRows });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({ error: true,message: 'Failed to update record' }, { status: 500 });
+        return NextResponse.json({ error: true, message: 'Failed to update record' }, { status: 500 });
     }
 }
 
@@ -118,9 +125,9 @@ export async function DELETE(request: Request) {
             `UPDATE works SET status = 'Inactive' WHERE work_id = ?`,
             [work_id]
         );
-        return NextResponse.json({error: false, message: "Work deleted successfully", affectedRows: result.affectedRows });
+        return NextResponse.json({ error: false, message: "Work deleted successfully", affectedRows: result.affectedRows });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({error: true, message: 'Failed to delete record' }, { status: 500 });
+        return NextResponse.json({ error: true, message: 'Failed to delete record' }, { status: 500 });
     }
 }

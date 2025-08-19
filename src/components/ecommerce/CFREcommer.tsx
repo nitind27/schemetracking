@@ -116,7 +116,8 @@ const MetricCard = ({ icon, label, value, href }: {
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  {label} : <span className="font-bold text-[16px]">{value}</span>  
+                  {label}
+                   {/* : <span className="font-bold text-[16px]">{value}</span>   */}
                 </span>
                 {/* <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">
                

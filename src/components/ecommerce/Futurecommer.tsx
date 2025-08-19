@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 
-import { ReusableTable } from "../tables/BasicTableOne";
 import { Column } from "../tables/tabletype";
 
 import React from 'react';
 
 // import { Scheme_year } from '../Yearmaster/yearmaster';
 import { Futureworktype } from './Cfrtype/futurework';
+import { Simpletableshowdata } from '../tables/Simpletableshowdata';
+import { Tabviewtable } from '../tables/Tabviewtable';
 
 
 interface Props {
@@ -58,36 +59,40 @@ const Futurecommer: React.FC<Props> = ({ serverData }) => {
         {
             key: 'year',
             label: 'User ID',
-            accessor: 'user_id',
-            render: (data) => <span>{data.user_id}</span>
+            accessor: 'username',
+            render: (data) => <span>{data.username}</span>
         },
-        {
-            key: 'year',
-            label: 'Status',
-            accessor: 'status',
-            render: (data) => <span>{data.status}</span>
-        },
+        
     ];
 
     return (
         <div className="">
 
-            <ReusableTable
-                data={data}
-                inputfiled={
-                    []
-                }
+        <Tabviewtable
+            data={data}
+            inputfiled={
+                []
+            }
 
-                columns={columns}
-                title="Year"
-                filterOptions={[]}
-                // filterKey="role"
-
-                searchKey="year"
-
-            />
-        </div>
+            columns={columns}
+            title="Year"
+            filterOptions={[]}
+            searchKey="work_name"
+            tabFilter={{
+                field: 'work_status',
+                fallbackFields: ['status'],
+                normalize: true,
+                tabs: [
+                    { label: 'All', value: '' },
+                    { label: 'Pending', value: 'pending' },
+                    { label: 'In Progress', value: 'inprogress' },
+                    { label: 'Complete', value: 'complete' },
+                ],
+            }}
+        />
+    </div>
     );
 };
 
 export default Futurecommer;
+    
