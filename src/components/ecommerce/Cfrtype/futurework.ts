@@ -32,6 +32,7 @@ export interface presentworktype {
     status: string;
     created_at: string;
     updated_at: string;
+    gis_location?: string; // KML file path or URL
 
 }
 export interface basicdetailsofvillagetype {

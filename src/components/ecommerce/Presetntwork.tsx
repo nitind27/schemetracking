@@ -6,50 +6,55 @@ import React from 'react';
 import { presentworktype } from './Cfrtype/futurework';
 // import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import { Tabviewtable } from '../tables/Tabviewtable';
+import KMLMapButton from '../common/KMLMapButton';
+
 interface Props {
 	serverData: presentworktype[];
 }
+
 const Presetntwork: React.FC<Props> = ({ serverData }) => {
 	const [data] = useState<presentworktype[]>(serverData || []);
+	
 	const columns: Column<presentworktype>[] = [
 		{
-			key: 'year',
+			key: 'work_name',
 			label: 'Work Name',
 			accessor: 'work_name',
 			render: (data) => <span>{data.work_name}</span>
 		},
 		{
-			key: 'year',
+			key: 'total_area',
 			label: 'Total Area',
-			accessor: 'work_name',
-			render: (data) => <span>{data.work_name}</span>
+			accessor: 'total_area',
+			render: (data) => <span>{data.total_area}</span>
 		},
 		{
-			key: 'year',
+			key: 'estimated_amount',
 			label: 'Estimated Amount',
 			accessor: 'estimated_amount',
 			render: (data) => <span>{data.estimated_amount}</span>
 		},
 		{
-			key: 'year',
+			key: 'department_name',
 			label: 'Department Name',
 			accessor: 'department_name',
 			render: (data) => <span>{data.department_name}</span>
 		},
 		{
-			key: 'year',
+			key: 'implementing_method',
 			label: 'Implementing Method',
 			accessor: 'implementing_method',
 			render: (data) => <span>{data.implementing_method}</span>
 		},
 		{
-			key: 'year',
+			key: 'work_status',
 			label: 'Work Status',
 			accessor: 'work_status',
 			render: (data) => <span>{data.work_status}</span>
 		},
+		
 		{
-			key: 'year',
+			key: 'work_photo',
 			label: 'Work Photo',
 			accessor: 'work_photo',
 			render: (data) => <span><img
@@ -59,30 +64,44 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 			</span>
 		},
 		{
-			key: 'year',
+			key: 'start_date',
 			label: 'Work Start Date',
 			accessor: 'start_date',
 			render: (data) => <span>{data.start_date}</span>
 		},
 		{
-			key: 'year',
+			key: 'end_date',
 			label: 'Work End Date',
 			accessor: 'end_date',
 			render: (data) => <span>{data.end_date}</span>
 		},
 		{
-			key: 'year',
+			key: 'worker_number',
 			label: 'Work Number',
 			accessor: 'worker_number',
 			render: (data) => <span>{data.worker_number}</span>
 		},
 		{
-			key: 'year',
+			key: 'username',
 			label: 'User ID',
 			accessor: 'username',
 			render: (data) => <span>{data.username}</span>
 		},
+		{
+			key: 'gis_location',
+			label: 'GIS Location',
+			accessor: 'gis_location',
+			render: () => (
+				<div className="flex justify-center">
+					<KMLMapButton 
+						kmlFile={"/public/kml/Harankhuri CFR.kml"} 
+						title="Click to open KML file in Google Earth"
+					/>
+				</div>
+			)
+		},
 	];
+	
 	return (
 		<div className="">
 			<Tabviewtable
@@ -107,4 +126,5 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 		</div>
 	);
 };
+
 export default Presetntwork;
