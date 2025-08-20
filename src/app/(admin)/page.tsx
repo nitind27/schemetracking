@@ -1,14 +1,9 @@
 // app/ecommerce/page.tsx
 import type { Metadata } from "next";
 import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
-
 import Showschemstable from "@/components/ecommerce/Showschemstable";
 import { Suspense } from "react";
 import Loader from "@/common/Loader";
-// import DoTalukadata from "@/components/Do/Talukawisedata/DoTalukadata";
-
-
-// import { SchemeSaturation } from "@/components/ecommerce/SchemeSaturation";
 import GraphData from "@/components/ecommerce/GraphData";
 import SchemesBarChart from "@/components/ecommerce/SchemesBarChart";
 import { Documents } from "@/components/Documentsdata/documents";
@@ -17,11 +12,12 @@ import { Schemesdatas } from "@/components/schemesdata/schemes";
 import { Taluka } from "@/components/Taluka/Taluka";
 import { Village } from "@/components/Village/village";
 import DistrictMap from "@/components/ecommerce/DistrictMap";
+import { CFREcommer } from "@/components/ecommerce/CFREcommer";
+import TabView from "@/components/common/TabView";
 
 export const metadata: Metadata = {
   title: "Scheme Monitoring & Tracking System",
-  description:
-    "Scheme Monitoring & Tracking System",
+  description: "Scheme Monitoring & Tracking System",
 };
 
 async function fetchMetrics() {
@@ -129,36 +125,54 @@ async function getData(): Promise<{
 export default async function Ecommerce() {
   const metrics = await fetchMetrics();
   const farmersData = await fetchFarmersData();
-
   const { farmers, villages, talukas, schemes, documents } = await getData();
 
+  // Main Dashboard Content Component
+  const MainDashboardContent = () => (
+    <div className="grid grid-cols-6 gap-4 md:gap-6">
+      <div className="col-span-12 space-y-0 xl:col-span-7">
+        <Suspense fallback={<Loader />}>
+          <EcommerceMetrics metrics={metrics} />
+          <DistrictMap
+            data={farmers}
+            datavillage={villages}
+            datataluka={talukas}
+            dataschems={schemes}
+            documents={documents}
+          />
+          <GraphData farmersData={farmersData} />
+          <SchemesBarChart farmersData={farmersData} />
+          <Showschemstable farmersData={farmersData} />
+        </Suspense>
+      </div>
+    </div>
+  );
+
+  // CFR Dashboard Content Component
+  const CFRDashboardContent = () => (
+    <div className="grid grid-cols-6 gap-4 md:gap-6">
+      <div className="col-span-12 space-y-6 xl:col-span-7">
+        <CFREcommer />
+      </div>
+    </div>
+  );
+
+  const tabs = [
+    {
+      id: "main-dashboard",
+      label: "IFR Dashboard",
+      content: <MainDashboardContent />
+    },
+    {
+      id: "cfr-dashboard", 
+      label: "CFR Dashboard",
+      content: <CFRDashboardContent />
+    }
+  ];
 
   return (
-    <>
-
-      <div className="grid grid-cols-6 gap-4 md:gap-6">
-        <div className="col-span-12 space-y-0 xl:col-span-7 ">
-          {/* <Loader /> */}
-          <Suspense fallback={<Loader />}>
-            {/* <DownloadButtons /> */}
-
-            <EcommerceMetrics metrics={metrics} />
-            <DistrictMap
-              data={farmers}
-              datavillage={villages}
-              datataluka={talukas}
-              dataschems={schemes}
-              documents={documents}
-            />
-            <GraphData farmersData={farmersData} />
-            {/* <DoTalukadata farmersData={farmersData} /> */}
-            <SchemesBarChart farmersData={farmersData} />
-
-            {/* <SchemeSaturation metrics={metrics} /> */}
-            <Showschemstable farmersData={farmersData} />
-          </Suspense>
-        </div>
-      </div>
-    </>
+    <div className="w-full">
+      <TabView tabs={tabs} defaultTab="main-dashboard" />
+    </div>
   );
 }
