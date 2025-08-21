@@ -6,6 +6,7 @@ import React from 'react';
 import { basicdetailsofvillagetype } from '../ecommerce/Cfrtype/futurework';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import CustomModel from '@/common/CustomModel';
+import KMLMapButton from '../common/KMLMapButton';
 
 interface Props {
     serverData: basicdetailsofvillagetype[];
@@ -44,8 +45,23 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
         ];
     };
 
+    // सभासद table data (static for now)
+    const sabhasadRows = [
+        { no: '१.', name: 'अर्जुन जोरदार पावरा', pad: 'अध्यक्ष' },
+        { no: '२.', name: 'राकेश लालसिंग पावरा', pad: 'सचिव' },
+        { no: '३.', name: 'अभिष्नी प्रमोद पावरा', pad: 'खजिनदार' },
+        { no: '४.', name: 'श्रीमती रचना कळपेश', pad: 'सभासद' },
+        { no: '५.', name: 'सुभाष सायसिंग पावरा', pad: 'सभासद' },
+        { no: '६.', name: 'रविंद्र इमानवेल पावरा', pad: 'सभासद' },
+        { no: '७.', name: 'निता लोटन पावरा', pad: 'सभासद' },
+        { no: '८.', name: 'रमेश गुरूज्या पावरा', pad: 'सभासद' },
+        { no: '९.', name: 'कळपेश सुकलाल पावरा', pad: 'सभासद' },
+        { no: '१०.', name: 'रसिकलाल बोमचा पावरा', pad: 'सभासद' },
+        { no: '११.', name: 'संदीप वनकर पावरा', pad: 'सभासद' },
+    ];
+
     console.log("serverData", serverData);
-    
+
     const columns: Column<basicdetailsofvillagetype>[] = [
         {
             key: 'taluka',
@@ -147,108 +163,125 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                     title={`सामुहीक वनहक्क समिती ${selectedVillage.village_name} क्षेत्रातील नरेगा कामाचा माहिती`}
                     isFullScreen={true}
                 >
-                    <div className="space-y-8">
-                        {/* Document Title */}
-                        <div className="text-center mb-8">
-                            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                                सामुहीक वनहक्क समिती {selectedVillage.village_name} क्षेत्रातील नरेगा कामाचा माहिती
-                            </h1>
-                            <p className="text-gray-600 text-lg">
-                                Community Forest Rights Committee - NREGA Work Information
-                            </p>
-                        </div>
+                    <div className="w-full max-w-7xl mx-auto">
+                        <div className="space-y-8">
+                            {/* Document Title */}
 
-                        {/* Main Data Table */}
-                        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                <h2 className="text-xl font-semibold text-gray-800">गाव तपशील</h2>
-                            </div>
-                            
-                            <div className="p-6">
-                                <div className="space-y-4">
-                                    {getVillageModalData(selectedVillage).map((item, index) => (
-                                        <div key={index} className="flex border-b border-gray-100 pb-4 last:border-b-0">
-                                            <div className="w-1/3 pr-4">
-                                                <span className="font-semibold text-gray-700 text-lg">
-                                                    {item.label}:
-                                                </span>
-                                            </div>
-                                            <div className="w-2/3">
-                                                <span className="text-gray-900 text-lg">
-                                                    {item.value}
-                                                    {item.unit && (
-                                                        <span className="text-gray-500 ml-2">
-                                                            {item.unit}
-                                                        </span>
-                                                    )}
-                                                </span>
+
+                            {/* Flex Container for Village Details and CFR Maps */}
+                            <div className="flex flex-col lg:flex-row gap-8">
+                                {/* Main Data Table */}
+                                <div className="lg:w-1/2">
+                                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                            <h2 className="text-xl font-semibold text-gray-800">गाव तपशील</h2>
+                                        </div>
+
+                                        <div className="p-6">
+                                            <div className="space-y-4">
+                                                {getVillageModalData(selectedVillage).map((item, index) => (
+                                                    <div key={index} className="flex border-b border-gray-100 pb-4 last:border-b-0">
+                                                        <div className="w-1/3 pr-4">
+                                                            <span className="font-semibold text-gray-700 text-base">
+                                                                {item.label}:
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-2/3">
+                                                            <span className="text-gray-900 text-base">
+                                                                {item.value}
+                                                                {item.unit && (
+                                                                    <span className="text-gray-500 ml-2">
+                                                                        {item.unit}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* CFR Maps Section */}
-                        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                <h2 className="text-xl font-semibold text-gray-800">CFR सिमांकित नकाशा</h2>
-                            </div>
-                            
-                            <div className="p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Map 1 */}
-                                    <div className="bg-gray-100 rounded-lg p-4 h-64 flex items-center justify-center">
-                                     <img src="/images/GIS/img1.jpg" alt="" />
-                                    </div>
-                                    
-                                    {/* Map 2 */}
-                                    <div className="bg-gray-100 rounded-lg p-4 h-64 flex items-center justify-center">
-                                       <img src="/images/GIS/img2.jpg" alt="" />
                                     </div>
                                 </div>
-                                
-                                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                                    <p className="text-blue-800 text-sm">
-                                        <strong>सूचना:</strong> वरील नकाशे हे {selectedVillage.village_name} गावाच्या CFR क्षेत्राचे सिमांकित नकाशे आहेत. 
-                                        यामध्ये पारंपारिक सीमा, भुमी चिन्हे आणि खासरा कक्ष क्रमांक समाविष्ट आहेत.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* GIS Section - Only Image */}
-                        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                <h2 className="text-xl font-semibold text-gray-800">GIS</h2>
-                            </div>
-                            
-                            <div className="p-6">
-                                <div className="flex justify-center">
-                                    <div className=" rounded-lg p-4 w-full max-w-4xl h-96 flex items-center justify-center">
-                                        <div className="text-center">
-                                            {/* <div className="text-gray-500 mb-4">
-                                                <svg className="w-32 h-32 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                                                </svg>
+                                {/* Right Side - CFR Maps, GIS, and New Map Card */}
+                                <div className="lg:w-1/2 space-y-6">
+                                    {/* CFR Maps Section */}
+                                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                            <h2 className="text-xl font-semibold text-gray-800">CFR सिमांकित नकाशा</h2>
+                                        </div>
+
+                                        <div className="p-6">
+                                            <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
+                                                <img src="/images/GIS/gismap.jpg" alt="" className="w-full h-full object-cover rounded" />
                                             </div>
-                                            <p className="text-gray-600 font-medium text-xl">CFR क्षेत्र शिवारफेरी कार्यक्रम</p>
-                                            <p className="text-gray-500 mt-2">CFR Area Field Visit Program</p>
-                                            <p className="text-xs text-gray-400 mt-4">Powered by NoteCam</p> */}
-                                            <img src="/images/GIS/gis.jpg" alt="" className='h-96 '/>
+                                        </div>
+                                    </div>
+
+                                    {/* GIS Section - Only Image */}
+                                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                            <h2 className="text-xl font-semibold text-gray-800">Geo Tag photos</h2>
+                                        </div>
+
+                                        <div className="p-6">
+                                            <div className="flex justify-center">
+                                                <div className="rounded-lg w-full h-64 flex items-center justify-center">
+                                                    <div className="text-center">
+                                                        <img src="/images/GIS/gis.jpg" alt="" className='h-64 object-cover rounded' />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* New Map Card with Icon */}
+                                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                            <h2 className="text-xl font-semibold text-gray-800">GIS</h2>
+                                        </div>
+
+                                        <div className="p-6">
+                                            <div className="flex justify-center items-center">
+                                                <KMLMapButton
+                                                    kmlFile={"/public/kml/Harankhuri CFR.kml"}
+                                                    title="Click to open KML file in Google Earth"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Footer Note */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                            <h3 className="text-lg font-semibold text-blue-800 mb-3">टीप:</h3>
-                            <p className="text-blue-700 text-lg">
-                                हा दस्तऐवज {selectedVillage.taluka_name} तालुका, {selectedVillage.gp_name} ग्रामपंचायत, 
-                                {selectedVillage.village_name} गावाच्या सामुहीक वनहक्क समितीच्या नरेगा कामाची माहिती दर्शवतो.
-                            </p>
+                            {/* सभासद table (full width; not inside flex) */}
+                            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                    <h2 className="text-xl font-semibold text-gray-800">सभासद</h2>
+                                </div>
+                                <div className="p-6">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full table-fixed border border-gray-300">
+                                            <thead>
+                                                <tr className="bg-gray-100">
+                                                    <th className="w-20 border border-gray-300 px-3 py-2 text-left">अ.न.</th>
+                                                    <th className="border border-gray-300 px-3 py-2 text-left">सभासदाचे नाव</th>
+                                                    <th className="w-40 border border-gray-300 px-3 py-2 text-left">पद</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {sabhasadRows.map((r, idx) => (
+                                                    <tr key={idx} className="odd:bg-white even:bg-gray-50">
+                                                        <td className="border border-gray-300 px-3 py-2">{r.no}</td>
+                                                        <td className="border border-gray-300 px-3 py-2">{r.name}</td>
+                                                        <td className="border border-gray-300 px-3 py-2">{r.pad}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </CustomModel>

@@ -95,8 +95,8 @@ const CustomModel: React.FC<ModalProps> = ({
   // Full Screen Modal
   if (isFullScreen) {
     return (
-      <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-sm">
-        <div className="w-full h-full flex flex-col bg-white">
+      <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-sm p-5">
+        <div className="w-[1050px] h-full flex flex-col bg-white justify-between rounded-lg shadow-xl mx-auto my-0">
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-white">
             <h2 className="text-3xl font-bold text-gray-800">{title}</h2>
