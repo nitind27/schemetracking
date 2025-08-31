@@ -26,22 +26,36 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
         setIsModalOpen(false);
         setSelectedVillage(null);
     };
+    function formatDate(dateString: string | undefined | null): string {
+        if (!dateString) return 'उपलब्ध नाही';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'उपलब्ध नाही';
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    }
 
     // Convert village data to the format needed for the modal with Marathi labels
     const getVillageModalData = (village: basicdetailsofvillagetype) => {
         return [
-            { label: 'ग्रामसभा/CFR प्राप्त गाव गाव', value: village.village_name, unit: '' },
+            { label: 'ग्रामसभा/CFR प्राप्त गाव', value: village.village_name, unit: '' },
             { label: 'ग्रामपंचायत', value: village.gp_name, unit: '' },
             { label: 'तालुका', value: village.taluka_name, unit: '' },
             { label: 'जिल्हा', value: 'नंदुरबार', unit: '' },
-            { label: 'ग्रामसभा अंमलबजावणी अधिकार प्राप्त दिनांक', value: village.date || 'उपलब्ध नाही', unit: '' },
-            { label: 'प्रमुख भुमी चिन्ह आणि खासरा कक्ष क्रमांकासह पारंपारिक सीमासह सीमांचे वर्णन', value: village.cfr_boundary_map || 'उपलब्ध नाही', unit: '' },
+            { label: 'ग्रामसभा अंमलबजावणी अधिकार प्राप्त दिनांक', value: formatDate(village.date) || 'उपलब्ध नाही', unit: '' },
+            // { label: 'प्रमुख भुमी चिन्ह आणि खासरा कक्ष क्रमांकासह पारंपारिक सीमासह सीमांचे वर्णन', value: village.cfr_boundary_map || 'उपलब्ध नाही', unit: '' },
+            { label: 'प्रमुख भुमी चिन्ह आणि खासरा कक्ष क्रमांकासह पारंपारिक सीमासह सीमांचे वर्णन', value: village.cfr_boundary_map && '15,54' || 'उपलब्ध नाही', unit: '' },
             { label: 'एकूण CFR क्षेत्र', value: village.total_cfr_area, unit: 'हेक्टर आर' },
             { label: 'कक्ष क्रमांक', value: village.room_number || 'उपलब्ध नाही', unit: '' },
             { label: 'प्रमाणपत्र क्रमांक', value: village.certificate_no || 'उपलब्ध नाही', unit: '' },
-            { label: 'दिनांक', value: village.date || 'उपलब्ध नाही', unit: '' },
+            { label: 'दिनांक', value: formatDate(village.date), unit: '' },
+
             { label: 'CFRMC माहिती', value: village.cfrmc_details || 'उपलब्ध नाही', unit: '' },
+            { label: 'चतु:सिमा', value: village.gp_name || "पूर्व || पश्चिम || उत्तर || दक्षिण ", unit: '' },
             { label: 'बँक खाते तपशील', value: village.bank_details || 'उपलब्ध नाही', unit: '' },
+            { label: 'खाते नंबर ', value: village.gp_name && "5481527135" || 'उपलब्ध नाही', unit: '' },
+            { label: 'IFSC ', value: village.bank_details && "CBIN0283044" || 'उपलब्ध नाही', unit: '' },
         ];
     };
 
@@ -88,60 +102,60 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                 </button>
             )
         },
-        {
-            key: 'total_cfr_area',
-            label: 'Total CFR Area',
-            accessor: 'total_cfr_area',
-            render: (data) => <span>{data.total_cfr_area}</span>
-        },
-        {
-            key: 'room_number',
-            label: 'Room Number',
-            accessor: 'room_number',
-            render: (data) => <span>{data.room_number}</span>
-        },
-        {
-            key: 'certificate_no',
-            label: 'Certificate No',
-            accessor: 'certificate_no',
-            render: (data) => <span>{data.certificate_no}</span>
-        },
-        {
-            key: 'date',
-            label: 'Date',
-            accessor: 'date',
-            render: (data) => <span>{data.date}</span>
-        },
-        {
-            key: 'cfrmc_details',
-            label: 'CFRMC Details',
-            accessor: 'cfrmc_details',
-            render: (data) => <span>{data.cfrmc_details}</span>
-        },
-        {
-            key: 'bank_details',
-            label: 'Bank Details',
-            accessor: 'bank_details',
-            render: (data) => <span>{data.bank_details}</span>
-        },
-        {
-            key: 'cfr_boundary_map',
-            label: 'CFR Boundary Map',
-            accessor: 'cfr_boundary_map',
-            render: (data) => <span>{data.cfr_boundary_map}</span>
-        },
-        {
-            key: 'cfr_work_info',
-            label: 'CFR Work Info',
-            accessor: 'cfr_work_info',
-            render: (data) => <span>{data.cfr_work_info}</span>
-        },
-        {
-            key: 'status',
-            label: 'Status',
-            accessor: 'status',
-            render: (data) => <span>{data.status}</span>
-        },
+        // {
+        //     key: 'total_cfr_area',
+        //     label: 'Total CFR Area',
+        //     accessor: 'total_cfr_area',
+        //     render: (data) => <span>{data.total_cfr_area}</span>
+        // },
+        // {
+        //     key: 'room_number',
+        //     label: 'Room Number',
+        //     accessor: 'room_number',
+        //     render: (data) => <span>{data.room_number}</span>
+        // },
+        // {
+        //     key: 'certificate_no',
+        //     label: 'Certificate No',
+        //     accessor: 'certificate_no',
+        //     render: (data) => <span>{data.certificate_no}</span>
+        // },
+        // {
+        //     key: 'date',
+        //     label: 'Date',
+        //     accessor: 'date',
+        //     render: (data) => <span>{data.date}</span>
+        // },
+        // {
+        //     key: 'cfrmc_details',
+        //     label: 'CFRMC Details',
+        //     accessor: 'cfrmc_details',
+        //     render: (data) => <span>{data.cfrmc_details}</span>
+        // },
+        // {
+        //     key: 'bank_details',
+        //     label: 'Bank Details',
+        //     accessor: 'bank_details',
+        //     render: (data) => <span>{data.bank_details}</span>
+        // },
+        // {
+        //     key: 'cfr_boundary_map',
+        //     label: 'CFR Boundary Map',
+        //     accessor: 'cfr_boundary_map',
+        //     render: (data) => <span>{data.cfr_boundary_map}</span>
+        // },
+        // {
+        //     key: 'cfr_work_info',
+        //     label: 'CFR Work Info',
+        //     accessor: 'cfr_work_info',
+        //     render: (data) => <span>{data.cfr_work_info}</span>
+        // },
+        // {
+        //     key: 'status',
+        //     label: 'Status',
+        //     accessor: 'status',
+        //     render: (data) => <span>{data.status}</span>
+        // },
     ];
 
     return (
@@ -208,7 +222,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                                     {/* CFR Maps Section */}
                                     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                            <h2 className="text-xl font-semibold text-gray-800">CFR सिमांकित नकाशा</h2>
+                                            <h2 className="text-xl font-semibold text-gray-800">CFR फलक फोटो</h2>
                                         </div>
 
                                         <div className="p-6">
@@ -221,14 +235,14 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                                     {/* GIS Section - Only Image */}
                                     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                            <h2 className="text-xl font-semibold text-gray-800">Geo Tag photos</h2>
+                                            <h2 className="text-xl font-semibold text-gray-800">CFR प्रमाणपत्र</h2>
                                         </div>
 
                                         <div className="p-6">
                                             <div className="flex justify-center">
                                                 <div className="rounded-lg w-full h-64 flex items-center justify-center">
                                                     <div className="text-center">
-                                                        <img src="/images/GIS/gis.jpg" alt="" className='h-64 object-cover rounded' />
+                                                        <img src="/images/GIS/certi.jpeg" alt="" className='h-64 object-cover rounded' />
                                                     </div>
                                                 </div>
                                             </div>
@@ -238,7 +252,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                                     {/* New Map Card with Icon */}
                                     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                            <h2 className="text-xl font-semibold text-gray-800">GIS</h2>
+                                            <h2 className="text-xl font-semibold text-gray-800">GIS (CFR सिमांकित नकाशा)</h2>
                                         </div>
 
                                         <div className="p-6">
