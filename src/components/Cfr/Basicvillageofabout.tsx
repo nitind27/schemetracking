@@ -43,19 +43,26 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
             { label: 'ग्रामपंचायत', value: village.gp_name, unit: '' },
             { label: 'तालुका', value: village.taluka_name, unit: '' },
             { label: 'जिल्हा', value: 'नंदुरबार', unit: '' },
-            { label: 'ग्रामसभा अंमलबजावणी अधिकार प्राप्त दिनांक', value: formatDate(village.date) || 'उपलब्ध नाही', unit: '' },
+            { label: 'ग्रामसभा अमलबाजवणी यंत्रणा घोषित झाले आहे का', value: village.cfr_boundary_map || 'उपलब्ध नाही', unit: '' },
             // { label: 'प्रमुख भुमी चिन्ह आणि खासरा कक्ष क्रमांकासह पारंपारिक सीमासह सीमांचे वर्णन', value: village.cfr_boundary_map || 'उपलब्ध नाही', unit: '' },
-            { label: 'प्रमुख भुमी चिन्ह आणि खासरा कक्ष क्रमांकासह पारंपारिक सीमासह सीमांचे वर्णन', value: village.cfr_boundary_map && '15,54' || 'उपलब्ध नाही', unit: '' },
+            { label: 'कक्ष क्र', value: '15,54', unit: '' },
             { label: 'एकूण CFR क्षेत्र', value: village.total_cfr_area, unit: 'हेक्टर आर' },
-            { label: 'कक्ष क्रमांक', value: village.room_number || 'उपलब्ध नाही', unit: '' },
+            // { label: 'कक्ष क्रमांक', value: village.room_number || 'उपलब्ध नाही', unit: '' },
             { label: 'प्रमाणपत्र क्रमांक', value: village.certificate_no || 'उपलब्ध नाही', unit: '' },
-            { label: 'दिनांक', value: formatDate(village.date), unit: '' },
+            { label: 'सामूहिक वन हक्क मिळाल्याची तारीख', value: formatDate(village.date), unit: '' },
 
-            { label: 'CFRMC माहिती', value: village.cfrmc_details || 'उपलब्ध नाही', unit: '' },
-            { label: 'चतु:सिमा', value: village.gp_name || "पूर्व || पश्चिम || उत्तर || दक्षिण ", unit: '' },
+
+            { label: 'चतु:सिमा', value: "पूर्व | पश्चिम | उत्तर | दक्षिण ", unit: '' },
             { label: 'बँक खाते तपशील', value: village.bank_details || 'उपलब्ध नाही', unit: '' },
-            { label: 'खाते नंबर ', value: village.gp_name && "5481527135" || 'उपलब्ध नाही', unit: '' },
-            { label: 'IFSC ', value: village.bank_details && "CBIN0283044" || 'उपलब्ध नाही', unit: '' },
+            { label: 'खाते नंबर ', value: "5481527135", unit: '' },
+            { label: 'IFSC ', value: "CBIN0283044", unit: '' },
+            { label: 'PAN ', value: "AAAPL1234C", unit: '' },
+            { label: 'TAN ', value: "PDES03028F", unit: '' },
+            { label: 'GST ', value: "27AAAPA1234A1Z5", unit: '' },
+            { label: 'DSC info', value: "Mohan Iyer", unit: '' },
+            { label: 'Total no of IFR Approved/ pending in CFR', value: "0", unit: '' },
+            { label: 'Total No. IFR Area in CFR', value: "0", unit: '' },
+            { label: 'Remaining Area', value: "0", unit: '' },
         ];
     };
 
@@ -191,7 +198,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                                             <h2 className="text-xl font-semibold text-gray-800">गाव तपशील</h2>
                                         </div>
 
-                                        <div className="p-6">
+                                        <div className="p-6 h-[870px] overflow-scroll">
                                             <div className="space-y-4">
                                                 {getVillageModalData(selectedVillage).map((item, index) => (
                                                     <div key={index} className="flex border-b border-gray-100 pb-4 last:border-b-0">
@@ -201,14 +208,19 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                                                             </span>
                                                         </div>
                                                         <div className="w-2/3">
-                                                            <span className="text-gray-900 text-base">
-                                                                {item.value}
+                                                            <span className={`text-gray-900 text-base ${item.label === 'चतु:सिमा' ? 'flex flex-col' : 'flex'}`}>
+                                                                {item.label === 'चतु:सिमा'
+                                                                    ? item.value.split(' | ').map((dir, idx) => (
+                                                                        <span key={idx}>{dir}</span>
+                                                                    ))
+                                                                    : item.value}
                                                                 {item.unit && (
                                                                     <span className="text-gray-500 ml-2">
                                                                         {item.unit}
                                                                     </span>
                                                                 )}
                                                             </span>
+
                                                         </div>
                                                     </div>
                                                 ))}
