@@ -62,7 +62,7 @@ export function Tabviewtable<T extends object>({
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
-  const [activeTab, setActiveTab] = useState<string>(
+  const [activeTab] = useState<string>(
     tabFilter?.defaultValue ?? (tabFilter?.tabs?.[0]?.value ?? "")
   );
 
