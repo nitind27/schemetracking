@@ -52,17 +52,21 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
             { label: 'सामूहिक वन हक्क मिळाल्याची तारीख', value: formatDate(village.date), unit: '' },
 
 
-            { label: 'चतु:सिमा', value: "पूर्व | पश्चिम | उत्तर | दक्षिण ", unit: '' },
+            { label: 'चतु:सिमा', value: "पूर्व - जुने धडगाव सीमा  | पश्चिम  - सोमाने | उत्तर - हरणखुरी गावाचे महसुली क्षेत्र  | दक्षिण - कुसुमवेरी वनक्षेत्र सीमा ", unit: '' },
             { label: 'बँक खाते तपशील', value: village.bank_details || 'उपलब्ध नाही', unit: '' },
             { label: 'खाते नंबर ', value: "5481527135", unit: '' },
             { label: 'IFSC ', value: "CBIN0283044", unit: '' },
+            { label: 'सामुहिक वन हक्क संवर्धन व व्यवस्थापन आराखडा पूर्ण आहे का ?', value: "होय", unit: '' },
+            { label: 'आराखड्याला ग्रामसभेने मंजुरी दिली आहे का ?', value: "होय", unit: '' },
+            { label: 'आराखड्याला तालुका कन्व्हर्जन समितीने मान्यता दिली आहे का ?', value: "होय", unit: '' },
+            { label: 'आराखड्याला जिल्हा कन्व्हर्जन समितीने मान्यता दिली आहे का ?', value: "होय", unit: '' },
             { label: 'PAN ', value: "AAAPL1234C", unit: '' },
             { label: 'TAN ', value: "PDES03028F", unit: '' },
             { label: 'GST ', value: "27AAAPA1234A1Z5", unit: '' },
             { label: 'DSC info', value: "Mohan Iyer", unit: '' },
             { label: 'Total no of IFR Approved/ pending in CFR', value: "0", unit: '' },
             { label: 'Total No. IFR Area in CFR', value: "0", unit: '' },
-            { label: 'Remaining Area', value: "0", unit: '' },
+            { label: 'Remaining Area', value: "62 hr", unit: '' },
         ];
     };
 
