@@ -12,6 +12,15 @@ interface Props {
 
 const Presetntwork: React.FC<Props> = ({ serverData }) => {
 	const [data] = useState<presentworktype[]>(serverData || []);
+    function formatDate(dateString: string | undefined | null): string {
+        if (!dateString) return 'उपलब्ध नाही';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'उपलब्ध नाही';
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    }
 
 	const columns: Column<presentworktype>[] = [
 		{
@@ -67,13 +76,13 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 			key: "start_date",
 			label: "Work Start Date",
 			accessor: "start_date",
-			render: (data) => <span>{data.start_date}</span>,
+			render: (data) => <span>{formatDate(data.start_date)}</span>,
 		},
 		{
 			key: "end_date",
 			label: "Work End Date",
 			accessor: "end_date",
-			render: (data) => <span>{data.end_date}</span>,
+			render: (data) => <span>{formatDate(data.end_date)}</span>,
 		},
 		{
 			key: "worker_number",
