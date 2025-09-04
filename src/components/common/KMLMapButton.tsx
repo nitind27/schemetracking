@@ -30,12 +30,15 @@ const KMLMapButton: React.FC<KMLMapButtonProps> = ({
 			if (kmlFile.startsWith('http')) {
 				// If already a full public URL with proper CORS, use as-is
 				apiUrl = kmlFile;
+				console.log(apiUrl)
 			} else {
 				apiUrl = resolveApiUrl(kmlFile);
+				console.log(apiUrl)
 			}
 
 			// Open in Google Earth Web with the API URL
-			const earthUrl = `https://earth.google.com/web/ge/kml?url=${encodeURIComponent(apiUrl)}`;
+			// const earthUrl = `https://earth.google.com/web/ge/kml?url=${encodeURIComponent(apiUrl)}`;
+			const earthUrl = `https://earth.google.com/web/@21.81441516,74.19079274,441.59179352a,3639.44047439d,30y,0h,0t,0r/data=CgRCAggBMikKJwolCiExWGhaNV9MN041a0FwZHdhdHJuQUhmRTJuazV1MXFCZm8gAToDCgEwQgIIAEoICOaxpJ4GEAE?url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fkml%2FHarankhuri%2520CFR.kml%3Fstyled%3D1&authuser=0`;
 			window.open(earthUrl, '_blank');
 		} catch (e) {
 			console.error(e);

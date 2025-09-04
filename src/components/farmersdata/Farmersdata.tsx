@@ -63,18 +63,23 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
     [datataluka]
   );
 
-  const villageOptions = useMemo(() =>
-    selectedTaluka
-      ? datavillage
-        .filter(village => village.taluka_id == selectedTaluka)
-        .map(village => ({
-          label: village.marathi_name,
-          value: village.village_id.toString()
-        }))
-      : [],
-    [datavillage, selectedTaluka]
-  );
-
+  const villageOptions = useMemo(() => {
+    if (!selectedTaluka) return [];
+  
+    // All villages in the selected taluka
+    const villagesInTaluka = datavillage.filter(village => village.taluka_id == selectedTaluka);
+  
+    // For each village, calculate counts
+    return villagesInTaluka.map(village => {
+      const totalCount = data.filter(farmer => farmer.village_id === village.village_id.toString()).length;
+      // const aadhaarCount = data.filter(farmer => farmer.village_id === village.village_id.toString() && farmer.aadhaar_no !== '').length;
+      return {
+        label: `${village.marathi_name} (${totalCount})`,
+        value: village.village_id.toString()
+      };
+    });
+  }, [datavillage, selectedTaluka, data]);
+  
   const filteredFarmers = useMemo(() => {
 
     let result = data;
