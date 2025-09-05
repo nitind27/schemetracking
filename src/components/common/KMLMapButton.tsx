@@ -34,9 +34,8 @@ const KMLMapButton: React.FC<KMLMapButtonProps> = ({
 	const handleMapClick = () => {
 		if (!kmlFile || !kmlUrl) return;
 
-		// Create a data URL with the HTML content
-		const htmlContent = `
-<!DOCTYPE html>
+		// Create a blob URL with the HTML content
+		const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -109,7 +108,7 @@ const KMLMapButton: React.FC<KMLMapButtonProps> = ({
             minZoom: 3,
             maxZoom: 22,
             zoomSnap: 0.5,
-            zoomDelta: 0.5,	
+            zoomDelta: 0.5,
         });
 
         // Add satellite layer
@@ -198,9 +197,13 @@ const KMLMapButton: React.FC<KMLMapButtonProps> = ({
 </body>
 </html>`;
 
-		// Create data URL and open in new tab
-		const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
-		window.open(dataUrl, '_blank');
+		// Create blob and open in new tab
+		const blob = new Blob([htmlContent], { type: 'text/html' });
+		const url = URL.createObjectURL(blob);
+		window.open(url, '_blank');
+		
+		// Clean up the URL after a delay
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
 	};
 
 	return (
