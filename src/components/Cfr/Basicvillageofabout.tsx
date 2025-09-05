@@ -273,9 +273,9 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
 
                                         <div className="p-6">
                                             <div className="flex justify-center items-center">
-                                                <KMLMapButton
+                                            <KMLMapButton
                                                     kmlFile={"/kml/Harankhuri CFR.kml"}
-                                                    title="Click to open KML file in Google Earth"
+                                                    title="Click to open KML file"
                                                 />
                                             </div>
                                         </div>
