@@ -112,7 +112,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
         <CustomModel
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          title={`सामुहीक वनहक्क समिती ${selectedVillage.village_name} क्षेत्रातील नरेगा कामाचा माहिती`}
+          title={`सामुहीक वनहक्क समिती ${selectedVillage.village_name} क्षेत्रातील माहिती`}
           isFullScreen={true}
         >
           <div className="w-full max-w-5xl mx-auto px-2 py-6">
