@@ -40,18 +40,27 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
     { label: 'ग्रामसभा/CFR प्राप्त गाव', value: village.village_name, unit: '' },
     { label: 'ग्रामपंचायत', value: village.gp_name, unit: '' },
     { label: 'तालुका', value: village.taluka_name, unit: '' },
-    { label: 'जिल्हा', value: 'नंदुरबार', unit: '' },
-    { label: 'ग्रामसभा अंमलबजावणी अधिकार प्राप्त दिनांक', value: formatDate(village.date) || 'उपलब्ध नाही', unit: '' },
-    { label: 'प्रमुख भुमी चिन्ह आणि खासरा कक्ष क्रमांकासह पारंपारिक सीमासह सीमांचे वर्णन', value: village.cfr_boundary_map && '15,54' || 'उपलब्ध नाही', unit: '' },
+    { label: 'जिल्हा', value: 'নंदुरबार', unit: '' },
+    { label: 'ग्रामसभा अमलबाजवणी यंत्रणा घोषित झाले आहे का', value: village.cfr_boundary_map || 'उपलब्ध नाही', unit: '' },
+    { label: 'कक्ष क्र', value: '15,54', unit: '' },
     { label: 'एकूण CFR क्षेत्र', value: village.total_cfr_area, unit: 'हेक्टर आर' },
-    { label: 'कक्ष क्रमांक', value: village.room_number || 'उपलब्ध नाही', unit: '' },
     { label: 'प्रमाणपत्र क्रमांक', value: village.certificate_no || 'उपलब्ध नाही', unit: '' },
-    { label: 'दिनांक', value: formatDate(village.date), unit: '' },
-    { label: 'CFRMC माहिती', value: village.cfrmc_details || 'उपलब्ध नाही', unit: '' },
-    { label: 'चतु:सिमा', value: village.gp_name || "पूर्व || पश्चिम || उत्तर || दक्षिण ", unit: '' },
+    { label: 'सामूहिक वन हक्क मिळाल्याची तारीख', value: formatDate(village.date), unit: '' },
+    { label: 'चतु:सिमा', value: "पूर्व - जुने धडगाव सीमा  | पश्चिम  - सोमाने | उत्तर - हरणखुरी गावाचे महसुली क्षेत्र  | दक्षिण - कुसुमवेरी वनक्षेत्र सीमा ", unit: '' },
     { label: 'बँक खाते तपशील', value: village.bank_details || 'उपलब्ध नाही', unit: '' },
-    { label: 'खाते नंबर ', value: village.gp_name && "5481527135" || 'उपलब्ध नाही', unit: '' },
-    { label: 'IFSC ', value: village.bank_details && "CBIN0283044" || 'उपलब्ध नाही', unit: '' },
+    { label: 'खाते नंबर ', value: "5481527135", unit: '' },
+    { label: 'IFSC ', value: "CBIN0283044", unit: '' },
+    { label: 'सामुहिक वन हक्क संवर्धन व व्यवस्थापन आराखडा पूर्ण आहे का ?', value: "होय", unit: '' },
+    { label: 'आराखड्याला ग्रामसभेने मंजुरी दिली आहे का ?', value: "होय", unit: '' },
+    { label: 'आराखड्याला तालुका कन्व्हर्जन समितीने मान्यता दिली आहे का ?', value: "होय", unit: '' },
+    { label: 'आराखड्याला जिल्हा कन्व्हर्जन समितीने मान्यता दिली आहे का ?', value: "होय", unit: '' },
+    { label: 'PAN ', value: "AAAPL1234C", unit: '' },
+    { label: 'TAN ', value: "PDES03028F", unit: '' },
+    { label: 'GST ', value: "27AAAPA1234A1Z5", unit: '' },
+    { label: 'DSC info', value: "Mohan Iyer", unit: '' },
+    { label: 'Total no of IFR Approved/ pending in CFR', value: "0", unit: '' },
+    { label: 'Total No. IFR Area in CFR', value: "0", unit: '' },
+    { label: 'Remaining Area', value: "62 hr", unit: '' },
   ];
 
   const sabhasadRows = [
@@ -118,29 +127,23 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
           <div className="w-full max-w-5xl mx-auto px-2 py-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Left: Village Details */}
-              <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+              <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden h-[960px] overflow-scroll">
                 <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
                   <h2 className="text-lg font-semibold text-gray-800">गाव तपशील</h2>
                 </div>
 
                 <div className="p-4">
                   <div className="space-y-2">
-                    {getVillageModalData(selectedVillage).map((item, index) => (
-                      <div key={index} className="flex border-b border-gray-100 pb-2 last:border-b-0">
-                        <div className="w-1/3 pr-2">
-                          <span className="font-semibold text-gray-700 text-base">
-                            {item.label}:
-                          </span>
+                    {getVillageModalData(selectedVillage).map((item, idx) => (
+                      <div key={idx} className="flex flex-col sm:flex-row sm:items-start">
+                        <div className="w-full sm:w-1/4 text-gray-700 font-semibold text-base mb-1 sm:mb-0">
+                          {item.label}:
                         </div>
-                        <div className="w-2/3">
-                          <span className="text-gray-900 text-base">
-                            {item.value}
-                            {item.unit && (
-                              <span className="text-gray-500 ml-1">
-                                {item.unit}
-                              </span>
-                            )}
-                          </span>
+                        <div className="w-full sm:w-2/3 text-gray-900 text-base space-y-1">
+                          {item.label === 'चतु:सिमा'
+                            ? item.value.split(' | ').map((dir, idx2) => <div key={idx2}>{dir}</div>)
+                            : item.value}
+                          {item.unit && <span className="text-gray-500 ml-1">{item.unit}</span>}
                         </div>
                       </div>
                     ))}
@@ -172,38 +175,38 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                     </div>
                   </div>
                 </div>
-                     {/* Sabha Table */}
-            <div className="bg-white rounded-lg shadow border border-gray-200 mt-4 max-w-3xl mx-auto">
-              <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
-                <h2 className="text-lg font-semibold text-gray-800">सभासद</h2>
-              </div>
-              <div className="p-4">
-                <div className="overflow-x-auto">
-                  <table className="w-full table-fixed border border-gray-300">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="w-20 border border-gray-300 px-2 py-1 text-left">अ.न.</th>
-                        <th className="border border-gray-300 px-2 py-1 text-left">सभासदाचे नाव</th>
-                        <th className="w-40 border border-gray-300 px-2 py-1 text-left">पद</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sabhasadRows.map((r, idx) => (
-                        <tr key={idx} className="odd:bg-white even:bg-gray-50">
-                          <td className="border border-gray-300 px-2 py-1">{r.no}</td>
-                          <td className="border border-gray-300 px-2 py-1">{r.name}</td>
-                          <td className="border border-gray-300 px-2 py-1">{r.pad}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {/* Sabha Table */}
+                <div className="bg-white rounded-lg shadow border border-gray-200 mt-4 max-w-3xl mx-auto">
+                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                    <h2 className="text-lg font-semibold text-gray-800">सभासद</h2>
+                  </div>
+                  <div className="p-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full table-fixed border border-gray-300">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="w-20 border border-gray-300 px-2 py-1 text-left">अ.न.</th>
+                            <th className="border border-gray-300 px-2 py-1 text-left">सभासदाचे नाव</th>
+                            <th className="w-40 border border-gray-300 px-2 py-1 text-left">पद</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sabhasadRows.map((r, idx) => (
+                            <tr key={idx} className="odd:bg-white even:bg-gray-50">
+                              <td className="border border-gray-300 px-2 py-1">{r.no}</td>
+                              <td className="border border-gray-300 px-2 py-1">{r.name}</td>
+                              <td className="border border-gray-300 px-2 py-1">{r.pad}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-              </div>
-            </div>
 
-       
+
 
             {/* GIS Map Card */}
             <div className="bg-white rounded-lg shadow border border-gray-200 mt-4 max-w-full mx-full w-full">
