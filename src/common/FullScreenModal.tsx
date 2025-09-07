@@ -55,21 +55,22 @@ const FullScreenModal: React.FC<FullScreenModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-sm">
-      <div className="w-full h-full flex flex-col bg-white">
+    <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-sm flex flex-col bg-white">
+      {/* Modal container occupying full screen */}
+      <div className="flex flex-col h-full w-full">
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white">
           <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Close modal"
           >
-            <svg 
-              width="24" 
-              height="24" 
-              viewBox="0 0 24 24" 
-              fill="none" 
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
@@ -83,25 +84,26 @@ const FullScreenModal: React.FC<FullScreenModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          {/* Left Side - Image */}
+        <div className="flex flex-1 flex-col lg:flex-row overflow-hidden">
+          {/* Image Section */}
           {imageUrl && (
-            <div className="lg:w-2/3 h-full overflow-hidden">
-              <img 
-                src={imageUrl} 
+            <div className="flex-1 flex items-center justify-center bg-gray-50 p-8 overflow-hidden">
+              <img
+                src={imageUrl}
                 alt={title}
-                className="w-full h-full object-cover"
+                className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-gray-200"
+                style={{ margin: 'auto', display: 'block' }}
               />
             </div>
           )}
 
-          {/* Right Side - Data */}
-          <div className="lg:w-1/3 h-full bg-gray-50 p-6 overflow-y-auto">
+          {/* Data Section */}
+          <div className="lg:w-1/3 w-full bg-white border-l border-gray-200 p-6 overflow-y-auto">
             <div className="space-y-6">
               {/* Data Items */}
               <div className="space-y-4">
                 {data.map((item, index) => (
-                  <div key={index} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                  <div key={index} className="bg-gray-50 rounded-lg p-4 shadow-sm border border-gray-200">
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium text-gray-600 uppercase tracking-wide">
                         {item.label}

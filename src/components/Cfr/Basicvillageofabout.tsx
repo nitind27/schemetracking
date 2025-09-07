@@ -5,6 +5,7 @@ import { Column } from "../tables/tabletype";
 import { basicdetailsofvillagetype } from '../ecommerce/Cfrtype/futurework';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import CustomModel from '@/common/CustomModel';
+import ImagePreviewModal from '@/common/ImagePreviewModal';
 import KMLMapButton from '../common/KMLMapButton';
 
 interface Props {
@@ -15,6 +16,10 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
   const [data] = useState<basicdetailsofvillagetype[]>(serverData || []);
   const [selectedVillage, setSelectedVillage] = useState<basicdetailsofvillagetype | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Image preview states
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{url: string, title: string} | null>(null);
 
   const handleVillageClick = (villageData: basicdetailsofvillagetype) => {
     setSelectedVillage(villageData);
@@ -24,6 +29,16 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedVillage(null);
+  };
+
+  const handleImageClick = (imageUrl: string, title: string) => {
+    setSelectedImage({ url: imageUrl, title });
+    setIsImageModalOpen(true);
+  };
+
+  const handleCloseImageModal = () => {
+    setIsImageModalOpen(false);
+    setSelectedImage(null);
   };
 
   function formatDate(dateString: string | undefined | null): string {
@@ -42,25 +57,25 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
     { label: 'तालुका', value: village.taluka_name, unit: '' },
     { label: 'जिल्हा', value: 'নंदुरबार', unit: '' },
     { label: 'ग्रामसभा अमलबाजवणी यंत्रणा घोषित झाले आहे का', value: village.cfr_boundary_map || 'उपलब्ध नाही', unit: '' },
-    { label: 'कक्ष क्र', value: '15,54', unit: '' },
+    { label: 'कक्ष क्र', value: village.room_number ||  'उपलब्ध नाही', unit: '' },
     { label: 'एकूण CFR क्षेत्र', value: village.total_cfr_area, unit: 'हेक्टर आर' },
     { label: 'प्रमाणपत्र क्रमांक', value: village.certificate_no || 'उपलब्ध नाही', unit: '' },
     { label: 'सामूहिक वन हक्क मिळाल्याची तारीख', value: formatDate(village.date), unit: '' },
-    { label: 'चतु:सिमा', value: "पूर्व - जुने धडगाव सीमा  | पश्चिम  - सोमाने | उत्तर - हरणखुरी गावाचे महसुली क्षेत्र  | दक्षिण - कुसुमवेरी वनक्षेत्र सीमा ", unit: '' },
+    { label: 'चतु:सिमा', value: `${village.north} | ${village.east} | ${village.west} | ${village.south}`, unit: '' },
     { label: 'बँक खाते तपशील', value: village.bank_details || 'उपलब्ध नाही', unit: '' },
-    { label: 'खाते नंबर ', value: "5481527135", unit: '' },
-    { label: 'IFSC ', value: "CBIN0283044", unit: '' },
-    { label: 'सामुहिक वन हक्क संवर्धन व व्यवस्थापन आराखडा पूर्ण आहे का ?', value: "होय", unit: '' },
-    { label: 'आराखड्याला ग्रामसभेने मंजुरी दिली आहे का ?', value: "होय", unit: '' },
-    { label: 'आराखड्याला तालुका कन्व्हर्जन समितीने मान्यता दिली आहे का ?', value: "होय", unit: '' },
-    { label: 'आराखड्याला जिल्हा कन्व्हर्जन समितीने मान्यता दिली आहे का ?', value: "होय", unit: '' },
-    { label: 'PAN ', value: "AAAPL1234C", unit: '' },
-    { label: 'TAN ', value: "PDES03028F", unit: '' },
-    { label: 'GST ', value: "27AAAPA1234A1Z5", unit: '' },
-    { label: 'DSC info', value: "Mohan Iyer", unit: '' },
-    { label: 'Total no of IFR Approved/ pending in CFR', value: "0", unit: '' },
-    { label: 'Total No. IFR Area in CFR', value: "0", unit: '' },
-    { label: 'Remaining Area', value: "62 hr", unit: '' },
+    { label: 'खाते नंबर ', value: village.accountno || 'उपलब्ध नाही', unit: '' },
+    { label: 'IFSC ', value: village.ifsc || 'उपलब्ध नाही', unit: '' },
+    { label: 'सामुहिक वन हक्क संवर्धन व व्यवस्थापन आराखडा पूर्ण आहे का ?', value: village.samuhik, unit: '' },
+    { label: 'आराखड्याला ग्रामसभेने मंजुरी दिली आहे का ?', value: village.aarakhdaylagramsabhe, unit: '' },
+    { label: 'आराखड्याला तालुका कन्व्हर्जन समितीने मान्यता दिली आहे का ?', value: village.aarakhdyalataluka, unit: '' },
+    { label: 'आराखड्याला जिल्हा कन्व्हर्जन समितीने मान्यता दिली आहे का ?', value: village.aarakhdayakajilha, unit: '' },
+    { label: 'PAN ', value: village.pan || '-', unit: '' },
+    { label: 'TAN ', value: village.tan || '-', unit: '' },
+    { label: 'GST ', value: village.gst || '-', unit: '' },
+    { label: 'DSC info', value: village.dsc || '-', unit: '' },
+    { label: 'Total no of IFR Approved/ pending in CFR', value: village.totalifrapp, unit: '' },
+    { label: 'Total No. IFR Area in CFR', value: village.totalnoifrarea, unit: '' },
+    { label: 'Remaining Area', value: village.remainingarea, unit: '' },
   ];
 
   const sabhasadRows = [
@@ -160,7 +175,12 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                   </div>
                   <div className="p-4">
                     <div className="rounded-lg h-40 flex items-center justify-center bg-gray-100 overflow-hidden">
-                      <img src="/images/GIS/gismap.jpg" alt="" className="object-cover rounded max-h-36 w-auto" />
+                      <img 
+                        src="/images/GIS/gismap.jpg" 
+                        alt="CFR फलक फोटो" 
+                        className="object-cover rounded max-h-36 w-auto cursor-pointer hover:opacity-80 transition-opacity duration-200" 
+                        onClick={() => handleImageClick("/images/GIS/gismap.jpg", "CFR फलक फोटो")}
+                      />
                     </div>
                   </div>
                 </div>
@@ -171,7 +191,12 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                   </div>
                   <div className="p-4">
                     <div className="flex justify-center">
-                      <img src="/images/GIS/certi.jpeg" alt="" className="h-36 object-cover rounded" />
+                      <img 
+                        src="/images/GIS/certi.jpeg" 
+                        alt="CFR प्रमाणपत्र" 
+                        className="h-36 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity duration-200" 
+                        onClick={() => handleImageClick("/images/GIS/certi.jpeg", "CFR प्रमाणपत्र")}
+                      />
                     </div>
                   </div>
                 </div>
@@ -206,8 +231,6 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
               </div>
             </div>
 
-
-
             {/* GIS Map Card */}
             <div className="bg-white rounded-lg shadow border border-gray-200 mt-4 max-w-full mx-full w-full">
               <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
@@ -223,6 +246,17 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
 
           </div>
         </CustomModel>
+      )}
+
+      {/* Dedicated Image Preview Modal */}
+      {selectedImage && (
+        <ImagePreviewModal
+          isOpen={isImageModalOpen}
+          onClose={handleCloseImageModal}
+          imageUrl={selectedImage.url}
+          title={selectedImage.title}
+          alt={selectedImage.title}
+        />
       )}
     </div>
   );
