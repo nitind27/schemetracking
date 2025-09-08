@@ -22,6 +22,12 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ url: string, title: string } | null>(null);
 
+
+  const sortedData = React.useMemo(() => {
+    const hasKml = (v: basicdetailsofvillagetype) =>
+      !!v.kmlfile && String(v.kmlfile).trim() !== '';
+    return [...data].sort((a, b) => (hasKml(b) ? 1 : 0) - (hasKml(a) ? 1 : 0));
+  }, [data]);
   const handleVillageClick = (villageData: basicdetailsofvillagetype) => {
     setSelectedVillage(villageData);
     setIsModalOpen(true);
@@ -136,7 +142,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
   return (
     <div>
       <Simpletableshowdata
-        data={data}
+        data={sortedData}
         inputfiled={[]}
         columns={columns}
         title="Year"
