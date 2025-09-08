@@ -7,6 +7,7 @@ import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import CustomModel from '@/common/CustomModel';
 import ImagePreviewModal from '@/common/ImagePreviewModal';
 import KMLMapButton from '../common/KMLMapButton';
+import KMLMapdata from '../common/KMLMapdata';
 
 interface Props {
   serverData: basicdetailsofvillagetype[];
@@ -16,10 +17,10 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
   const [data] = useState<basicdetailsofvillagetype[]>(serverData || []);
   const [selectedVillage, setSelectedVillage] = useState<basicdetailsofvillagetype | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   // Image preview states
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<{url: string, title: string} | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{ url: string, title: string } | null>(null);
 
   const handleVillageClick = (villageData: basicdetailsofvillagetype) => {
     setSelectedVillage(villageData);
@@ -57,7 +58,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
     { label: 'तालुका', value: village.taluka_name, unit: '' },
     { label: 'जिल्हा', value: 'নंदुरबार', unit: '' },
     { label: 'ग्रामसभा अमलबाजवणी यंत्रणा घोषित झाले आहे का', value: village.cfr_boundary_map || 'उपलब्ध नाही', unit: '' },
-    { label: 'कक्ष क्र', value: village.room_number ||  'उपलब्ध नाही', unit: '' },
+    { label: 'कक्ष क्र', value: village.room_number || 'उपलब्ध नाही', unit: '' },
     { label: 'एकूण CFR क्षेत्र', value: village.total_cfr_area, unit: 'हेक्टर आर' },
     { label: 'प्रमाणपत्र क्रमांक', value: village.certificate_no || 'उपलब्ध नाही', unit: '' },
     { label: 'सामूहिक वन हक्क मिळाल्याची तारीख', value: formatDate(village.date), unit: '' },
@@ -117,6 +118,18 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
           {data.village_name}
         </button>
       )
+    },
+    {
+      key: 'kml',
+      label: 'KML',
+      accessor: 'kmlfile',
+      render: (data) =>
+        data.kmlfile ? (
+          <KMLMapdata
+            kmlFile={`/kml/${data.kmlfile}`}
+            title="Open KML in new tab"
+          />
+        ) : null
     }
   ];
 
@@ -175,10 +188,10 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                   </div>
                   <div className="p-4">
                     <div className="rounded-lg h-40 flex items-center justify-center bg-gray-100 overflow-hidden">
-                      <img 
-                        src="/images/GIS/gismap.jpg" 
-                        alt="CFR फलक फोटो" 
-                        className="object-cover rounded max-h-36 w-auto cursor-pointer hover:opacity-80 transition-opacity duration-200" 
+                      <img
+                        src="/images/GIS/gismap.jpg"
+                        alt="CFR फलक फोटो"
+                        className="object-cover rounded max-h-36 w-auto cursor-pointer hover:opacity-80 transition-opacity duration-200"
                         onClick={() => handleImageClick("/images/GIS/gismap.jpg", "CFR फलक फोटो")}
                       />
                     </div>
@@ -191,10 +204,10 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                   </div>
                   <div className="p-4">
                     <div className="flex justify-center">
-                      <img 
-                        src="/images/GIS/certi.jpeg" 
-                        alt="CFR प्रमाणपत्र" 
-                        className="h-36 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity duration-200" 
+                      <img
+                        src="/images/GIS/certi.jpeg"
+                        alt="CFR प्रमाणपत्र"
+                        className="h-36 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity duration-200"
                         onClick={() => handleImageClick("/images/GIS/certi.jpeg", "CFR प्रमाणपत्र")}
                       />
                     </div>
@@ -207,20 +220,22 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                   </div>
                   <div className="p-4">
                     <div className="overflow-x-auto">
-                      <table className="w-full table-fixed border border-gray-300">
+                      <table className="w-full table-fixed border border-gray-300 text-[12px] text-nowrap">
                         <thead>
                           <tr className="bg-gray-100">
-                            <th className="w-20 border border-gray-300 px-2 py-1 text-left">अ.न.</th>
-                            <th className="border border-gray-300 px-2 py-1 text-left">सभासदाचे नाव</th>
-                            <th className="w-40 border border-gray-300 px-2 py-1 text-left">पद</th>
+                            <th className="w-20 border border-gray-300 px-2 py-1 text-center">अ.न.</th>
+                            <th className="border border-gray-300 px-2 py-1 text-center w-32">सभासदाचे नाव</th>
+                            <th className="w-40 border border-gray-300 px-2 py-1 text-center w-5">पद</th>
+                            <th className="border border-gray-300 px-2 py-1text-center">संपर्क क्र</th>
                           </tr>
                         </thead>
                         <tbody>
                           {sabhasadRows.map((r, idx) => (
                             <tr key={idx} className="odd:bg-white even:bg-gray-50">
                               <td className="border border-gray-300 px-2 py-1">{r.no}</td>
-                              <td className="border border-gray-300 px-2 py-1">{r.name}</td>
-                              <td className="border border-gray-300 px-2 py-1">{r.pad}</td>
+                              <td className="border border-gray-300 px-2 py-1 text-center">{r.name}</td>
+                              <td className="border border-gray-300 px-2 py-1 text-center">{r.pad}</td>
+                              <td className="border border-gray-300 px-2 py-1 text-center">-</td>
                             </tr>
                           ))}
                         </tbody>
@@ -237,13 +252,16 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                 <h2 className="text-lg font-semibold text-gray-800">GIS (CFR सिमांकित नकाशा)</h2>
               </div>
               <div className="p-4 flex justify-center items-center">
-                <KMLMapButton
-                  kmlFile={"/kml/Harankhuri CFR.kml"}
-                  title="Click to open KML file in Google Earth"
-                />
+                {selectedVillage?.kmlfile ? (
+                  <KMLMapButton
+                    kmlFile={`/kml/${selectedVillage.kmlfile}`}
+                    title="Open KML in new tab"
+                  />
+                ) : (
+                  <div className="text-sm text-gray-500">KML not available</div>
+                )}
               </div>
             </div>
-
           </div>
         </CustomModel>
       )}

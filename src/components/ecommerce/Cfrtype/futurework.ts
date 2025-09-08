@@ -71,6 +71,7 @@ export interface basicdetailsofvillagetype {
     taluka_name: string;
     village_name: string;
     gp_name: string;
+    kmlfile: string;
     status: string;
     created_at: string;
     updated_at: string;
