@@ -199,7 +199,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                   <div className="space-y-2">
                     {getVillageModalData(selectedVillage).map((item, idx) => (
                       <div key={idx} className="flex flex-col sm:flex-row sm:items-start justify-between">
-                        <div className="w-full sm:w-1/2 text-gray-700 font-semibold text-base mb-1 sm:mb-0  whitespace-nowrap text-[1px]">
+                        <div className="w-full sm:w-1/2 text-gray-700 font-semibold text-base mb-1 sm:mb-0  whitespace-nowrap">
                           {item.label}:
                         </div>
                         <div className="w-full sm:w-2/3 text-gray-900 text-base space-y-1">
