@@ -42,12 +42,14 @@ export interface basicdetailsofvillagetype {
     village_id: string;
     total_cfr_area: string;
     room_number: string;
+    photo: string;
     certificate_no: string;
     date: string;
     cfrmc_details: string;
     bank_details: string;
     cfr_boundary_map: string;
     cfr_work_info: string;
+    certificate_img: string;
     bankname: string;
     ifsc: string;
     accountno: string;

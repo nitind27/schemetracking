@@ -192,15 +192,19 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                 <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                   <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
                     <h2 className="text-lg font-semibold text-gray-800">CFR फलक फोटो</h2>
+
                   </div>
                   <div className="p-4">
                     <div className="rounded-lg h-40 flex items-center justify-center bg-gray-100 overflow-hidden">
+
                       <img
-                        src="/images/GIS/gismap.jpg"
+                        src={`${selectedVillage.photo ? `/images/GIS/${selectedVillage.photo}` : '/images/GIS/images.png'}  `}
                         alt="CFR फलक फोटो"
                         className="object-cover rounded max-h-36 w-auto cursor-pointer hover:opacity-80 transition-opacity duration-200"
                         onClick={() => handleImageClick("/images/GIS/gismap.jpg", "CFR फलक फोटो")}
+
                       />
+
                     </div>
                   </div>
                 </div>
@@ -212,10 +216,11 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                   <div className="p-4">
                     <div className="flex justify-center">
                       <img
-                        src="/images/GIS/certi.jpeg"
+
+                        src={`${selectedVillage.photo ? `/images/cfrcertificate/${selectedVillage.certificate_img}` : '/images/GIS/images.png'}  `}
                         alt="CFR प्रमाणपत्र"
                         className="h-36 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                        onClick={() => handleImageClick("/images/GIS/certi.jpeg", "CFR प्रमाणपत्र")}
+                        onClick={() => handleImageClick("/images/cfrcertificate/certi.jpeg", "CFR प्रमाणपत्र")}
                       />
                     </div>
                   </div>

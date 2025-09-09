@@ -11,7 +11,9 @@ export async function GET() {
              taluka.name AS taluka_name,
               grampanchyat.gpname AS gp_name,
                village.marathi_name AS village_name,
-               village.kmlfile AS kmlfile
+               village.kmlfile AS kmlfile,
+               village.certificate_img AS certificate_img,
+               village.photo AS photo
                 FROM 
                 basic_village_details 
              INNER JOIN taluka ON basic_village_details.taluka_id = taluka.taluka_id 
