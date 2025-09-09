@@ -63,15 +63,15 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
     { label: 'ग्रामपंचायत', value: village.gp_name, unit: '' },
     { label: 'तालुका', value: village.taluka_name, unit: '' },
     { label: 'जिल्हा', value: 'নंदुरबार', unit: '' },
-    { label: 'ग्रामसभा अमलबाजवणी यंत्रणा घोषित झाले आहे का', value: village.cfr_boundary_map || 'उपलब्ध नाही', unit: '' },
-    { label: 'कक्ष क्र', value: village.room_number || 'उपलब्ध नाही', unit: '' },
+    { label: 'ग्रामसभा अमलबाजवणी यंत्रणा घोषित झाले आहे का', value: village.cfr_boundary_map || '-', unit: '' },
+    { label: 'कक्ष क्र', value: village.room_number || '-', unit: '' },
     { label: 'एकूण CFR क्षेत्र', value: village.total_cfr_area, unit: 'हेक्टर आर' },
-    { label: 'प्रमाणपत्र क्रमांक', value: village.certificate_no || 'उपलब्ध नाही', unit: '' },
+    { label: 'प्रमाणपत्र क्रमांक', value: village.certificate_no || '-', unit: '' },
     { label: 'सामूहिक वन हक्क मिळाल्याची तारीख', value: formatDate(village.date), unit: '' },
     { label: 'चतु:सिमा', value: `${village.north} | ${village.east} | ${village.west} | ${village.south}`, unit: '' },
-    { label: 'बँक खाते तपशील', value: village.bank_details || 'उपलब्ध नाही', unit: '' },
-    { label: 'खाते नंबर ', value: village.accountno || 'उपलब्ध नाही', unit: '' },
-    { label: 'IFSC ', value: village.ifsc || 'उपलब्ध नाही', unit: '' },
+    { label: 'बँक खाते तपशील', value: village.bank_details || '-', unit: '' },
+    { label: 'खाते नंबर ', value: village.accountno || '-', unit: '' },
+    { label: 'IFSC ', value: village.ifsc || '-', unit: '' },
     { label: 'सामुहिक वन हक्क संवर्धन व व्यवस्थापन आराखडा पूर्ण आहे का ?', value: village.samuhik, unit: '' },
     { label: 'आराखड्याला ग्रामसभेने मंजुरी दिली आहे का ?', value: village.aarakhdaylagramsabhe, unit: '' },
     { label: 'आराखड्याला तालुका कन्व्हर्जन समितीने मान्यता दिली आहे का ?', value: village.aarakhdyalataluka, unit: '' },
@@ -155,7 +155,8 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
         <CustomModel
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          title={`सामुहीक वनहक्क समिती ${selectedVillage.village_name} क्षेत्रातील माहिती`}
+          // title={`सामुहीक वनहक्क समिती ${selectedVillage.village_name} क्षेत्रातील माहिती`}
+          title={`सामूहिक वनहक्क व्यवस्थापन समिती (CFRMC), ${selectedVillage.village_name}`}
           isFullScreen={true}
         >
           <div className="w-full max-w-5xl mx-auto px-2 py-6">
