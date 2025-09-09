@@ -212,7 +212,6 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                 <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                   <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
                     <h2 className="text-lg font-semibold text-gray-800">CFR प्रमाणपत्र</h2>
-                    {`${selectedVillage.certificate_img ? `/images/cfrcertificate/${selectedVillage.certificate_img}` : '/images/GIS/images.png'}  `}
                   </div>
                   <div className="p-4">
                     <div className="flex justify-center">
