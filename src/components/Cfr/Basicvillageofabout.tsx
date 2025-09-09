@@ -9,6 +9,17 @@ import ImagePreviewModal from '@/common/ImagePreviewModal';
 import KMLMapButton from '../common/KMLMapButton';
 import KMLMapdata from '../common/KMLMapdata';
 
+interface Sabhasad {
+  id?: number | string;
+  name?: string;
+  position?: string;
+  Position?: string;
+  contact_number?: string;
+}
+
+interface Props {
+  serverData: basicdetailsofvillagetype[];
+}
 interface Props {
   serverData: basicdetailsofvillagetype[];
 }
@@ -16,6 +27,7 @@ interface Props {
 const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
   const [data] = useState<basicdetailsofvillagetype[]>(serverData || []);
   const [selectedVillage, setSelectedVillage] = useState<basicdetailsofvillagetype | null>(null);
+  console.log('selectedVillage', selectedVillage);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Image preview states
@@ -48,6 +60,34 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
     setSelectedImage(null);
   };
 
+  // Normalize sabhasad data to an array
+  // Normalize sabhasad data to an array
+   // Normalize sabhasad data to an array
+  // Normalize sabhasad data to an array
+  const sabhasadList = React.useMemo<Sabhasad[]>(() => {
+    const raw = selectedVillage?.sabhasad_array as unknown;
+    if (!raw) return [] as Sabhasad[];
+    const s = String(raw).trim();
+    try {
+      // Case 1: already an array string -> parse directly
+      if (s.startsWith('[') && s.endsWith(']')) {
+        const arr = JSON.parse(s) as unknown;
+        return Array.isArray(arr) ? (arr as Sabhasad[]) : [];
+      }
+      // Case 2: single object string -> wrap to array
+      if (s.startsWith('{') && s.endsWith('}')) {
+        const obj = JSON.parse(s) as unknown;
+        return [obj as Sabhasad];
+      }
+      // Case 3: comma-joined objects without brackets -> wrap and parse
+      if (s.includes('},{') || (s.includes('},"{') || s.includes('},"{'))) {
+        const arr = JSON.parse(`[${s}]`) as unknown;
+        return Array.isArray(arr) ? (arr as Sabhasad[]) : [];
+      }
+    } catch { }
+    return [] as Sabhasad[];
+  }, [selectedVillage]);
+  console.log('sabhasadList', sabhasadList);
   function formatDate(dateString: string | undefined | null): string {
     if (!dateString) return 'उपलब्ध नाही';
     const date = new Date(dateString);
@@ -85,19 +125,6 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
     { label: 'Remaining Area', value: village.remainingarea, unit: '' },
   ];
 
-  const sabhasadRows = [
-    { no: '१.', name: 'अर्जुन जोरदार पावरा', pad: 'अध्यक्ष' },
-    { no: '२.', name: 'राकेश लालसिंग पावरा', pad: 'सचिव' },
-    { no: '३.', name: 'अभिष्नी प्रमोद पावरा', pad: 'खजिनदार' },
-    { no: '४.', name: 'श्रीमती रचना कळपेश', pad: 'सभासद' },
-    { no: '५.', name: 'सुभाष सायसिंग पावरा', pad: 'सभासद' },
-    { no: '६.', name: 'रविंद्र इमानवेल पावरा', pad: 'सभासद' },
-    { no: '७.', name: 'निता लोटन पावरा', pad: 'सभासद' },
-    { no: '८.', name: 'रमेश गुरूज्या पावरा', pad: 'सभासद' },
-    { no: '९.', name: 'कळपेश सुकलाल पावरा', pad: 'सभासद' },
-    { no: '१०.', name: 'रसिकलाल बोमचा पावरा', pad: 'सभासद' },
-    { no: '११.', name: 'संदीप वनकर पावरा', pad: 'सभासद' },
-  ];
 
   const columns: Column<basicdetailsofvillagetype>[] = [
     {
@@ -137,7 +164,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
           />
         ) : null
     }
-  ];
+  ];// convert string into object
 
   return (
     <div>
@@ -151,6 +178,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
       />
 
       {/* Full Screen Village Details Modal */}
+
       {selectedVillage && (
         <CustomModel
           isOpen={isModalOpen}
@@ -160,7 +188,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
           isFullScreen={true}
         >
           <div className="w-full max-w-5xl mx-auto px-2 py-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
               {/* Left: Village Details */}
               <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden h-[960px] overflow-scroll">
                 <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
@@ -170,8 +198,8 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                 <div className="p-4">
                   <div className="space-y-2">
                     {getVillageModalData(selectedVillage).map((item, idx) => (
-                      <div key={idx} className="flex flex-col sm:flex-row sm:items-start">
-                        <div className="w-full sm:w-1/4 text-gray-700 font-semibold text-base mb-1 sm:mb-0">
+                      <div key={idx} className="flex flex-col sm:flex-row sm:items-start justify-between">
+                        <div className="w-full sm:w-1/2 text-gray-700 font-semibold text-base mb-1 sm:mb-0  whitespace-nowrap text-[1px]">
                           {item.label}:
                         </div>
                         <div className="w-full sm:w-2/3 text-gray-900 text-base space-y-1">
@@ -187,69 +215,68 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
               </div>
 
               {/* Right: Images */}
-              <div className="space-y-3">
-                {/* CFR Map */}
-                <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
-                    <h2 className="text-lg font-semibold text-gray-800">CFR फलक फोटो</h2>
-
+                         {/* Right: Images */}
+                         <div className="space-y-3">
+                {/* Two inline cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* CFR Map */}
+                  <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                      <h2 className="text-lg font-semibold text-gray-800">CFR फलक फोटो</h2>
+                    </div>
+                    <div className="p-4">
+                      <div className="rounded-lg h-40 flex items-center justify-center bg-gray-100 overflow-hidden">
+                        <img
+                          src={`${selectedVillage.photo ? `/images/GIS/${selectedVillage.photo}` : '/images/GIS/images.png'}`}
+                          alt="CFR फलक फोटो"
+                          className="object-cover rounded max-h-36 w-auto cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                          onClick={() => handleImageClick(`/images/GIS/${selectedVillage.photo}`, "CFR फलक फोटो")}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="p-4">
-                    <div className="rounded-lg h-40 flex items-center justify-center bg-gray-100 overflow-hidden">
-                      <img
-                        src={`${selectedVillage.photo ? `/images/GIS/${selectedVillage.photo}` : '/images/GIS/images.png'}  `}
-                        alt="CFR फलक फोटो"
-                        className="object-cover rounded max-h-36 w-auto cursor-pointer hover:opacity-80 transition-opacity duration-200"
 
-                        onClick={() => handleImageClick(`/images/GIS/${selectedVillage.photo}`, "CFR फलक फोटो")}
-
-                      />
-
+                  {/* Certificate */}
+                  <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                      <h2 className="text-lg font-semibold text-gray-800">CFR प्रमाणपत्र</h2>
+                    </div>
+                    <div className="p-4">
+                      <div className="rounded-lg h-40 flex items-center justify-center bg-gray-100 overflow-hidden">
+                        <img
+                          src={`${selectedVillage.certificate_img ? `/images/cfrcertificate/${selectedVillage.certificate_img}` : '/images/GIS/images.png'}`}
+                          alt="CFR प्रमाणपत्र"
+                          className="h-36 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                          onClick={() => handleImageClick(`/images/cfrcertificate/${selectedVillage.certificate_img}`, "CFR प्रमाणपत्र")}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-                {/* Certificate */}
-                <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
-                    <h2 className="text-lg font-semibold text-gray-800">CFR प्रमाणपत्र</h2>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex justify-center">
 
-                      <img
-
-                        src={`${selectedVillage.certificate_img ? `/images/cfrcertificate/${selectedVillage.certificate_img}` : '/images/GIS/images.png'}  `}
-                        alt="CFR प्रमाणपत्र"
-                        className="h-36 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                        onClick={() => handleImageClick(`/images/cfrcertificate/${selectedVillage.certificate_img}`, "CFR प्रमाणपत्र")}
-
-                      />
-                    </div>
-                  </div>
-                </div>
-                {/* Sabha Table */}
-                <div className="bg-white rounded-lg shadow border border-gray-200 mt-4 max-w-3xl mx-auto">
+                {/* Sabha Table (below the two cards) */}
+                <div className="bg-white rounded-lg shadow border border-gray-200 mt-4 ">
                   <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
                     <h2 className="text-lg font-semibold text-gray-800">सभासद</h2>
                   </div>
                   <div className="p-4">
                     <div className="overflow-x-auto">
-                      <table className="w-full table-fixed border border-gray-300 text-[12px] text-nowrap">
+                      <table className="w-full table-fixed border border-gray-300 text-[12px] whitespace-nowrap">
                         <thead>
                           <tr className="bg-gray-100">
                             <th className="w-20 border border-gray-300 px-2 py-1 text-center">अ.न.</th>
-                            <th className="border border-gray-300 px-2 py-1 text-center w-32">सभासदाचे नाव</th>
-                            <th className="w-40 border border-gray-300 px-2 py-1 text-center w-5">पद</th>
-                            <th className="border border-gray-300 px-2 py-1text-center">संपर्क क्र</th>
+                            <th className="w-32 border border-gray-300 px-2 py-1 text-center">सभासदाचे नाव</th>
+                            <th className="w-40 border border-gray-300 px-2 py-1 text-center">पद</th>
+                            <th className="border border-gray-300 px-2 py-1 text-center">संपर्क क्र</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {sabhasadRows.map((r, idx) => (
-                            <tr key={idx} className="odd:bg-white even:bg-gray-50">
-                              <td className="border border-gray-300 px-2 py-1">{r.no}</td>
-                              <td className="border border-gray-300 px-2 py-1 text-center">{r.name}</td>
-                              <td className="border border-gray-300 px-2 py-1 text-center">{r.pad}</td>
-                              <td className="border border-gray-300 px-2 py-1 text-center">-</td>
+                          {sabhasadList.map((r, idx) => (
+                            <tr key={r.id ?? idx} className="odd:bg-white even:bg-gray-50">
+                              <td className="border border-gray-300 px-2 py-1 text-center">{idx + 1}</td>
+                              <td className="border border-gray-300 px-2 py-1 text-center">{r.name ?? ''}</td>
+                              <td className="border border-gray-300 px-2 py-1 text-center">{r.Position ?? r.position ?? ''}</td>
+                              <td className="border border-gray-300 px-2 py-1 text-center">{r.contact_number ?? ''}</td>
                             </tr>
                           ))}
                         </tbody>

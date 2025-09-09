@@ -58,6 +58,10 @@ export interface basicdetailsofvillagetype {
     totalifrapp: string;
     totalnoifrarea: string;
     remainingarea: string;
+    position: string;
+    contact_number: string;
+    nameofsabhasad: string;
+    sabhasad_array: string;
     samuhik: string;
     aarakhdaylagramsabhe: string;
     aarakhdyalataluka: string;

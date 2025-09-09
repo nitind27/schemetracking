@@ -14,6 +14,7 @@ import { Village } from "@/components/Village/village";
 import DistrictMap from "@/components/ecommerce/DistrictMap";
 import { CFREcommer } from "@/components/ecommerce/CFREcommer";
 import TabView from "@/components/common/TabView";
+import NotificationTabs from "@/components/Notifications/NotificationTabs";
 
 export const metadata: Metadata = {
   title: "Scheme Monitoring & Tracking System",
@@ -167,7 +168,17 @@ export default async function Ecommerce() {
       id: "cfr-dashboard", 
       label: "CFR Dashboard",
       content: <CFRDashboardContent />
-    }
+    },
+    {
+      id: "notification",
+      label: "Notification",
+      content: <div className="grid grid-cols-6 gap-4 md:gap-6">
+        <div className="col-span-12 space-y-6 xl:col-span-7">
+          <NotificationTabs />
+        </div>
+      </div>
+      }
+    
   ];
 
   return (
