@@ -178,7 +178,6 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
       />
 
       {/* Full Screen Village Details Modal */}
-
       {selectedVillage && (
         <CustomModel
           isOpen={isModalOpen}
