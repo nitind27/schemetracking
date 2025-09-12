@@ -174,7 +174,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
         columns={columns}
         title="Year"
         filterOptions={[]}
-        searchKey="year"
+        searchKey="village_name"
       />
 
       {/* Full Screen Village Details Modal */}
@@ -187,7 +187,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
           title={`सामूहिक वनहक्क व्यवस्थापन समिती (CFRMC), ${selectedVillage.village_name}`}
           isFullScreen={true}
         >
-          <div className="w-full max-w-5xl mx-auto px-2 py-6">
+          <div className="w-full max-w-5xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
               {/* Left: Village Details */}
               <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden h-[960px] overflow-scroll">

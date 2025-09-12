@@ -125,7 +125,7 @@ const CustomModel: React.FC<ModalProps> = ({
           {/* Content */}
           <div className="flex-1 overflow-y-auto bg-gray-50">
             {children ? (
-              <div className="p-8">
+              <div className="p-4">
                 {children}
               </div>
             ) : data ? (
