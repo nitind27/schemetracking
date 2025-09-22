@@ -139,7 +139,7 @@ const CFRStatusSummary: React.FC = () => {
                     <div key={s.key} className="space-y-2">
                         <div className="flex items-center justify-between">
                             <div className="text-sm text-gray-700 font-medium">{s.label}</div>
-                            <div className="text-[16px] text-black font-bold">
+                            <div className="text-[14px] text-black font-bold">
                                 होय: {s.yesCount}/{s.total} ({s.yesPercent.toFixed(1)}%)
                             </div>
                         </div>
