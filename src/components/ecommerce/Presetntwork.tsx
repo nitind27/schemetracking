@@ -4,7 +4,7 @@ import { Column } from "../tables/tabletype";
 import React from "react";
 import { presentworktype } from "./Cfrtype/futurework";
 import { Tabviewtable } from "../tables/Tabviewtable";
-import KMLMapButton from "../common/KMLMapButton";
+// import KMLMapButton from "../common/KMLMapButton";
 
 interface Props {
 	serverData: presentworktype[];
