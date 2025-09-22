@@ -14,7 +14,7 @@ import {
   presentworktype,
   Futureworktype,
 } from "@/components/ecommerce/Cfrtype/futurework";
-
+import CFRStatusSummary from "@/components/Cfr/CFRStatusSummary";
 // interface Metrics {
 //   farmers: FarmdersType[];
 //   schemes: Schemesdatas[];
@@ -115,7 +115,7 @@ export const CFREcommer = () => {
 
   return (
     <div className="space-y-4">
-     
+      <CFRStatusSummary />
       <TabView tabs={tabs} defaultTab="basic" />
     </div>
   );
