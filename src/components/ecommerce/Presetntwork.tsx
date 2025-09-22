@@ -96,19 +96,19 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 			accessor: "username",
 			render: (data) => <span>{data.username}</span>,
 		},
-		{
-			key: "gis_location",
-			label: "GIS Location",
-			accessor: "gis_location",
-			render: () => (
-				<div className="flex justify-center">
-					<KMLMapButton
-						kmlFile={"/public/kml/Harankhuri CFR.kml"}
-						title="Click to open KML file in Google Earth"
-					/>
-				</div>
-			),
-		},
+		// {
+		// 	key: "gis_location",
+		// 	label: "GIS Location",
+		// 	accessor: "gis_location",
+		// 	render: () => (
+		// 		<div className="flex justify-center">
+		// 			<KMLMapButton
+		// 				kmlFile={"/public/kml/Harankhuri CFR.kml"}
+		// 				title="Click to open KML file in Google Earth"
+		// 			/>
+		// 		</div>
+		// 	),
+		// },
 	];
 
 	const filterOptions = [
