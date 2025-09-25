@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     // ];
     const updatableFields = [
         'village_id', 'taluka_id', 'documents',
-        'schemes', 'update_record', 'gis', 'geo_photo',
+        'schemes', 'questions', 'update_record', 'gis', 'geo_photo',
         'farmer_record'
     ];
 
