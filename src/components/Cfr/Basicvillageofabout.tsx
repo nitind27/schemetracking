@@ -8,6 +8,7 @@ import CustomModel from '@/common/CustomModel';
 import ImagePreviewModal from '@/common/ImagePreviewModal';
 import KMLMapButton from '../common/KMLMapButton';
 import KMLMapdata from '../common/KMLMapdata';
+import CFRStatusSummary from './CFRStatusSummary';
 
 interface Sabhasad {
   id?: number | string;
@@ -168,6 +169,10 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
 
   return (
     <div>
+      <div className='mb-4'>
+
+      <CFRStatusSummary />
+      </div>
       <Simpletableshowdata
         data={sortedData}
         inputfiled={[]}

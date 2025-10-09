@@ -35,6 +35,113 @@ function isNo(v: unknown): boolean {
     return val === "नाही";
 }
 
+// Donut Chart Component
+const DonutChart: React.FC<{
+    yesCount: number;
+    noCount: number;
+    total: number;
+    label: string;
+    onSegmentClick?: (filter: "होय" | "नाही") => void;
+}> = ({ yesCount, noCount, total, label, onSegmentClick }) => {
+    const yesPercentage = total ? (yesCount / total) * 100 : 0;
+    const noPercentage = total ? (noCount / total) * 100 : 0;
+    
+    const radius = 40;
+    const circumference = 2 * Math.PI * radius;
+    const yesStrokeDasharray = `${(yesPercentage / 100) * circumference} ${circumference}`;
+    const noStrokeDasharray = `${(noPercentage / 100) * circumference} ${circumference}`;
+    
+    // Start angle for no segment (after yes segment)
+    const noOffset = (yesPercentage / 100) * circumference;
+
+    return (
+        <div className="flex flex-col items-center p-4 border border-gray-200 rounded-lg bg-white">
+            <h4 className="text-sm font-medium text-gray-700 mb-3 text-center h-12 flex items-center justify-center">
+                {label}
+            </h4>
+            
+            <div className="relative">
+                <svg width="120" height="120" className="transform -rotate-90">
+                    {/* Background circle */}
+                    <circle
+                        cx="60"
+                        cy="60"
+                        r={radius}
+                        stroke="#e5e7eb"
+                        strokeWidth="12"
+                        fill="none"
+                    />
+                    
+                    {/* Yes segment */}
+                    <circle
+                        cx="60"
+                        cy="60"
+                        r={radius}
+                        stroke="#10b981"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeDasharray={yesStrokeDasharray}
+                        strokeDashoffset="0"
+                        className="cursor-pointer transition-opacity hover:opacity-80"
+                        onClick={() => onSegmentClick?.("होय")}
+                    />
+                    
+                    {/* No segment */}
+                    {noPercentage > 0 && (
+                        <circle
+                            cx="60"
+                            cy="60"
+                            r={radius}
+                            stroke="#ef4444"
+                            strokeWidth="12"
+                            fill="none"
+                            strokeDasharray={noStrokeDasharray}
+                            strokeDashoffset={-noOffset}
+                            className="cursor-pointer transition-opacity hover:opacity-80"
+                            onClick={() => onSegmentClick?.("नाही")}
+                        />
+                    )}
+                </svg>
+                
+                {/* Center text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-lg font-bold text-gray-800">{total}</span>
+                    <span className="text-xs text-gray-500">एकूण</span>
+                </div>
+            </div>
+
+            {/* Legend */}
+            <div className="mt-3 space-y-1 w-full">
+                <div 
+                    className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 py-1 rounded"
+                    onClick={() => onSegmentClick?.("होय")}
+                >
+                    <div className="flex items-center">
+                        <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                        <span className="text-gray-700">होय</span>
+                    </div>
+                    <span className="font-semibold text-gray-800">
+                        {yesCount} ({yesPercentage.toFixed(1)}%)
+                    </span>
+                </div>
+                
+                <div 
+                    className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 px-2 py-1 rounded"
+                    onClick={() => onSegmentClick?.("नाही")}
+                >
+                    <div className="flex items-center">
+                        <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                        <span className="text-gray-700">नाही</span>
+                    </div>
+                    <span className="font-semibold text-gray-800">
+                        {noCount} ({noPercentage.toFixed(1)}%)
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const CFRStatusSummary: React.FC = () => {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
@@ -71,16 +178,10 @@ const CFRStatusSummary: React.FC = () => {
         };
     }, []);
 
-    // Remove the villageIdSet intersection so all basic rows are counted
-    // const villageIdSet = React.useMemo(() => {
-    //   const set = new Set<string>();
-    //   villages.forEach(v => set.add(String(v.village_id)));
-    //   return set;
-    // }, [villages]);
-
     const matchedBasics = React.useMemo(() => {
-        return basic; // use all rows (e.g., 330)
+        return basic;
     }, [basic]);
+    
     const villageNameById = React.useMemo(() => {
         const m = new Map<string, string>();
         villages.forEach(v => {
@@ -96,14 +197,15 @@ const CFRStatusSummary: React.FC = () => {
         const total = matchedBasics.length || 0;
         return LABELS.map(({ key, label }) => {
             const yesCount = matchedBasics.reduce((acc, row) => (isYes((row)[key]) ? acc + 1 : acc), 0);
+            const noCount = matchedBasics.reduce((acc, row) => (isNo((row)[key]) ? acc + 1 : acc), 0);
             const yesPercent = total ? (yesCount / total) * 100 : 0;
-            return { key, label, yesCount, total, yesPercent };
+            return { key, label, yesCount, noCount, total, yesPercent };
         });
     }, [matchedBasics]);
 
-    const openModalFor = (key: StatusKey) => {
+    const openModalFor = (key: StatusKey, filter: "होय" | "नाही" = "होय") => {
         setActiveKey(key);
-        setModalFilter("होय");
+        setModalFilter(filter);
         setModalOpen(true);
     };
 
@@ -130,30 +232,53 @@ const CFRStatusSummary: React.FC = () => {
 
     return (
         <div className="bg-white rounded-lg shadow border border-gray-200">
-            <div className="px-4 py-3 border-b border-gray-100">
+            {/* <div className="px-4 py-3 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-800">CFRMC Summary</h3>
-            </div>
+            </div> */}
 
-            <div className="p-4 space-y-4">
-                {stats.map(s => (
-                    <div key={s.key} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-700 font-medium">{s.label}</div>
-                            <div className="text-[14px] text-black font-bold">
-                                होय: {s.yesCount}/{s.total} ({s.yesPercent.toFixed(1)}%)
+            <div className="p-4">
+              
+                {/* <div className="mb-8">
+                    <h4 className="text-md font-semibold text-gray-700 mb-4">प्रगती दर्शक</h4>
+                    <div className="space-y-4">
+                        {stats.map(s => (
+                            <div key={s.key} className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm text-gray-700 font-medium">{s.label}</div>
+                                    <div className="text-[14px] text-black font-bold">
+                                        होय: {s.yesCount}/{s.total} ({s.yesPercent.toFixed(1)}%)
+                                    </div>
+                                </div>
+
+                                <div className="flex h-3 rounded overflow-hidden border border-gray-300 bg-gray-100">
+                                    <div
+                                        className="bg-green-500 cursor-pointer"
+                                        style={{ width: `${s.yesPercent}%` }}
+                                        onClick={() => openModalFor(s.key, "होय")}
+                                        title="होय असलेल्या गावांची यादी पाहण्यासाठी क्लिक करा"
+                                    />
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="flex h-3 rounded overflow-hidden border border-gray-300 bg-gray-100">
-                            <div
-                                className="bg-green-500 cursor-pointer"
-                                style={{ width: `${s.yesPercent}%` }}
-                                onClick={() => openModalFor(s.key)}
-                                title="होय असलेल्या गावांची यादी पाहण्यासाठी क्लिक करा"
-                            />
-                        </div>
+                        ))}
                     </div>
-                ))}
+                </div> */}
+
+                
+                <div>
+                    <h4 className="text-md font-semibold text-gray-700 mb-4">वाटप आलेख</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        {stats.map(s => (
+                            <DonutChart
+                                key={s.key}
+                                yesCount={s.yesCount}
+                                noCount={s.noCount}
+                                total={s.total}
+                                label={s.label}
+                                onSegmentClick={(filter) => openModalFor(s.key, filter)}
+                            />
+                        ))}
+                    </div>
+                </div>
             </div>
 
             <CfrModel
