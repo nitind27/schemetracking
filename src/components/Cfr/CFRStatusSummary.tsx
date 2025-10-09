@@ -7,14 +7,14 @@ import { Village } from "../Village/village";
 import CfrModel from "@/common/CfrModel";
 
 type StatusKey =
-    | "cfr_boundary_map"
+    | "gramsabhabankno"
     | "samuhik"
     | "aarakhdaylagramsabhe"
     | "aarakhdyalataluka"
     | "aarakhdayakajilha";
 
 const LABELS: { key: StatusKey; label: string }[] = [
-    { key: "cfr_boundary_map", label: "ग्रामसभा अमलबाजवणी यंत्रणा घोषित झाले आहे का ?" },
+    { key: "gramsabhabankno", label: "ग्रामसभा अमलबाजवणी यंत्रणा घोषित झाले आहे का ?" },
     { key: "samuhik", label: "सामुहिक वन हक्क संवर्धन व व्यवस्थापन आराखडा पूर्ण आहे का ?" },
     { key: "aarakhdaylagramsabhe", label: "आराखड्याला ग्रामसभेने मंजुरी दिली आहे का ?" },
     { key: "aarakhdyalataluka", label: "आराखड्याला तालुका कन्व्हर्जन समितीने मान्यता दिली आहे का ?" },
