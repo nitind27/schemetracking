@@ -12,11 +12,8 @@ import { CiCalendar } from "react-icons/ci";
 import { CiUser } from "react-icons/ci";
 import { GiFarmer } from "react-icons/gi";
 import {
-
   ChevronDownIcon,
-
   HorizontaLDots,
-
 } from "../icons/index";
 
 import { useToggleContext } from "@/context/ToggleContext";
@@ -174,14 +171,25 @@ const AppSidebar: React.FC = () => {
   const { setIsglobleloading } = useToggleContext();
   // const currentUser = sessionStorage?.getItem('userName');
   const router = usePathname();
+  
+  // Move all hooks to the top before any conditional logic
   const [storedValue, setStoredValue] = useState<string | null>(null);
   const [storedValuecategory_name, setStoredValuecategory_name] = useState<string | null>(null);
+  const [openSubmenu, setOpenSubmenu] = useState<{
+    type: "main" | "others";
+    index: number;
+  } | null>(null);
+  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>({});
+  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const isActive = useCallback((path: string) => path === pathname, [pathname]);
+
+  // Move navItems declaration here, before useEffect that uses it
   const navItems: NavItem[] = storedValuecategory_name === "1"
     ? allNavItems
-    : (storedValuecategory_name === "8" || storedValuecategory_name === "33" || storedValuecategory_name === "32" || storedValuecategory_name === "4")
+    : (storedValuecategory_name === "8" || storedValuecategory_name === "33" || storedValuecategory_name === "4")
       ? dopodashboard
       : dashboardOnly;
-
 
   useEffect(() => {
     const value = sessionStorage.getItem('userName');
@@ -190,16 +198,8 @@ const AppSidebar: React.FC = () => {
     setStoredValuecategory_name(category_name);
   }, []);
 
-
-  // Function to handle click and store path in localStorage
-  const handleItemClick = (path: string) => {
-    setIsglobleloading(true);
-    localStorage.setItem("currentPath", path);
-  };
-
   useEffect(() => {
     const handleRouteChange = () => {
-
       setIsglobleloading(false);
     };
 
@@ -207,10 +207,72 @@ const AppSidebar: React.FC = () => {
       handleRouteChange();
     }
     return () => {
-
+      // cleanup if needed
     };
-  }, [router]);
+  }, [router, setIsglobleloading]);
 
+  useEffect(() => {
+    // Check if the current path matches any submenu item
+    let submenuMatched = false;
+    ["main", "others"].forEach((menuType) => {
+      const items = menuType === "main" ? navItems : othersItems;
+      items.forEach((nav, index) => {
+        if (nav.subItems) {
+          nav.subItems.forEach((subItem) => {
+            if (isActive(subItem.path)) {
+              setOpenSubmenu({
+                type: menuType as "main" | "others",
+                index,
+              });
+              submenuMatched = true;
+            }
+          });
+        }
+      });
+    });
+
+    // If no submenu item matches, close the open submenu
+    if (!submenuMatched) {
+      setOpenSubmenu(null);
+    }
+  }, [pathname, isActive, navItems]);
+
+  useEffect(() => {
+    // Set the height of the submenu items when the submenu is opened
+    if (openSubmenu !== null) {
+      const key = `${openSubmenu.type}-${openSubmenu.index}`;
+      if (subMenuRefs.current[key]) {
+        setSubMenuHeight((prevHeights) => ({
+          ...prevHeights,
+          [key]: subMenuRefs.current[key]?.scrollHeight || 0,
+        }));
+      }
+    }
+  }, [openSubmenu]);
+
+  // Function to handle click and store path in localStorage
+  const handleItemClick = (path: string) => {
+    setIsglobleloading(true);
+    localStorage.setItem("currentPath", path);
+  };
+
+  const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
+    setOpenSubmenu((prevOpenSubmenu) => {
+      if (
+        prevOpenSubmenu &&
+        prevOpenSubmenu.type === menuType &&
+        prevOpenSubmenu.index === index
+      ) {
+        return null;
+      }
+      return { type: menuType, index };
+    });
+  };
+
+  // Hide sidebar completely when category_id = 32
+  if (storedValuecategory_name === "32") {
+    return null;
+  }
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -298,70 +360,6 @@ const AppSidebar: React.FC = () => {
       ))}
     </ul>
   );
-
-  const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "others";
-    index: number;
-  } | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
-  );
-  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  // const isActive = (path: string) => path === pathname;
-  const isActive = useCallback((path: string) => path === pathname, [pathname]);
-
-  useEffect(() => {
-    // Check if the current path matches any submenu item
-    let submenuMatched = false;
-    ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
-      items.forEach((nav, index) => {
-        if (nav.subItems) {
-          nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
-              setOpenSubmenu({
-                type: menuType as "main" | "others",
-                index,
-              });
-              submenuMatched = true;
-            }
-          });
-        }
-      });
-    });
-
-    // If no submenu item matches, close the open submenu
-    if (!submenuMatched) {
-      setOpenSubmenu(null);
-    }
-  }, [pathname, isActive]);
-
-  useEffect(() => {
-    // Set the height of the submenu items when the submenu is opened
-    if (openSubmenu !== null) {
-      const key = `${openSubmenu.type}-${openSubmenu.index}`;
-      if (subMenuRefs.current[key]) {
-        setSubMenuHeight((prevHeights) => ({
-          ...prevHeights,
-          [key]: subMenuRefs.current[key]?.scrollHeight || 0,
-        }));
-      }
-    }
-  }, [openSubmenu]);
-
-  const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
-    setOpenSubmenu((prevOpenSubmenu) => {
-      if (
-        prevOpenSubmenu &&
-        prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
-      ) {
-        return null;
-      }
-      return { type: menuType, index };
-    });
-  };
 
   return (
     <aside

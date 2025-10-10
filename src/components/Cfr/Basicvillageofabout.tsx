@@ -3,12 +3,13 @@
 import React, { useState } from 'react';
 import { Column } from "../tables/tabletype";
 import { basicdetailsofvillagetype } from '../ecommerce/Cfrtype/futurework';
-import { Simpletableshowdata } from '../tables/Simpletableshowdata';
+// import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import CustomModel from '@/common/CustomModel';
 import ImagePreviewModal from '@/common/ImagePreviewModal';
 import KMLMapButton from '../common/KMLMapButton';
 import KMLMapdata from '../common/KMLMapdata';
 import CFRStatusSummary from './CFRStatusSummary';
+import { EnhancedVillageTable } from '../tables/EnhancedVillageTable';
 
 interface Sabhasad {
   id?: number | string;
@@ -132,13 +133,13 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
       key: 'taluka',
       label: 'Taluka',
       accessor: 'taluka_name',
-      render: (data) => <span>{data.taluka_name}</span>
+      render: (data) => <span className="font-medium">{data.taluka_name}</span>
     },
     {
       key: 'grampanchayat',
       label: 'Grampanchayat',
       accessor: 'gp_name',
-      render: (data) => <span>{data.gp_name}</span>
+      render: (data) => <span className="font-medium">{data.gp_name}</span>
     },
     {
       key: 'village',
@@ -147,15 +148,27 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
       render: (data) => (
         <button
           onClick={() => handleVillageClick(data)}
-          className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium transition-colors duration-200"
+          className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium transition-colors duration-200 hover:bg-blue-50 px-2 py-1 rounded"
         >
           {data.village_name}
         </button>
       )
     },
     {
+      key: 'cfr_area',
+      label: 'CFR Area (Hectares)',
+      accessor: 'total_cfr_area',
+      render: (data) => <span className="text-green-600 font-semibold">{data.total_cfr_area}</span>
+    },
+    {
+      key: 'certificate',
+      label: 'Certificate No.',
+      accessor: 'certificate_no',
+      render: (data) => <span className="text-gray-700">{data.certificate_no || 'N/A'}</span>
+    },
+    {
       key: 'kml',
-      label: 'KML',
+      label: 'KML Map',
       accessor: 'kmlfile',
       render: (data) =>
         data.kmlfile ? (
@@ -163,23 +176,24 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
             kmlFile={`/kml/${data.kmlfile}`}
             title="Open KML in new tab"
           />
-        ) : null
+        ) : (
+          <span className="text-gray-400 text-sm">No KML</span>
+        )
     }
-  ];// convert string into object
+  ];
 
   return (
     <div>
       <div className='mb-4'>
-
-      <CFRStatusSummary />
+        <CFRStatusSummary />
       </div>
-      <Simpletableshowdata
+      
+      <EnhancedVillageTable
         data={sortedData}
-        inputfiled={[]}
         columns={columns}
-        title="Year"
-        filterOptions={[]}
+      
         searchKey="village_name"
+        onVillageClick={handleVillageClick}
       />
 
       {/* Full Screen Village Details Modal */}

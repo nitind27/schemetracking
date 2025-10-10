@@ -3,15 +3,44 @@ import { useState } from "react";
 import { Column } from "../tables/tabletype";
 import React from "react";
 import { presentworktype } from "./Cfrtype/futurework";
-import { Tabviewtable } from "../tables/Tabviewtable";
-// import KMLMapButton from "../common/KMLMapButton";
+import { Searchtable } from "../tables/Searchtable";
 
 interface Props {
 	serverData: presentworktype[];
+	// serverData1: presentworktype[];
 }
 
 const Presetntwork: React.FC<Props> = ({ serverData }) => {
 	const [data] = useState<presentworktype[]>(serverData || []);
+	// const [chartData] = useState<presentworktype[]>(serverData1 || []);
+	// Create data1 with proper village count by taluka
+	// const data1 = React.useMemo(() => {
+	// 	const talukaVillageMap = new Map<string, Set<string>>();
+		
+	// 	// Count unique villages per taluka
+	// 	data.forEach(item => {
+	// 		const taluka = item.taluka_name || "Unknown";
+	// 		const village = item.village_name || "Unknown";
+			
+	// 		if (!talukaVillageMap.has(taluka)) {
+	// 			talukaVillageMap.set(taluka, new Set());
+	// 		}
+	// 		talukaVillageMap.get(taluka)!.add(village);
+	// 	});
+		
+	// 	// Convert to array format for chart
+	// 	const result: Array<{taluka: string, villageCount: number, villages: string[]}> = [];
+	// 	talukaVillageMap.forEach((villages, taluka) => {
+	// 		result.push({
+	// 			taluka,
+	// 			villageCount: villages.size,
+	// 			villages: Array.from(villages)
+	// 		});
+	// 	});
+		
+	// 	return result;
+	// }, [data]);
+	
     function formatDate(dateString: string | undefined | null): string {
         if (!dateString) return 'उपलब्ध नाही';
         const date = new Date(dateString);
@@ -24,16 +53,40 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 
 	const columns: Column<presentworktype>[] = [
 		{
+			key: "taluka_name",
+			label: "Taluka",
+			accessor: "taluka_name",
+			render: (data) => <span>{data.taluka_name}</span>,
+			searchable: true, // Enable search for this column
+		},
+		{
+			key: "gp_name",
+			label: "Grampanchayat",
+			accessor: "gp_name",
+			render: (data) => <span>{data.gp_name || 'N/A'}</span>,
+			searchable: true, // Enable search for this column
+		},
+		{
+			key: "village_name",
+			label: "Village",
+			accessor: "village_name",
+			render: (data) => <span>{data.village_name || 'N/A'}</span>,
+			searchable: true, // Enable search for this column
+		},
+		{
 			key: "work_name",
 			label: "Work Name",
 			accessor: "work_name",
 			render: (data) => <span>{data.work_name}</span>,
+			searchable: true, // Enable search for this column
 		},
+	
 		{
 			key: "total_area",
 			label: "Total Area",
 			accessor: "total_area",
 			render: (data) => <span>{data.total_area}</span>,
+			searchable: false, // Disable search for this column
 		},
 		{
 			key: "estimated_amount",
@@ -52,6 +105,12 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 			label: "Implementing Method",
 			accessor: "implementing_method",
 			render: (data) => <span>{data.implementing_method}</span>,
+		},
+		{
+			key: "type",
+			label: "Type",
+			accessor: "type",
+			render: (data) => <span>{data.type}</span>,
 		},
 		{
 			key: "work_status",
@@ -96,19 +155,6 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 			accessor: "username",
 			render: (data) => <span>{data.username}</span>,
 		},
-		// {
-		// 	key: "gis_location",
-		// 	label: "GIS Location",
-		// 	accessor: "gis_location",
-		// 	render: () => (
-		// 		<div className="flex justify-center">
-		// 			<KMLMapButton
-		// 				kmlFile={"/public/kml/Harankhuri CFR.kml"}
-		// 				title="Click to open KML file in Google Earth"
-		// 			/>
-		// 		</div>
-		// 	),
-		// },
 	];
 
 	const filterOptions = [
@@ -131,28 +177,32 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 		},
 	];
 
-
 	return (
-		<div className="">
-			<Tabviewtable
-				data={data}
-				inputfiled={[]}
-				columns={columns}
-				title="Year"
-				filterOptions={filterOptions}
-				searchKey="work_name"
-				tabFilter={{
-					field: "type",
-					fallbackFields: [],
-					normalize: true,
-					tabs: [
-						{ label: "All", value: "" },
-						{ label: "Plantation", value: "Plantation" },
-						{ label: "NRM", value: "NRM" },
-					],
-				}}
-			/>
+		<div className="space-y-6">
+			
 
+			{/* Data Table */}
+			<div className="">
+				<Searchtable
+					data={data}
+					inputfiled={[]}
+					columns={columns}
+					title="Year"
+					filterOptions={filterOptions}
+					searchKey="work_name"
+					enableColumnSearch={true} // Enable column-wise search
+					tabFilter={{
+						field: "type",
+						fallbackFields: [],
+						normalize: true,
+						tabs: [
+							{ label: "All", value: "" },
+							{ label: "Plantation", value: "Plantation" },
+							{ label: "NRM", value: "NRM" },
+						],
+					}}
+				/>
+			</div>
 		</div>
 	);
 };

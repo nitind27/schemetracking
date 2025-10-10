@@ -32,8 +32,12 @@ export interface presentworktype {
     status: string;
     created_at: string;
     updated_at: string;
+    type: string;
     gis_location?: string; // KML file path or URL
-
+    // Add these new fields
+    taluka_name?: string;
+    village_name?: string;
+    gp_name?: string;
 }
 export interface basicdetailsofvillagetype {
     village_detail_id   : number;

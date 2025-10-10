@@ -21,17 +21,18 @@ export default function AuthLayout({
               {/* <!-- ===== Common Grid Shape Start ===== --> */}
               <GridShape />
               <div className="flex flex-col items-center max-w-xs">
-                <div className="text-white text-[30px]">
-                  SSTS-NDB
+                <div className=" whitespace-nowrap text-white text-[35px] border-b-[3px] border-[#FEE301] dark:border-gray-600 mb-5">
+                <span className="font-bold">VanSampada</span> (वनसंपदा)
                 </div>
-                <div className="text-white text-[30px] md:whitespace-nowrap">
+                <div className="text-white text-[30px] md:whitespace-nowrap mb-6">
 
-                  (Scheme Saturation Tracking System - Nandurbar)
+                  {/* (Scheme Saturation Tracking System - Nandurbar) */}
+                  (VanSampada (वनसंपदा) - Nandurbar)
                 </div>
 
                 <img
-                  width={500}
-                  height={50}
+                  width={200}
+                  height={45}
                   src="./images/logo/maharashtraShasan.png"
                   alt="Logo"
                 />

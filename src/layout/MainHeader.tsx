@@ -17,14 +17,15 @@ const MainHeader: React.FC = () => {
 
                         <span className="text-white text-[12px] whitespace-nowrap">
 
-                            Scheme Saturation Tracking System - Nandurbar
+                            {/* Scheme Saturation Tracking System - Nandurbar */}
+                            VanSampada (वनसंपदा)
                         </span>
 
                     </Link>
 
 
                     <div className="hidden lg:block">
-                        <h1 className="text-2xl font-semibold text-white whitespace-nowrap">Scheme Saturation Tracking System - Nandurbar </h1>
+                        <h1 className="text-2xl font-semibold text-white whitespace-nowrap">VanSampada (वनसंपदा) - Nandurbar </h1>
                     </div>
                 </div>
 

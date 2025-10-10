@@ -24,7 +24,7 @@ const TabView: React.FC<TabViewProps> = ({ tabs, defaultTab }) => {
   return (
     <div className="w-full">
       {/* Tab Buttons */}
-      <div className={`grid ${colsClass} gap-4 mb-6`}>
+      <div className={`grid ${colsClass} gap-4 mb-3`}>
         {tabs.map((tab) => (
           <button
             key={tab.id}

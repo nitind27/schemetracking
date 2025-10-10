@@ -47,11 +47,11 @@ export default function UserDropdown() {
   useEffect(() => {
     const value = sessionStorage.getItem('userName');
     if (value) {
-        // Remove special characters and get the part after the last special character
-        const cleanedValue = value.replace(/[^a-zA-Z0-9\s]/g, ''); // Remove special characters
-        const parts = cleanedValue.split(' ');
-        const initials = parts.map(part => part[0]).join('.'); // Get initials
-        setStoredValue(initials);
+        // // Remove special characters and get the part after the last special character
+        // const cleanedValue = value.replace(/[^a-zA-Z0-9\s]/g, ''); // Remove special characters
+        // const parts = cleanedValue.split(' ');
+        // const initials = parts.map(part => part[0]).join('.'); // Get initials
+        setStoredValue(value);
     }
 }, []);
 

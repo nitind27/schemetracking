@@ -10,9 +10,16 @@ export async function GET() {
         const [rows] = await pool.query<RowDataPacket[]>(
             `SELECT 
                 works.*, 
-                users.name AS username
+                users.name AS username,
+                taluka.name AS taluka_name,
+                village.marathi_name AS village_name,
+                grampanchyat.gpname AS gp_name
              FROM works
              INNER JOIN users ON works.user_id = users.user_id 
+             LEFT JOIN taluka ON taluka.taluka_id = works.taluka_id
+             LEFT JOIN village ON village.village_id = works.village_id
+             LEFT JOIN basic_village_details bvd ON village.village_id = bvd.village_id
+             LEFT JOIN grampanchyat ON grampanchyat.gp_id = works.gp_id
              WHERE works.status = "Active"`
         );
 

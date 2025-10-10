@@ -5,6 +5,7 @@ import React from "react";
 import { basicdetailsofvillagetype } from "@/components/ecommerce/Cfrtype/futurework";
 import { Village } from "../Village/village";
 import CfrModel from "@/common/CfrModel";
+import { Taluka } from "../Taluka/Taluka";
 
 type StatusKey =
     | "gramsabhabankno"
@@ -147,6 +148,8 @@ const CFRStatusSummary: React.FC = () => {
     const [error, setError] = React.useState<string | null>(null);
     const [basic, setBasic] = React.useState<basicdetailsofvillagetype[]>([]);
     const [villages, setVillages] = React.useState<Village[]>([]);
+    const [talukas, setTalukas] = React.useState<Taluka[]>([]);
+    const [selectedTaluka, setSelectedTaluka] = React.useState<string>("all");
 
     const [modalOpen, setModalOpen] = React.useState(false);
     const [activeKey, setActiveKey] = React.useState<StatusKey | null>(null);
@@ -157,14 +160,16 @@ const CFRStatusSummary: React.FC = () => {
         (async () => {
             try {
                 const base = process.env.NEXT_PUBLIC_API_URL;
-                const [bRes, vRes] = await Promise.all([
+                const [bRes, vRes, tRes] = await Promise.all([
                     fetch(`${base}/api/basicdetailsofvillage`, { cache: "no-store" }),
                     fetch(`${base}/api/villages`, { cache: "no-store" }),
+                    fetch(`${base}/api/taluka`, { cache: "no-store" }),
                 ]);
-                const [bJson, vJson] = await Promise.all([bRes.json(), vRes.json()]);
+                const [bJson, vJson, tJson] = await Promise.all([bRes.json(), vRes.json(), tRes.json()]);
                 if (!mounted) return;
                 setBasic(Array.isArray(bJson) ? bJson : []);
                 setVillages(Array.isArray(vJson) ? vJson : []);
+                setTalukas(Array.isArray(tJson) ? tJson : []);
             } catch {
                 if (!mounted) return;
                 setError("Failed to load CFR summary.");
@@ -179,8 +184,11 @@ const CFRStatusSummary: React.FC = () => {
     }, []);
 
     const matchedBasics = React.useMemo(() => {
-        return basic;
-    }, [basic]);
+        if (selectedTaluka === "all") {
+            return basic;
+        }
+        return basic.filter(row => String(row.taluka_name) === selectedTaluka);
+    }, [basic, selectedTaluka]);
     
     const villageNameById = React.useMemo(() => {
         const m = new Map<string, string>();
@@ -265,7 +273,24 @@ const CFRStatusSummary: React.FC = () => {
 
                 
                 <div>
-                    <h4 className="text-md font-semibold text-gray-700 mb-4">वाटप आलेख</h4>
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-md font-semibold text-gray-700">वाटप आलेख</h4>
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm text-gray-600">तालुका:</label>
+                            <select
+                                className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-96"
+                                value={selectedTaluka}
+                                onChange={(e) => setSelectedTaluka(e.target.value)}
+                            >
+                                <option value="all">सर्व तालुके</option>
+                                {talukas.map(taluka => (
+                                    <option key={taluka.taluka_id} value={taluka.name}>
+                                        {taluka.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                         {stats.map(s => (
                             <DonutChart
