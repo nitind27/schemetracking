@@ -2,54 +2,29 @@
 import { useState } from "react";
 import { Column } from "../tables/tabletype";
 import React from "react";
-import { presentworktype } from "./Cfrtype/futurework";
+import { basicdetailsofvillagetype, presentworktype } from "./Cfrtype/futurework";
 import { Searchtable } from "../tables/Searchtable";
+import WorkTypePieCharts from "./WorkTypePieCharts";
+import WorkStatusPieChart from "./WorkStatusPieChart"; // Add this import
 
 interface Props {
 	serverData: presentworktype[];
-	// serverData1: presentworktype[];
+	basicVillageData: basicdetailsofvillagetype[];
 }
 
-const Presetntwork: React.FC<Props> = ({ serverData }) => {
+const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 	const [data] = useState<presentworktype[]>(serverData || []);
-	// const [chartData] = useState<presentworktype[]>(serverData1 || []);
-	// Create data1 with proper village count by taluka
-	// const data1 = React.useMemo(() => {
-	// 	const talukaVillageMap = new Map<string, Set<string>>();
-		
-	// 	// Count unique villages per taluka
-	// 	data.forEach(item => {
-	// 		const taluka = item.taluka_name || "Unknown";
-	// 		const village = item.village_name || "Unknown";
-			
-	// 		if (!talukaVillageMap.has(taluka)) {
-	// 			talukaVillageMap.set(taluka, new Set());
-	// 		}
-	// 		talukaVillageMap.get(taluka)!.add(village);
-	// 	});
-		
-	// 	// Convert to array format for chart
-	// 	const result: Array<{taluka: string, villageCount: number, villages: string[]}> = [];
-	// 	talukaVillageMap.forEach((villages, taluka) => {
-	// 		result.push({
-	// 			taluka,
-	// 			villageCount: villages.size,
-	// 			villages: Array.from(villages)
-	// 		});
-	// 	});
-		
-	// 	return result;
-	// }, [data]);
-	
-    function formatDate(dateString: string | undefined | null): string {
-        if (!dateString) return 'उपलब्ध नाही';
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return 'उपलब्ध नाही';
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-        const year = date.getFullYear();
-        return `${day}-${month}-${year}`;
-    }
+	const [data1] = useState<basicdetailsofvillagetype[]>(basicVillageData || []);
+	console.log("serverData", data1);
+	function formatDate(dateString: string | undefined | null): string {
+		if (!dateString) return 'उपलब्ध नाही';
+		const date = new Date(dateString);
+		if (isNaN(date.getTime())) return 'उपलब्ध नाही';
+		const day = String(date.getDate()).padStart(2, '0');
+		const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+		const year = date.getFullYear();
+		return `${day}-${month}-${year}`;
+	}
 
 	const columns: Column<presentworktype>[] = [
 		{
@@ -80,7 +55,7 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 			render: (data) => <span>{data.work_name}</span>,
 			searchable: true, // Enable search for this column
 		},
-	
+
 		{
 			key: "total_area",
 			label: "Total Area",
@@ -179,7 +154,17 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 
 	return (
 		<div className="space-y-6">
-			
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[500px]">
+				<div className="flex-1">
+					<WorkStatusPieChart serverData={data} />
+				</div>
+				<div className="flex-1">
+					<WorkTypePieCharts
+						serverData={data}
+						basicVillageData={data1}
+					/>
+				</div>
+			</div>
 
 			{/* Data Table */}
 			<div className="">
@@ -190,7 +175,7 @@ const Presetntwork: React.FC<Props> = ({ serverData }) => {
 					title="Year"
 					filterOptions={filterOptions}
 					searchKey="work_name"
-					enableColumnSearch={true} // Enable column-wise search
+					enableColumnSearch={true}
 					tabFilter={{
 						field: "type",
 						fallbackFields: [],

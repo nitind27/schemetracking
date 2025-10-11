@@ -2,6 +2,10 @@
 
 import React, { useState, useMemo } from "react";
 import DataTable from "react-data-table-component";
+import Flatpickr from "react-flatpickr";
+import { format } from 'date-fns';
+import 'flatpickr/dist/flatpickr.css'; // Add this line for basic styling
+import 'flatpickr/dist/themes/material_green.css'; // Add this line for theme
 
 type FilterOption = {
   label: string;
@@ -38,6 +42,15 @@ type Column<T> = {
   searchable?: boolean; // New property to enable column search
 };
 
+type DateRangeFilter = {
+  startDateField: string;
+  endDateField: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  onStartDateChange: (date: Date | null) => void;
+  onEndDateChange: (date: Date | null) => void;
+};
+
 type Props<T> = {
   data: T[];
   columns: Column<T>[];
@@ -49,6 +62,7 @@ type Props<T> = {
   classname?: string;
   tabFilter?: TabFilter<T>;
   enableColumnSearch?: boolean; // New prop to enable column-wise search
+  dateRangeFilter?: DateRangeFilter; // Add this line
 };
 
 export function Searchtable<T extends object>({
@@ -60,6 +74,7 @@ export function Searchtable<T extends object>({
   submitbutton,
   tabFilter,
   enableColumnSearch = false, // Default to false
+  dateRangeFilter, // Add this line
 }: Props<T>) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
@@ -149,6 +164,32 @@ export function Searchtable<T extends object>({
       });
     }
 
+    // Apply date range filter
+    if (dateRangeFilter) {
+      tempData = tempData.filter((row) => {
+        const r = row as Record<string, unknown>;
+        const startDateValue = r[dateRangeFilter.startDateField];
+        const endDateValue = r[dateRangeFilter.endDateField];
+        
+        if (!startDateValue && !endDateValue) return true;
+        
+        const rowStartDate = startDateValue ? new Date(String(startDateValue)) : null;
+        const rowEndDate = endDateValue ? new Date(String(endDateValue)) : null;
+        
+        // Check if start date filter is applied
+        if (dateRangeFilter.startDate && rowStartDate) {
+          if (rowStartDate < dateRangeFilter.startDate) return false;
+        }
+        
+        // Check if end date filter is applied
+        if (dateRangeFilter.endDate && rowEndDate) {
+          if (rowEndDate > dateRangeFilter.endDate) return false;
+        }
+        
+        return true;
+      });
+    }
+
     // Apply multiple dropdown filters
     if (filterOptions.length > 0) {
       tempData = tempData.filter((row) => {
@@ -195,7 +236,7 @@ export function Searchtable<T extends object>({
     }
 
     return tempData;
-  }, [data, filters, search, searchKey, filterOptions, tabFilter, activeTab, enableColumnSearch, columnSearches, columns]);
+  }, [data, filters, search, searchKey, filterOptions, tabFilter, activeTab, enableColumnSearch, columnSearches, dateRangeFilter]);
 
   const handleFilterChange = (filterKey: string, value: string) => {
     setFilters((prev) => ({ ...prev, [filterKey]: value }));
@@ -212,6 +253,62 @@ export function Searchtable<T extends object>({
 
           {/* Filters + Search + Submit button on the right */}
           <div className="flex flex-col md:flex-row gap-2 items-center">
+            {/* Date Range Filters */}
+            {dateRangeFilter && (
+              <div className="flex gap-2 items-center">
+                <div className="flex flex-col">
+                  <label className="text-xs text-gray-600 mb-1">Date Range</label>
+                  <Flatpickr
+                    value={[
+                      dateRangeFilter.startDate ? format(dateRangeFilter.startDate, 'yyyy-MM-dd') : '',
+                      dateRangeFilter.endDate ? format(dateRangeFilter.endDate, 'yyyy-MM-dd') : ''
+                    ]}
+                    onChange={(dates) => {
+                      if (dates && dates.length === 2) {
+                        dateRangeFilter.onStartDateChange(dates[0]);
+                        dateRangeFilter.onEndDateChange(dates[1]);
+                      } else if (dates && dates.length === 1) {
+                        dateRangeFilter.onStartDateChange(dates[0]);
+                        dateRangeFilter.onEndDateChange(null);
+                      } else {
+                        dateRangeFilter.onStartDateChange(null);
+                        dateRangeFilter.onEndDateChange(null);
+                      }
+                    }}
+                    options={{
+                      mode: "range",
+                      dateFormat: "Y-m-d",
+                      allowInput: true,
+                      clickOpens: true,
+                      showMonths: 2,
+                      static: false,
+                      // placeholder: "Select date range...",
+                      disable: [
+                        function(date) {
+                          // Disable future dates if needed
+                          return date > new Date();
+                        }
+                      ]
+                    }}
+                    className="border rounded px-3 py-2 min-w-[200px] cursor-pointer"
+                    placeholder="Select date range..."
+                  />
+                </div>
+                {(dateRangeFilter.startDate || dateRangeFilter.endDate) && (
+                  <button
+                    className="bg-gray-400 text-white px-3 py-2 rounded hover:bg-gray-300 whitespace-nowrap mt-6"
+                    onClick={() => {
+                      dateRangeFilter.onStartDateChange(null);
+                      dateRangeFilter.onEndDateChange(null);
+                    }}
+                    type="button"
+                  >
+                    Clear Dates
+                  </button>
+                )}
+              </div>
+            )}
+
             {filterOptions.map((group, index) => (
               <select
                 key={`${group.label}-${index}`}

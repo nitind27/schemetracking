@@ -3,7 +3,7 @@ import React from 'react';
 const PrivacyPolicy = () => {
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-md my-10">
-      <h1 className="text-3xl font-bold mb-4">Privacy Policy for SSTS-NDB (Scheme Saturation Tracking System)</h1>
+      <h1 className="text-3xl font-bold mb-4">Privacy Policy for VanSampada (Scheme Saturation Tracking System)</h1>
       <p className="text-sm text-gray-500 mb-6">Last Updated: May 01 2025</p>
       <p className="text-sm text-gray-500 mb-6">Developed by: WeClocks Technology Private Limited</p>
       <p className="text-sm text-gray-500 mb-6">Location: Nandurbar District, Maharashtra, India</p>
@@ -11,7 +11,7 @@ const PrivacyPolicy = () => {
       <section className="mb-6">
         <h2 className="text-xl font-semibold mb-2">Introduction</h2>
         <p className="text-gray-700">
-          SSTS-NDB is a mobile application developed under the directive of the Government of Maharashtra to facilitate the monitoring and delivery of government schemes to Individual Forest Rights (IFR) beneficiaries in the Nandurbar district. This Privacy Policy outlines how we collect, use, and protect your information.
+          VanSampada is a mobile application developed under the directive of the Government of Maharashtra to facilitate the monitoring and delivery of government schemes to Individual Forest Rights (IFR) beneficiaries in the Nandurbar district. This Privacy Policy outlines how we collect, use, and protect your information.
         </p>
       </section>
 

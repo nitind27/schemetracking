@@ -29,7 +29,7 @@ interface Props {
 const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
   const [data] = useState<basicdetailsofvillagetype[]>(serverData || []);
   const [selectedVillage, setSelectedVillage] = useState<basicdetailsofvillagetype | null>(null);
-  console.log('selectedVillage', selectedVillage);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Image preview states

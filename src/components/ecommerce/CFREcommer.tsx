@@ -100,7 +100,7 @@ export const CFREcommer = () => {
         ? <div>Loading...</div>
         : error
         ? <div className="text-red-500">{error}</div>
-        : <Presetntwork serverData={presentData} />
+        : <Presetntwork serverData={presentData} basicVillageData={basicData} />
     },
     {
       id: "future",

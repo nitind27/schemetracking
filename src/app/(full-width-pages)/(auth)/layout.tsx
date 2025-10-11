@@ -26,14 +26,14 @@ export default function AuthLayout({
                 </div>
                 <div className="text-white text-[30px] md:whitespace-nowrap mb-6">
 
-                  {/* (Scheme Saturation Tracking System - Nandurbar) */}
-                  (VanSampada (वनसंपदा) - Nandurbar)
+                  (Scheme Saturation Tracking System - Nandurbar)
+                  {/* (VanSampada (वनसंपदा) - Nandurbar) */}
                 </div>
 
                 <img
-                  width={200}
+                  width={400}
                   height={45}
-                  src="./images/logo/maharashtraShasan.png"
+                  src="./images/logo/Logo_vansampada.png"
                   alt="Logo"
                 />
 
