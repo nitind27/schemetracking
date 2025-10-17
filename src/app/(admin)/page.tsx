@@ -14,7 +14,8 @@ import { Village } from "@/components/Village/village";
 import DistrictMap from "@/components/ecommerce/DistrictMap";
 import { CFREcommer } from "@/components/ecommerce/CFREcommer";
 import TabView from "@/components/common/TabView";
-import NotificationTabs from "@/components/Notifications/NotificationTabs";
+// import NotificationTabs from "@/components/Notifications/NotificationTabs";
+import Section32Tabs from "@/components/common/Section32Tabs";
 
 export const metadata: Metadata = {
   title: "Scheme Monitoring & Tracking System",
@@ -171,10 +172,10 @@ export default async function Ecommerce() {
     },
     {
       id: "notification",
-      label: "Notification",
+      label: "Section 3(2)",
       content: <div className="grid grid-cols-6 gap-4 md:gap-6">
         <div className="col-span-12 space-y-6 xl:col-span-7">
-          <NotificationTabs />
+        <Section32Tabs />
         </div>
       </div>
       }

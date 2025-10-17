@@ -437,7 +437,7 @@ const SchemeStatusBarChart = ({
             ))}
             {filteredVillageStats.length === 0 && villageSearchTerm && (
               <div className="text-center py-4 text-gray-500">
-                No villages found matching "{villageSearchTerm}"
+                No villages found matching {villageSearchTerm}
               </div>
             )}
           </div>

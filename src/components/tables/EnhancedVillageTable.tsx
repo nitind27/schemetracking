@@ -17,7 +17,7 @@ type Props = {
 export function EnhancedVillageTable({
     data,
     columns,
-    title = "",
+    // title = "",
     searchKey = "village_name",
 }: Props) {
     const [filters, setFilters] = useState<Record<string, string>>({});
