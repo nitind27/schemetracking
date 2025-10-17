@@ -38,7 +38,7 @@ export async function GET(
       '.webp': 'image/webp'
     }[extension] || 'application/octet-stream';
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(Buffer.from(fileBuffer), {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable'

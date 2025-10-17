@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const files3 = formData.getAll('files3') as File[];
     const files4 = formData.getAll('files4') as File[];
     const files5 = formData.getAll('files5') as File[];
-
+    const files6 = formData.getAll('files6') as File[];
 
     // const updatableFields = [
     //     'name', 'adivasi', 'village_id', 'taluka_id', 'gat_no',
@@ -56,10 +56,11 @@ export async function POST(request: Request) {
         const aadhaarDocDir = path.join(tmpBasePath, 'uploadaadhaar');
         const profileDocDir = path.join(tmpBasePath, 'uploadsprofile');
         const geophotoDir = path.join(tmpBasePath, 'geophotos');
+        const audioDir = path.join(tmpBasePath, 'audio');
 
 
 
-        for (const dir of [farmerDocDir, schemeDocDir, aadhaarDocDir, profileDocDir, geophotoDir]) {
+        for (const dir of [farmerDocDir, schemeDocDir, aadhaarDocDir, profileDocDir, geophotoDir, audioDir]) {
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
             }
@@ -125,6 +126,18 @@ export async function POST(request: Request) {
             geophotos.push(safeFileName);
         }
 
+        const newAudioNames: string[] = [];
+        for (const file of files6) {
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const originalFileName = file.name;
+
+            const safeFileName = `${originalFileName}`;
+            const filePath = path.join(audioDir, safeFileName);
+
+            await fs.promises.writeFile(filePath, buffer);
+            newAudioNames.push(safeFileName);
+        }
+
         connection = await pool.getConnection();
 
         const updateFields: string[] = [];
@@ -152,7 +165,8 @@ export async function POST(request: Request) {
             uploadedAadhaarDocs: newAadhaarDocNames,
             uploadedProfileDocs: newProfileDocNames,
             geophotos1: geophotos,
-        });
+            uploadedAudio: newAudioNames,
+    });
 
     } catch (error) {
         console.error('Error updating farmer:', error);

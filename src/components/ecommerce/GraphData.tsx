@@ -514,7 +514,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 </select>
               </div>
               <button
-                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 w-full md:w-auto"
+                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 w-full md:w-auto mr-5"
                 onClick={handleAadhaarDownload}
               >
                 Download Excel
@@ -798,7 +798,7 @@ const GraphData = ({ farmersData }: { farmersData: AllFarmersData }) => {
         >
           &times;
         </button>
-        <h3 className="text-lg font-bold mb-4">Village wise document availability</h3>
+        Village wise document availability of {taluka.find(t => Number(t.taluka_id) === Number(selectedTalukaId))?.name || 'Unknown Taluka'}
         <input
           type="text"
           placeholder="Search village..."

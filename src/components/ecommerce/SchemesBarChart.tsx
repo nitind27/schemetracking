@@ -99,6 +99,7 @@ const SchemeStatusBarChart = ({
   const [selectedVillage, setSelectedVillage] = useState<Village | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<"Benefited" | "NotApplied" | "Applied">("Benefited");
   const [page, setPage] = useState(1);
+  const [villageSearchTerm, setVillageSearchTerm] = useState(""); // Add this line
 
   // Chart Data
   const chartData = useMemo(() => {
@@ -159,6 +160,14 @@ const SchemeStatusBarChart = ({
       })
       .sort((a, b) => b.percent - a.percent); // <-- sort descending
   }, [selectedScheme, selectedTaluka, selectedStatus, farmers, villages]);
+
+  // Filtered village stats based on search term
+  const filteredVillageStats = useMemo(() => {
+    if (!villageSearchTerm.trim()) return villageStats;
+    return villageStats.filter(v => 
+      v.name.toLowerCase().includes(villageSearchTerm.toLowerCase())
+    );
+  }, [villageStats, villageSearchTerm]);
 
   // Beneficiaries list for selected village+scheme+status
   const filteredFarmers = useMemo(() => {
@@ -287,7 +296,7 @@ const SchemeStatusBarChart = ({
                   onClick={(_data) => {
                     const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
                     setSelectedScheme(scheme || null);
-                    setSelectedStatus("NotApplied");
+                    setSelectedStatus("Benefited");
                     setModalLevel("scheme");
                   }}
                   cursor="pointer"
@@ -301,7 +310,7 @@ const SchemeStatusBarChart = ({
                   onClick={(_data) => {
                     const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
                     setSelectedScheme(scheme || null);
-                    setSelectedStatus("Applied");
+                    setSelectedStatus("Benefited");
                     setModalLevel("scheme");
                   }}
                   cursor="pointer"
@@ -390,8 +399,20 @@ const SchemeStatusBarChart = ({
               </button>
             </div>
           </div>
+          
+          {/* Add search box here */}
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Search village name..."
+              value={villageSearchTerm}
+              onChange={(e) => setVillageSearchTerm(e.target.value)}
+              className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
           <div className="space-y-4 h-96 overflow-scroll">
-            {villageStats.map((v) => (
+            {filteredVillageStats.map((v) => (
               <div key={v.village_id} className="mb-2">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">{v.name}</span>
@@ -414,6 +435,11 @@ const SchemeStatusBarChart = ({
                 </div>
               </div>
             ))}
+            {filteredVillageStats.length === 0 && villageSearchTerm && (
+              <div className="text-center py-4 text-gray-500">
+                No villages found matching "{villageSearchTerm}"
+              </div>
+            )}
           </div>
         </Modal>
       )}

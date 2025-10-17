@@ -117,6 +117,14 @@ export function EnhancedVillageTable({
     }, [columns, perPage, currentPage]);
 
     const filteredData = useMemo(() => {
+        // Check if any filter or search is applied
+        const hasActiveFilters = Object.values(filters).some(filter => filter) || search;
+
+        // If no filters are applied, return empty array to show "not found" message
+        if (!hasActiveFilters) {
+            return [];
+        }
+
         let tempData = [...data];
 
         // Apply dropdown filters
@@ -167,6 +175,7 @@ export function EnhancedVillageTable({
 
     const SubHeaderComponent = (
         <div className="space-y-4 w-full">
+
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                 {/* Filter Controls */}
                 <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
@@ -183,7 +192,7 @@ export function EnhancedVillageTable({
                                     handleFilterChange(group.label, e.target.value);
                                 }}
                             >
-                                <option value="">सर्व {group.label}</option>
+                                <option value="">{group.label} निवडा</option>
                                 {group.options.map((opt) => (
                                     <option key={opt.value} value={opt.value}>
                                         {opt.label}
@@ -231,7 +240,8 @@ export function EnhancedVillageTable({
     return (
         <div className="p-4 rounded-lg w-full border bg-white shadow-sm">
             <div className="mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
+                <h2 className="text-xl font-semibold text-gray-800">गावा विषयी प्राथमिक</h2>
+                 
             </div>
 
             <DataTable
@@ -279,13 +289,23 @@ export function EnhancedVillageTable({
                 }}
                 noDataComponent={
                     <div className="text-center py-8">
-                        <p className="text-gray-500">No villages found matching your criteria</p>
-                        <button
-                            onClick={clearAllFilters}
-                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200"
-                        >
-                            Clear Filters
-                        </button>
+                        {Object.values(filters).some(filter => filter) || search ? (
+                            <>
+                                <p className="text-gray-500 text-lg">कोई गाव मिला नहीं</p>
+                                <p className="text-gray-400 text-sm mt-2">आपके द्वारा चुने गए फिल्टर के अनुसार कोई डेटा नहीं मिला</p>
+                                <button
+                                    onClick={clearAllFilters}
+                                    className="mt-4 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200"
+                                >
+                                    फिल्टर साफ करें
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-gray-500 text-lg">कोणताही डेटा उपलब्ध नाही.</p>
+                                <p className="text-gray-400 text-sm mt-2">कृपया फिल्टर वापरून डेटा शोधा.</p>
+                            </>
+                        )}
                     </div>
                 }
             />

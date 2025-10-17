@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import TabView from "@/components/common/TabView";
 import { Modal } from "@/components/ui/modal";
+import Notificationtab from "../common/Notificationtab";
 
 type PdfItem = {
   id: string | number;
@@ -126,7 +127,7 @@ export default function NotificationTabs({
 
   return (
     <div className="w-full bg-white p-5">
-      <TabView tabs={tabs} defaultTab={defaultTab} />
+      <Notificationtab tabs={tabs} defaultTab={defaultTab} />
 
       <Modal
         isOpen={!!openPdf}
