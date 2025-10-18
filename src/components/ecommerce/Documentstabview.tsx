@@ -53,6 +53,11 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const [modalTitle, setModalTitle] = useState('');
     const [modalFarmers, setModalFarmers] = useState<FarmdersType[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
+    
+    // Add filter states
+    const [selectedTaluka, setSelectedTaluka] = useState<string>('');
+    const [selectedVillage, setSelectedVillage] = useState<string>('');
+    const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
 
     useEffect(() => {
         if (farmersData) {
@@ -61,13 +66,34 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
         }
     }, [farmersData]);
 
+    // Initialize filteredFarmers with all farmers
     useEffect(() => {
-        if (datafarmers.length === 0 || documents.length === 0) {
+        setFilteredFarmers(datafarmers);
+    }, [datafarmers]);
+
+    // Filter farmers based on taluka and village selection
+    useEffect(() => {
+        let filtered = [...datafarmers];
+        
+        if (selectedTaluka) {
+            filtered = filtered.filter(farmer => farmer.taluka_id === selectedTaluka);
+        }
+        
+        if (selectedVillage) {
+            filtered = filtered.filter(farmer => farmer.village_id === selectedVillage);
+        }
+        
+        setFilteredFarmers(filtered);
+    }, [datafarmers, selectedTaluka, selectedVillage]);
+
+    // Calculate document usage based on filtered farmers
+    useEffect(() => {
+        if (filteredFarmers.length === 0 || documents.length === 0) {
             setDocumentUsageList([]);
             return;
         }
 
-        const farmersDocsParsed = datafarmers.map(farmer =>
+        const farmersDocsParsed = filteredFarmers.map(farmer =>
             parseFarmerDocuments(typeof farmer.documents === 'string' ? farmer.documents : '')
         );
 
@@ -76,7 +102,7 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
             let countNotHas = 0;
             let countUpdationNeeded = 0;
 
-            datafarmers.forEach((farmer, idx) => {
+            filteredFarmers.forEach((farmer, idx) => {
                 const docEntry = farmersDocsParsed[idx][String(doc.id)];
                 if (docEntry) {
                     if (docEntry.available === 'Yes') {
@@ -101,13 +127,13 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
         });
 
         setDocumentUsageList(usageList);
-    }, [datafarmers, documents]);
+    }, [filteredFarmers, documents]);
 
     // Modal logic
     const openModal = (docId: number, docName: string, type: ModalType) => {
         setModalTitle(`${docName} - ${type === 'has' ? 'Available' : type === 'not' ? 'Not Available' : 'Updation Needed'}`);
-        // Filter farmers
-        const filteredFarmers = datafarmers.filter(farmer => {
+        // Filter farmers from filteredFarmers instead of datafarmers
+        const filteredFarmersForModal = filteredFarmers.filter(farmer => {
             const docMap = parseFarmerDocuments(farmer.documents);
             const entry = docMap[String(docId)];
             if (type === 'has') return entry && entry.available === 'Yes';
@@ -115,7 +141,7 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
             if (type === 'updation') return entry && entry.updation === 'Yes';
             return false;
         });
-        setModalFarmers(filteredFarmers);
+        setModalFarmers(filteredFarmersForModal);
         setCurrentPage(1);
         setIsModalOpen(true);
     };
@@ -144,6 +170,75 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
         const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
         saveAs(blob, `${modalTitle.replace(/\s+/g, "_")}_Farmers.xlsx`);
     };
+
+    // Create filter options
+    const talukaOptions = farmersData.taluka.map(taluka => ({
+        label: taluka.name,
+        value: taluka.taluka_id.toString()
+    }));
+
+    const villageOptions = farmersData.villages
+        .filter(village => !selectedTaluka || village.taluka_id === selectedTaluka)
+        .map(village => ({
+            label: village.marathi_name,
+            value: village.village_id.toString()
+        }));
+
+    // Custom filter component
+    const FilterComponent = () => (
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className="flex flex-col md:flex-row gap-2">
+                <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Taluka</label>
+                <select
+                    className="border rounded px-3 py-2 min-w-[150px]"
+                    value={selectedTaluka}
+                    onChange={(e) => {
+                        setSelectedTaluka(e.target.value);
+                        setSelectedVillage(''); // Reset village when taluka changes
+                    }}
+                >
+                    <option value="">All Taluka</option>
+                    {talukaOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Village</label>
+                <select
+                    className="border rounded px-3 py-2 min-w-[150px]"
+                    value={selectedVillage}
+                    onChange={(e) => setSelectedVillage(e.target.value)}
+                >
+                    <option value="">All Village</option>
+                    {villageOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+                </div>
+                <div className="flex flex-col gap-2 mt-7">
+                <button
+                    onClick={() => {
+                        setSelectedTaluka('');
+                        setSelectedVillage('');
+                    }}
+                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                    >
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+            
+            <div className="text-sm text-gray-600 flex items-center">
+                Showing {filteredFarmers.length} IFR Holders
+            </div>
+        </div>
+    );
 
     const columns: Column<DocumentUsage>[] = [
         {
@@ -195,13 +290,22 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     return (
         <div className='bg-white'>
-            <Simpletableshowdata
-                data={documentUsageList}
-                columns={columns}
-                title=""
-                filterOptions={[]}
-                searchKey="document"
-            />
+            <div className="p-4 rounded-lg w-full border bg-white">
+                <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-4">
+                    Availability of documents
+                </h2>
+                
+                <FilterComponent />
+                
+                <Simpletableshowdata
+                    data={documentUsageList}
+                    columns={columns}
+                    title=""
+                    filterOptions={[]}
+                    searchKey="document"
+                />
+            </div>
+            
             {isModalOpen && (
                 <div className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-4 z-999999">
                     <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl max-h-[90vh] overflow-auto z-999999">

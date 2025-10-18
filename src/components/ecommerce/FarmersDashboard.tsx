@@ -43,6 +43,11 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const [datataluka, setdatataluka] = useState<Taluka[]>([]);
     const [datavillage, setdatavillages] = useState<Village[]>([]);
 
+    // Add filter states
+    const [selectedTaluka, setSelectedTaluka] = useState<string>('');
+    const [selectedVillage, setSelectedVillage] = useState<string>('');
+    const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
+
     useEffect(() => {
         if (farmersData) {
             setDataschems(farmersData.schemes);
@@ -52,7 +57,27 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         }
     }, [farmersData]);
 
-    const allfarmersname = datafarmers.filter(farmer => {
+    // Initialize filteredFarmers with all farmers
+    useEffect(() => {
+        setFilteredFarmers(datafarmers);
+    }, [datafarmers]);
+
+    // Filter farmers based on taluka and village selection
+    useEffect(() => {
+        let filtered = [...datafarmers];
+        
+        if (selectedTaluka) {
+            filtered = filtered.filter(farmer => farmer.taluka_id === selectedTaluka);
+        }
+        
+        if (selectedVillage) {
+            filtered = filtered.filter(farmer => farmer.village_id === selectedVillage);
+        }
+        
+        setFilteredFarmers(filtered);
+    }, [datafarmers, selectedTaluka, selectedVillage]);
+
+    const allfarmersname = filteredFarmers.filter(farmer => {
         return farmer.schemes && farmer.schemes.trim() !== "";
     });
 
@@ -92,6 +117,75 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         saveAs(blob, `${modalTitle.replace(/\s+/g, "_")}_Schemes.xlsx`);
     };
 
+    // Create filter options
+    const talukaOptions = datataluka.map(taluka => ({
+        label: taluka.name,
+        value: taluka.taluka_id.toString()
+    }));
+
+    const villageOptions = datavillage
+        .filter(village => !selectedTaluka || village.taluka_id === selectedTaluka)
+        .map(village => ({
+            label: village.marathi_name,
+            value: village.village_id.toString()
+        }));
+
+    // Custom filter component
+    const FilterComponent = () => (
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className="flex flex-col md:flex-row gap-2">
+                <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Taluka</label>
+                <select
+                    className="border rounded px-3 py-2 min-w-[150px]"
+                    value={selectedTaluka}
+                    onChange={(e) => {
+                        setSelectedTaluka(e.target.value);
+                        setSelectedVillage(''); // Reset village when taluka changes
+                    }}
+                >
+                    <option value="">All Taluka</option>
+                    {talukaOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+                </div>
+                <div className="flex flex-col gap-2">       
+                <label className="text-sm font-medium text-gray-700">Village</label>
+                <select
+                    className="border rounded px-3 py-2 min-w-[150px]"
+                    value={selectedVillage}
+                    onChange={(e) => setSelectedVillage(e.target.value)}
+                >
+                    <option value="">All Village</option>
+                    {villageOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+                </div>
+                <div className="flex flex-col gap-2 mt-7">
+                <button
+                    onClick={() => {
+                        setSelectedTaluka('');
+                        setSelectedVillage('');
+                    }}
+                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                >
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+            
+            <div className="text-sm text-gray-600 flex items-center">
+                Showing {allfarmersname.length} IFR Holders
+            </div>
+        </div>
+    );
+
     const columns: Column<FarmdersType>[] = [
         {
             key: 'scheme_name',
@@ -101,7 +195,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 <span>
                     <UserDatamodel
                         farmersid={farmer.farmer_id.toString()}
-                        datafarmers={datafarmers}
+                        datafarmers={filteredFarmers}
                         farmername={farmer.farmer_record?.split('|')[0]}
                         datavillage={datavillage}
                         datataluka={datataluka}
@@ -164,18 +258,26 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     return (
         <div className='bg-white'>
-            <Simpletableshowdata
-                data={allfarmersname}
-                inputfiled={
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
-                        <div className="col-span-1"></div>
-                    </div>
-                }
-                columns={columns}
-                title="Scheme Beneficiaries"
-                filterOptions={[]}
-                searchKey="name"
-            />
+            <div className="p-4 rounded-lg w-full border bg-white">
+                <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-4">
+                    IFR Holders by Scheme
+                </h2>
+                
+                <FilterComponent />
+                
+                <Simpletableshowdata
+                    data={allfarmersname}
+                    inputfiled={
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
+                            <div className="col-span-1"></div>
+                        </div>
+                    }
+                    columns={columns}
+                    title=""
+                    filterOptions={[]}
+                    searchKey="name"
+                />
+            </div>
 
             {isModalOpen && (
                 <div className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-4 z-99999">

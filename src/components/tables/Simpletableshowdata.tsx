@@ -42,7 +42,7 @@ export function Simpletableshowdata<T extends object>({
   searchKey,
   inputfiled,
   submitbutton,
-  
+  title,
 }: Props<T>) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
@@ -155,6 +155,11 @@ export function Simpletableshowdata<T extends object>({
 
   return (
    <div className="p-4  rounded-lg w-full border bg-white">
+    {title && (
+      <h2 className="text-lg md:text-2xl font-bold text-gray-800">
+        {title}
+      </h2>
+    )}
       <DataTable
         columns={reactColumns}
         data={filteredData}

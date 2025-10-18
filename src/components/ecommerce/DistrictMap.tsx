@@ -81,7 +81,7 @@ const DistrictMap: React.FC<FarmersdataProps> = ({
   })
 
   return (
-    <div className="flex flex-col md:flex-row bg-white mt-5">
+    <div className="flex flex-col md:flex-row bg-white mt-3">
       <div className="w-full md:w-1/2">
         <Talukawiseserve
           talukaCounts={talukaCounts}

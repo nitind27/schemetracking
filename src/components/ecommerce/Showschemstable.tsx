@@ -37,10 +37,10 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     return (
         <div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-8 mt-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3 mt-3">
                 <div>
                     <button
-                        className={`w-full py-3 px-2 sm:py-4 sm:px-4 rounded-lg text-sm sm:text-base font-medium transition-colors ${activeTab === 'documents'
+                        className={`w-full sm:py-2 sm:px-2 rounded-lg text-sm sm:text-base font-medium transition-colors ${activeTab === 'documents'
                                 ? 'bg-blue-600 text-white shadow-md'
                                 : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
                             }`}
@@ -51,7 +51,7 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 </div>
                 <div>
                     <button
-                        className={`w-full py-3 px-2 sm:py-4 sm:px-4 rounded-lg text-sm sm:text-base font-medium transition-colors ${activeTab === 'farmers'
+                        className={`w-full py-3 px-2 sm:py-2 sm:px-2 rounded-lg text-sm sm:text-base font-medium transition-colors ${activeTab === 'farmers'
                                 ? 'bg-blue-600 text-white shadow-md'
                                 : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
                             }`}
@@ -62,7 +62,7 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 </div>
                 <div>
                     <button
-                        className={`w-full py-3 px-2 sm:py-4 sm:px-4 rounded-lg text-sm sm:text-base font-medium transition-colors ${activeTab === 'schemes'
+                        className={`w-full py-3 px-2 sm:py-2 sm:px-2 rounded-lg text-sm sm:text-base font-medium transition-colors ${activeTab === 'schemes'
                                 ? 'bg-blue-600 text-white shadow-md'
                                 : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
                             }`}

@@ -1,21 +1,24 @@
 // app/ecommerce/page.tsx
 import type { Metadata } from "next";
 import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
-import Showschemstable from "@/components/ecommerce/Showschemstable";
+// import Showschemstable from "@/components/ecommerce/Showschemstable";
 import { Suspense } from "react";
 import Loader from "@/common/Loader";
-import GraphData from "@/components/ecommerce/GraphData";
-import SchemesBarChart from "@/components/ecommerce/SchemesBarChart";
-import { Documents } from "@/components/Documentsdata/documents";
-import { FarmdersType } from "@/components/farmersdata/farmers";
-import { Schemesdatas } from "@/components/schemesdata/schemes";
-import { Taluka } from "@/components/Taluka/Taluka";
-import { Village } from "@/components/Village/village";
-import DistrictMap from "@/components/ecommerce/DistrictMap";
+// import GraphData from "@/components/ecommerce/GraphData";
+// import SchemesBarChart from "@/components/ecommerce/SchemesBarChart";
+    // import { Documents } from "@/components/Documentsdata/documents";
+    // import { FarmdersType } from "@/components/farmersdata/farmers";
+    // import { Schemesdatas } from "@/components/schemesdata/schemes";
+    // import { Taluka } from "@/components/Taluka/Taluka";
+    // import { Village } from "@/components/Village/village";
+// import DistrictMap from "@/components/ecommerce/DistrictMap";
 import { CFREcommer } from "@/components/ecommerce/CFREcommer";
 import TabView from "@/components/common/TabView";
 // import NotificationTabs from "@/components/Notifications/NotificationTabs";
 import Section32Tabs from "@/components/common/Section32Tabs";
+// import AadhaarStatusChart from "@/components/ecommerce/AadhaarStatusChart";
+// import DocumentAvailabilityChart from "@/components/ecommerce/DocumentAvailabilityChart";
+import DashboardTalukatabview from "@/components/ecommerce/DashboardTalukatabview";
 
 export const metadata: Metadata = {
   title: "Scheme Monitoring & Tracking System",
@@ -98,53 +101,51 @@ async function fetchFarmersData() {
   }
 }
 
-async function getData(): Promise<{
-  farmers: FarmdersType[];
-  villages: Village[];
-  talukas: Taluka[];
-  schemes: Schemesdatas[];
-  documents: Documents[];
-}> {
-  const [farmersRes, villagesRes, talukaRes, schemesRes, documentsRes] = await Promise.all([
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmernewapi`, { cache: 'no-store' }),
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/villages`, { cache: 'no-store' }),
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/taluka`, { cache: 'no-store' }),
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescrud`, { cache: 'no-store' }),
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`, { cache: 'no-store' }),
-  ]);
+// async function getData(): Promise<{
+//   farmers: FarmdersType[];
+//   villages: Village[];
+//   talukas: Taluka[];
+//   schemes: Schemesdatas[];
+//   documents: Documents[];
+// }> {
+//   const [farmersRes, villagesRes, talukaRes, schemesRes, documentsRes] = await Promise.all([
+//     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/farmernewapi`, { cache: 'no-store' }),
+//     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/villages`, { cache: 'no-store' }),
+//     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/taluka`, { cache: 'no-store' }),
+//     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schemescrud`, { cache: 'no-store' }),
+//     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`, { cache: 'no-store' }),
+//   ]);
 
-  const [farmers, villages, talukas, schemes, documents] = await Promise.all([
-    farmersRes.json(),
-    villagesRes.json(),
-    talukaRes.json(),
-    schemesRes.json(),
-    documentsRes.json(),
-  ]);
+//   const [farmers, villages, talukas, schemes, documents] = await Promise.all([
+//     farmersRes.json(),
+//     villagesRes.json(),
+//     talukaRes.json(),
+//     schemesRes.json(),
+//     documentsRes.json(),
+//   ]);
 
-  return { farmers, villages, talukas, schemes, documents };
-}
+//   return { farmers, villages, talukas, schemes, documents };
+// }
 
 export default async function Ecommerce() {
   const metrics = await fetchMetrics();
   const farmersData = await fetchFarmersData();
-  const { farmers, villages, talukas, schemes, documents } = await getData();
+  // const { farmers, villages, talukas, schemes, documents } = await getData();
 
   // Main Dashboard Content Component
   const MainDashboardContent = () => (
     <div className="grid grid-cols-6 gap-4 md:gap-6">
-      <div className="col-span-12 space-y-0 xl:col-span-7">
+      <div className="col-span-12 space-y-2 xl:col-span-7">
         <Suspense fallback={<Loader />}>
           <EcommerceMetrics metrics={metrics} />
-          <DistrictMap
-            data={farmers}
-            datavillage={villages}
-            datataluka={talukas}
-            dataschems={schemes}
-            documents={documents}
-          />
-          <GraphData farmersData={farmersData} />
+          <DashboardTalukatabview farmersData={farmersData} />
+           
+         {/*} 
+          <AadhaarStatusChart farmersData={farmersData} />
+          <DocumentAvailabilityChart farmersData={farmersData} />
           <SchemesBarChart farmersData={farmersData} />
-          <Showschemstable farmersData={farmersData} />
+          <Showschemstable farmersData={farmersData} /> */}
+          
         </Suspense>
       </div>
     </div>

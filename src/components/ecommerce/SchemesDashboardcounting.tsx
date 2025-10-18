@@ -10,6 +10,8 @@ import { Schemecategorytype } from '../Schemecategory/Schemecategory';
 import { Schemesubcategorytype } from '../Schemesubcategory/Schemesubcategory';
 import { Scheme_year } from '../Yearmaster/yearmaster';
 import { Documents } from '../Documentsdata/documents';
+import { Taluka } from '../Taluka/Taluka';
+import { Village } from '../Village/village';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
@@ -21,6 +23,8 @@ interface AllFarmersData {
     schemessubcategory: Schemesubcategorytype[];
     yearmaster: Scheme_year[];
     documents: Documents[];
+    taluka: Taluka[];
+    villages: Village[];
 }
 
 // Helper function to parse farmer's schemes string to extract statuses per schemeId based on your format
@@ -64,6 +68,11 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 10;
 
+    // Add filter states
+    const [selectedTaluka, setSelectedTaluka] = useState<string>('');
+    const [selectedVillage, setSelectedVillage] = useState<string>('');
+    const [filteredFarmersForCounts, setFilteredFarmersForCounts] = useState<FarmdersType[]>([]);
+
     useEffect(() => {
         if (farmersData) {
             setDataschems(farmersData.schemes);
@@ -75,11 +84,31 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         }
     }, [farmersData]);
 
+    // Initialize filteredFarmersForCounts with all farmers
+    useEffect(() => {
+        setFilteredFarmersForCounts(datafarmers);
+    }, [datafarmers]);
+
+    // Filter farmers based on taluka and village selection
+    useEffect(() => {
+        let filtered = [...datafarmers];
+        
+        if (selectedTaluka) {
+            filtered = filtered.filter(farmer => farmer.taluka_id === selectedTaluka);
+        }
+        
+        if (selectedVillage) {
+            filtered = filtered.filter(farmer => farmer.village_id === selectedVillage);
+        }
+        
+        setFilteredFarmersForCounts(filtered);
+    }, [datafarmers, selectedTaluka, selectedVillage]);
+
     useEffect(() => {
         setCurrentPage(1);
     }, [filteredFarmers]);
 
-    const alldata = datafarmers.filter(farmer => farmer.schemes?.trim() !== "");
+    const alldata = filteredFarmersForCounts.filter(farmer => farmer.schemes?.trim() !== "");
 
     // Filter schemes if farmers have schemes string (dummy filter)
     const matches = dataschems.filter(scheme =>
@@ -87,7 +116,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
     );
 
     const handleBenefitedClick = (schemeId: string) => {
-        const benefitedFarmers = datafarmers.filter(farmer => {
+        const benefitedFarmers = filteredFarmersForCounts.filter(farmer => {
             const statuses = parseFarmerSchemeStatuses(farmer.schemes);
             return statuses[schemeId] === 'Benefited';
         });
@@ -97,7 +126,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
     };
 
     const handleAppliedClick = (schemeId: string) => {
-        const appliedFarmers = datafarmers.filter(farmer => {
+        const appliedFarmers = filteredFarmersForCounts.filter(farmer => {
             const statuses = parseFarmerSchemeStatuses(farmer.schemes);
             return statuses[schemeId] === 'Applied';
         });
@@ -107,7 +136,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
     };
 
     const handleNotBenefitedClick = (schemeId: string) => {
-        const notBenefited = datafarmers.filter(farmer => {
+        const notBenefited = filteredFarmersForCounts.filter(farmer => {
             const statuses = parseFarmerSchemeStatuses(farmer.schemes);
             // Farmer is not Benefited or Applied for this scheme
             return !(statuses[schemeId] === 'Benefited' || statuses[schemeId] === 'Applied');
@@ -135,10 +164,12 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
     const handleDownloadExcel = () => {
         const excelData = filteredFarmers.map((farmer, idx) => ({
             "Sr.No": (currentPage - 1) * rowsPerPage + idx + 1,
-            "IFR Holder": farmer.name,
-            "Type": farmer.adivasi,
-            "Contact No": farmer.contact_no || "-",
-            "Vanksetra": farmer.vanksetra
+            "IFR Holder": farmer.farmer_record?.split('|')[0] || "",
+            "Type": farmer.farmer_record?.split('|')[1] || "",
+            "Contact No": farmer.farmer_record?.split('|')[6] || "-",
+            "Vanksetra": farmer.farmer_record?.split('|')[3] || "",
+            "Taluka": farmersData.taluka.find(t => t.taluka_id === Number(farmer.taluka_id))?.name || "",
+            "Village": farmersData.villages.find(v => v.village_id === Number(farmer.village_id))?.marathi_name || ""
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -149,23 +180,92 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         saveAs(blob, `${modalTitle.replace(/\s+/g, "_")}_Farmers.xlsx`);
     };
 
-    /* Count functions for each scheme and status */
+    // Create filter options
+    const talukaOptions = farmersData.taluka.map(taluka => ({
+        label: taluka.name,
+        value: taluka.taluka_id.toString()
+    }));
+
+    const villageOptions = farmersData.villages
+        .filter(village => !selectedTaluka || village.taluka_id === selectedTaluka)
+        .map(village => ({
+            label: village.marathi_name,
+            value: village.village_id.toString()
+        }));
+
+    // Custom filter component
+    const FilterComponent = () => (
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className="flex flex-col md:flex-row gap-2">
+                <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Taluka</label>
+                <select
+                    className="border rounded px-3 py-2 min-w-[150px]"
+                    value={selectedTaluka}
+                    onChange={(e) => {
+                        setSelectedTaluka(e.target.value);
+                        setSelectedVillage(''); // Reset village when taluka changes
+                    }}
+                >
+                    <option value="">All Taluka</option>
+                    {talukaOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">Village</label>
+                <select
+                    className="border rounded px-3 py-2 min-w-[150px]"
+                    value={selectedVillage}
+                    onChange={(e) => setSelectedVillage(e.target.value)}
+                >
+                    <option value="">All Village</option>
+                    {villageOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+                </div>
+                <div className="flex flex-col gap-2 mt-7">
+                <button
+                    onClick={() => {
+                        setSelectedTaluka('');
+                        setSelectedVillage('');
+                    }}
+                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                >
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+            
+            <div className="text-sm text-gray-600 flex items-center">
+                Showing {filteredFarmersForCounts.length} IFR Holders
+            </div>
+        </div>
+    );
+
+    /* Count functions for each scheme and status - Updated to use filtered farmers */
     const countBenefited = (schemeId: string) => {
-        return datafarmers.reduce((count, farmer) => {
+        return filteredFarmersForCounts.reduce((count, farmer) => {
             const statuses = parseFarmerSchemeStatuses(farmer.schemes);
             return statuses[schemeId] === 'Benefited' ? count + 1 : count;
         }, 0);
     };
 
     const countApplied = (schemeId: string) => {
-        return datafarmers.reduce((count, farmer) => {
+        return filteredFarmersForCounts.reduce((count, farmer) => {
             const statuses = parseFarmerSchemeStatuses(farmer.schemes);
             return statuses[schemeId] === 'Applied' ? count + 1 : count;
         }, 0);
     };
 
     const countNotBenefited = (schemeId: string) => {
-        return datafarmers.reduce((count, farmer) => {
+        return filteredFarmersForCounts.reduce((count, farmer) => {
             const statuses = parseFarmerSchemeStatuses(farmer.schemes);
             if (!statuses[schemeId] || statuses[schemeId] === 'NotApplied') return count + 1;
             return count;
@@ -231,18 +331,26 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
 
     return (
         <div className='bg-white'>
-            <Simpletableshowdata
-                data={matches}
-                inputfiled={
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
-                        <div className="col-span-1"></div>
-                    </div>
-                }
-                columns={columns}
-                title="Scheme Beneficiaries"
-                filterOptions={[]}
-                searchKey="beneficiery_name"
-            />
+            <div className="p-4 rounded-lg w-full border bg-white">
+                <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-4">
+                    Schemes by IFR Holders
+                </h2>
+                
+                <FilterComponent />
+                
+                <Simpletableshowdata
+                    data={matches}
+                    inputfiled={
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
+                            <div className="col-span-1"></div>
+                        </div>
+                    }
+                    columns={columns}
+                    title=""
+                    filterOptions={[]}
+                    searchKey="beneficiery_name"
+                />
+            </div>
 
             {isModalOpen && (
                 <div className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-4 z-999999">
@@ -282,6 +390,12 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Vanksetra
                                             </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Taluka
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Village
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
@@ -301,6 +415,12 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {farmer.farmer_record?.split('|')[3]}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {farmersData.taluka.find((data) => data.taluka_id === Number(farmer.taluka_id))?.name || ""}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {farmersData.villages.find((data) => data.village_id === Number(farmer.village_id))?.marathi_name || ""}
                                                 </td>
                                             </tr>
                                         ))}

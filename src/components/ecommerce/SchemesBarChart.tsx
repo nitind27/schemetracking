@@ -250,7 +250,7 @@ const SchemeStatusBarChart = ({
   return (
     <>
       {/* Main Bar Chart */}
-      <div className="w-full mt-5">
+      <div className="w-full mt-3">
         <div className="bg-white p-4 rounded-xl shadow-lg w-full overflow-x-auto">
           <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-4">
             Scheme wise IFR holders
