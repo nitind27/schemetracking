@@ -479,6 +479,8 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                                 color,
                                             };
                                         });
+                                        // Hide villages with 0/0 progress
+                                        villageProgressArr = villageProgressArr.filter(v => v.total > 0);
                                         // Sort by color and percent
                                         villageProgressArr = sortByColorAndPercent(villageProgressArr);
 

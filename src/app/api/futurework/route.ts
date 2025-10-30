@@ -36,12 +36,16 @@ export async function POST(request: Request) {
         const implementing_method = formData.get('implementing_method') as string;
         const work_status = formData.get('work_status') as string;
         const user_id = parseInt(formData.get('user_id') as string, 10);
+        const work_year = formData.get('work_year') as string;
+        const taluka_id = parseInt(formData.get('taluka_id') as string, 10);
+        const gp_id = parseInt(formData.get('gp_id') as string, 10);
+        const village_id = parseInt(formData.get('village_id') as string, 10);
 
         const [result] = await pool.query<ResultSetHeader>(
             `INSERT INTO future_work 
-        (work_name, total_area, department_name, estimated_amount, implementing_method, work_status, user_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [work_name, total_area, department_name, estimated_amount, implementing_method, work_status, user_id]
+        (work_name, total_area, department_name, estimated_amount, implementing_method, work_status, user_id, work_year, taluka_id, gp_id, village_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [work_name, total_area, department_name, estimated_amount, implementing_method, work_status, user_id, work_year, taluka_id, gp_id, village_id]
         );
 
         return NextResponse.json({ error: false, message: 'Inserted successfully', id: result.insertId });
@@ -64,13 +68,17 @@ export async function PUT(request: Request) {
         const implementing_method = formData.get('implementing_method') as string;
         const work_status = formData.get('work_status') as string;
         const user_id = parseInt(formData.get('user_id') as string, 10);
+        const work_year = formData.get('work_year') as string;
+        const taluka_id = parseInt(formData.get('taluka_id') as string, 10);
+        const gp_id = parseInt(formData.get('gp_id') as string, 10);
+        const village_id = parseInt(formData.get('village_id') as string, 10);
         // const status = formData.get('status') as string;
 
         await pool.query<ResultSetHeader>(
             `UPDATE future_work 
        SET work_name = ?, total_area = ?, department_name = ?, 
            estimated_amount = ?, implementing_method = ?, 
-           work_status = ?, user_id = ?
+           work_status = ?, user_id = ?, work_year = ?, taluka_id = ?, gp_id = ?, village_id = ?
        WHERE future_work_id = ?`,
             [
                 work_name,
@@ -80,7 +88,11 @@ export async function PUT(request: Request) {
                 implementing_method,
                 work_status,
                 user_id,
-                future_work_id,
+                future_work_id, 
+                work_year,
+                taluka_id,
+                gp_id,
+                village_id,
             ]
         );
 

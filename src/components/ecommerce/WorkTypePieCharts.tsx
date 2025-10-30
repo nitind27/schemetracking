@@ -18,20 +18,18 @@ const WorkTypePieCharts: React.FC<Props> = ({ serverData, basicVillageData }) =>
   // Add error handling and data validation
   if (!serverData || !Array.isArray(serverData) || serverData.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-[500px] flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <p>No work data available</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-[500px] flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <p>No work data available</p>
-            </div>
+      <>
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-[360px] flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <p>No work data available</p>
           </div>
         </div>
-      </div>
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-[360px] flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <p>No work data available</p>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -96,7 +94,7 @@ const WorkTypePieCharts: React.FC<Props> = ({ serverData, basicVillageData }) =>
     chart: {
       fontFamily: "Outfit, sans-serif",
       type: "donut",
-      height: 300,
+      height: 400,
       toolbar: {
         show: false,
       },
@@ -182,10 +180,9 @@ const WorkTypePieCharts: React.FC<Props> = ({ serverData, basicVillageData }) =>
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 h-[500px]">
-        {/* NRM Donut Chart */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-full flex flex-col">
+    <>
+      {/* NRM Donut Chart */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-[400px] flex flex-col">
           <div className="mb-4 flex-shrink-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
               <h3 className="text-sm sm:text-base font-semibold text-gray-900">NRM Work</h3>
@@ -216,7 +213,7 @@ const WorkTypePieCharts: React.FC<Props> = ({ serverData, basicVillageData }) =>
           </div>
           
           {/* Chart */}
-          <div className="flex-1 flex items-center justify-center min-h-[280px]">
+          <div className="flex-1 flex items-center justify-center">
             <ReactApexChart
               options={{
                 ...chartOptions,
@@ -244,13 +241,13 @@ const WorkTypePieCharts: React.FC<Props> = ({ serverData, basicVillageData }) =>
               }}
               series={nrmSeries}
               type="donut"
-              height={280}
+              height={220}
             />
           </div>
         </div>
 
-        {/* Plantation Donut Chart */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-full flex flex-col">
+      {/* Plantation Donut Chart */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-[400px] flex flex-col">
           <div className="mb-4 flex-shrink-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
               <h3 className="text-sm sm:text-base font-semibold text-gray-900">Plantation Work</h3>
@@ -281,7 +278,7 @@ const WorkTypePieCharts: React.FC<Props> = ({ serverData, basicVillageData }) =>
           </div>
           
           {/* Chart */}
-          <div className="flex-1 flex items-center justify-center min-h-[280px]">
+          <div className="flex-1 flex items-center justify-center">
             <ReactApexChart
               options={{
                 ...chartOptions,
@@ -297,7 +294,7 @@ const WorkTypePieCharts: React.FC<Props> = ({ serverData, basicVillageData }) =>
                         ...chartOptions.plotOptions?.pie?.donut?.labels,
                         total: {
                           ...chartOptions.plotOptions?.pie?.donut?.labels?.total,
-                          label: "Plantation Coverage",
+                          label: "Plantation Work",
                           formatter: function () {
                             return plantationPercentage.toFixed(1) + "%";
                           },
@@ -309,12 +306,11 @@ const WorkTypePieCharts: React.FC<Props> = ({ serverData, basicVillageData }) =>
               }}
               series={plantationSeries}
               type="donut"
-              height={280}
+              height={220}
             />
           </div>
         </div>
-      </div>
-    </div>
+    </>
   );
 };
 

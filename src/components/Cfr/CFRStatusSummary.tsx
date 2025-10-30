@@ -106,7 +106,7 @@ const DonutChart: React.FC<{
                 
                 {/* Center text */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-lg font-bold text-gray-800">{total}</span>
+                    <span className="text-sm font-bold text-gray-800">{yesCount}/{total}</span>
                     <span className="text-xs text-gray-500">एकूण</span>
                 </div>
             </div>

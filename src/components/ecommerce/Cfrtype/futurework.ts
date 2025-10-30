@@ -11,7 +11,11 @@ export interface Futureworktype {
     status: string;
     created_at: string;
     updated_at: string;
-
+    // NEW OPTIONAL FIELDS for dropdowns & proper referencing:
+    taluka_name?: string;
+    gp_name?: string;
+    village_name?: string;
+    query?: string;
 }
 
 
