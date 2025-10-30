@@ -75,6 +75,8 @@ export function Searchtable<T extends object>({
   tabFilter,
   enableColumnSearch = false, // Default to false
   dateRangeFilter, // Add this line
+  title,
+  classname,
 }: Props<T>) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
@@ -347,7 +349,10 @@ export function Searchtable<T extends object>({
   );
 
   return (
-    <div className="p-4 rounded-lg w-full border bg-white">
+    <div className={`p-4 rounded-lg w-full border bg-white ${classname ?? ""}`}>
+      {title ? (
+        <div className="mb-3 text-lg font-semibold">{title}</div>
+      ) : null}
       <DataTable
         columns={reactColumns}
         data={filteredData}

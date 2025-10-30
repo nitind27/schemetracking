@@ -53,7 +53,7 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 		{ key: "taluka_name", label: "Taluka" },
 		{ key: "gp_name", label: "Grampanchayat" },
 		{ key: "village_name", label: "Village" },
-		{ key: "work_name", label: "Work Name" },
+	
 		{ key: "total_area", label: "Total Area" },
 		{ key: "estimated_amount", label: "Estimated Amount" },
 		{ key: "department_name", label: "Department Name" },
@@ -78,7 +78,7 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 	const renderWorkModal = () => (
 		!selectedWork ? null : (
 			<div className="space-y-3">
-				<div className="font-semibold text-blue-800 text-lg mb-3">{selectedWork.work_status}</div>
+				{/* <div className="font-semibold text-blue-800 text-lg mb-3">{selectedWork.work_status}</div> */}
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
 					{modalFields.map(({ key, label, render }) => {
 						const value = render ? render(selectedWork) : selectedWork[key];
@@ -131,13 +131,13 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 			searchable: true, // Enable search for this column
 		},
 
-		{
-			key: "total_area",
-			label: "Total Area",
-			accessor: "total_area",
-			render: (data) => <span>{data.total_area}</span>,
-			searchable: false, // Disable search for this column
-		},
+		// {
+		// 	key: "total_area",
+		// 	label: "Total Area",
+		// 	accessor: "total_area",
+		// 	render: (data) => <span>{data.total_area}</span>,
+		// 	searchable: false, // Disable search for this column
+		// },
 		// {
 		// 	key: "estimated_amount",
 		// 	label: "Estimated Amount",
@@ -243,7 +243,7 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 					data={data}
 					inputfiled={[]}
 					columns={columns}
-					title="Year"
+					title="Work Status"
 					filterOptions={filterOptions}
 					searchKey="work_name"
 					enableColumnSearch={true}
@@ -259,7 +259,7 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 					}}
 				/>
 			</div>
-			<Modal open={!!selectedWork} onClose={() => setSelectedWork(null)} title="Work Name">
+			<Modal open={!!selectedWork} onClose={() => setSelectedWork(null)} title={`Work Name: ${selectedWork?.work_name ?? ''}`}>
 				{renderWorkModal()}
 			</Modal>
 		</div>
