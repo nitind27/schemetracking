@@ -1,0 +1,54 @@
+
+
+
+// app/api/uploadsvillagekml/[filename]/route.ts
+import { NextResponse } from 'next/server';
+import { readFile } from 'fs/promises';
+import path from 'path';
+
+type Params = {
+  params: Promise<{ filename: string }>;
+};
+
+export async function GET(
+  request: Request,
+  { params }: Params
+) {
+  try {
+    // Await the params promise first
+    const resolvedParams = await params;
+
+    // Security: Prevent directory traversal
+    const safeFilename = path.basename(resolvedParams.filename);
+    const filePath = path.join(
+      process.cwd(),
+      'tmp',
+      'uploads',
+      'villagekml',
+      safeFilename
+    );
+
+    // Read file from filesystem
+    const fileBuffer = await readFile(filePath);
+
+    // Determine content type
+    const extension = path.extname(safeFilename).toLowerCase();
+    const contentType = {
+      '.kml': 'application/vnd.google-earth.kml+xml',
+      '.kmz': 'application/vnd.google-earth.kmz'
+    }[extension] || 'application/octet-stream';
+
+    return new NextResponse(new Uint8Array(fileBuffer), {
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=31536000, immutable'
+      }
+    });
+  } catch (error) {
+    console.error('File read error:', error);
+    return NextResponse.json(
+      { error: 'File not found' },
+      { status: 404 }
+    );
+  }
+}
