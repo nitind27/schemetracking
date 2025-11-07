@@ -44,6 +44,9 @@ export async function POST(request: Request) {
         const end_date = formData.get('end_date');
         const worker_number = formData.get('worker_number');
         const user_id = formData.get('user_id');
+        const taluka_id = formData.get('taluka_id');
+        const village_id = formData.get('village_id');
+        const gp_id = formData.get('gp_id');
 
         // File upload
         const file = formData.get('work_photo');
@@ -63,11 +66,11 @@ export async function POST(request: Request) {
             `INSERT INTO works (
                 work_name, total_area, estimated_cost, implementing_method,
                 work_status, work_photo, start_date, end_date,
-                worker_number, user_id, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                worker_number, user_id, status, taluka_id, village_id, gp_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 work_name, total_area, estimated_cost, implementing_method,
-                work_status, photoPath, start_date, end_date, worker_number, user_id, 'Active'
+                work_status, photoPath, start_date, end_date, worker_number, user_id, 'Active', taluka_id, village_id, gp_id
             ]
         );
         return NextResponse.json({ error: false, message: "Work inserted successfully", insertId: result.insertId });

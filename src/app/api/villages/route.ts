@@ -57,7 +57,7 @@ export async function PUT(request: Request) {
 
         // Handle photo upload
         const photoFile = formData.get('photo');
-        if (photoFile && typeof photoFile === 'object' && 'arrayBuffer' in photoFile) {
+        if (photoFile && typeof photoFile === 'object' && 'arrayBuffer' in photoFile && photoFile.name && photoFile.size > 0) {
             const buffer = Buffer.from(await photoFile.arrayBuffer());
             const filename = `${photoFile.name}`;
             const filePath = path.join(villageDir, filename);
@@ -71,9 +71,19 @@ export async function PUT(request: Request) {
 
         // Handle kmlfile upload
         const kmlFile = formData.get('kmlfile');
-        if (kmlFile && typeof kmlFile === 'object' && 'arrayBuffer' in kmlFile) {
-            const buffer = Buffer.from(await kmlFile.arrayBuffer());
+        if (kmlFile && typeof kmlFile === 'object' && 'arrayBuffer' in kmlFile && kmlFile.name && kmlFile.size > 0) {
             const filename = `${kmlFile.name}`;
+            const fileExtension = path.extname(filename).toLowerCase();
+            
+            // Validate KML file extension
+            if (fileExtension !== '.kml') {
+                return NextResponse.json(
+                    { error: true, message: 'Failed: KML file must have .kml extension' },
+                    { status: 400 }
+                );
+            }
+            
+            const buffer = Buffer.from(await kmlFile.arrayBuffer());
             const filePath = path.join(villageKmlDir, filename);
             
             await fs.promises.writeFile(filePath, buffer);
@@ -85,7 +95,7 @@ export async function PUT(request: Request) {
 
         // Handle certificate_img upload
         const certificateFile = formData.get('certificate_img');
-        if (certificateFile && typeof certificateFile === 'object' && 'arrayBuffer' in certificateFile) {
+        if (certificateFile && typeof certificateFile === 'object' && 'arrayBuffer' in certificateFile && certificateFile.name && certificateFile.size > 0) {
             const buffer = Buffer.from(await certificateFile.arrayBuffer());
             const filename = `${certificateFile.name}`;
             const filePath = path.join(villageCertificateDir, filename);
@@ -97,12 +107,13 @@ export async function PUT(request: Request) {
             updateValues.push(certificatePath);
         }
 
-        // Only update if at least one field is provided
+        // If no fields to update, just return success
         if (updateFields.length === 0) {
-            return NextResponse.json(
-                { error: true, message: 'At least one field (photo, kmlfile, or certificate_img) must be provided' },
-                { status: 400 }
-            );
+            return NextResponse.json({
+                error: false,
+                message: 'No fields to update',
+                affectedRows: 0
+            });
         }
 
         // Add village_id to updateValues for WHERE clause
