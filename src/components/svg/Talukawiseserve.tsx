@@ -129,24 +129,70 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
 
     // Export to Excel function for farmer data
     const exportToExcel = (data: Farmer[], villageName: string, talukaName: string, tabType: string) => {
-        const worksheet = XLSX.utils.json_to_sheet(
-            data.map((farmer, index) => ({
+        // Create Excel data with proper sequential numbering starting from 1
+        const excelData = data.map((farmer, index) => {
+            const record = farmer.farmer_record?.split('|') || [];
+            const geoPhotos = farmer.geo_photo ? farmer.geo_photo.split('|').join(', ') : "";
+            const gisData = farmer.gis ? farmer.gis.split('|').join('; ') : "";
+            
+            return {
                 'Sr No': index + 1,
-                'IFR Name': farmer.farmer_record?.split('|')[0] || "",
-                'Contact Number': farmer.farmer_record?.split('|')[6] || "",
-                'Aadhaar Card Number': farmer.farmer_record?.split('|')[5] || "",
+                'IFR Name': record[0] || "",
+                'Adivasi': record[1] || "",
+                'Gat No': record[2] || "",
+                'Vanksetra': record[3] || "",
+                'Nivas Seti': record[4] || "",
+                'Aadhaar Card Number': record[5] || "",
+                'Contact Number': record[6] || "",
+                'Email': record[7] || "",
+                'Kisan ID': record[8] || "",
+                'DOB': record[9] || "",
+                'Gender': record[10] || "",
+                'Compartment Number': record[13] || "",
+                'Schedule J': record[14] || "",
+                'Claim ID': record[15] || "",
+                'Created At': record[16] || "",
+                'Updated At': record[17] || "",
                 'Village': getVillageName(farmer.village_id),
                 'Taluka': getTalukaName(farmer.taluka_id),
-                'Gat No': farmer.farmer_record?.split('|')[2] || "",
-                'Vanksetra': farmer.farmer_record?.split('|')[3] || "",
-                'Adivasi': farmer.farmer_record?.split('|')[1] || "",
-                'Kisan ID': farmer.farmer_record?.split('|')[8] || "",
-                'Gender': farmer.farmer_record?.split('|')[10] || "",
-                'DOB': farmer.farmer_record?.split('|')[9] || "",
                 'Status': farmer.status,
+                'Survey Status': tabType === 'Surveyed' ? 'Surveyed' : 'Yet to be Surveyed',
+                'Update Record': farmer.update_record || "",
+                'Geo Photos': geoPhotos,
+                'GIS Data': gisData,
+            };
+        });
 
-            }))
-        );
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+        // Set column widths for better readability
+        const columnWidths = [
+            { wch: 8 },   // Sr No
+            { wch: 25 },  // IFR Name
+            { wch: 15 },  // Adivasi
+            { wch: 12 },  // Gat No
+            { wch: 15 },  // Vanksetra
+            { wch: 15 },  // Nivas Seti
+            { wch: 20 },  // Aadhaar Card Number
+            { wch: 18 },  // Contact Number
+            { wch: 25 },  // Email
+            { wch: 15 },  // Kisan ID
+            { wch: 12 },  // DOB
+            { wch: 10 },  // Gender
+            { wch: 18 },  // Compartment Number
+            { wch: 15 },  // Schedule J
+            { wch: 15 },  // Claim ID
+            { wch: 20 },  // Created At
+            { wch: 20 },  // Updated At
+            { wch: 20 },  // Village
+            { wch: 20 },  // Taluka
+            { wch: 12 },  // Status
+            { wch: 18 },  // Survey Status
+            { wch: 30 },  // Update Record
+            { wch: 40 },  // Geo Photos
+            { wch: 50 },  // GIS Data
+        ];
+        worksheet['!cols'] = columnWidths;
 
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, `${villageName}_${tabType}`);
@@ -163,20 +209,56 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
         if (!taluka_id) return;
 
         const villages = getVillagesForTaluka(taluka_id);
-        const villageData = villages.map((village) => {
-            const { total, filledCount, percent } = getVillageProgress(village.village_id);
+        
+        // Map to progress info and filter out villages with 0 total (matching UI behavior)
+        let villageProgressArr = villages.map((village) => {
+            const { total, filledCount, percent, color } = getVillageProgress(village.village_id);
             return {
-                'Sr No': villages.indexOf(village) + 1,
+                ...village,
+                total,
+                filledCount,
+                percent,
+                color,
+            };
+        });
+        
+        // Filter out villages with 0 total (matching UI display)
+        villageProgressArr = villageProgressArr.filter(v => v.total > 0);
+        
+        // Sort by color and percent (matching UI sorting)
+        villageProgressArr = sortByColorAndPercent(villageProgressArr);
+        
+        // Create Excel data with proper sequential numbering
+        const villageData = villageProgressArr.map((village, index) => {
+            return {
+                'Sr No': index + 1,
                 'Taluka Name': talukaName,
-                'Village Name': village.name,
-                'Total IFR Holders': total,
-                'Surveyed Count': filledCount,
-                'Yet to be Surveyed': total - filledCount,
-                'Percentage': `${percent}%`,
+                'Village Name': village.marathi_name || village.name,
+                'Village Name (English)': village.name || '',
+                'Total IFR Holders': village.total,
+                'Surveyed Count': village.filledCount,
+                'Yet to be Surveyed': village.total - village.filledCount,
+                'Percentage': `${village.percent}%`,
+                'Status': village.color === 'green' ? 'Good' : village.color === 'orange' ? 'Moderate' : 'Needs Attention',
             };
         });
 
+        // Set column widths for better readability
+        const columnWidths = [
+            { wch: 8 },   // Sr No
+            { wch: 20 },  // Taluka Name
+            { wch: 30 },  // Village Name
+            { wch: 25 },  // Village Name (English)
+            { wch: 18 },  // Total IFR Holders
+            { wch: 18 },  // Surveyed Count
+            { wch: 20 },  // Yet to be Surveyed
+            { wch: 12 },  // Percentage
+            { wch: 20 },  // Status
+        ];
+
         const worksheet = XLSX.utils.json_to_sheet(villageData);
+        worksheet['!cols'] = columnWidths;
+        
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, `${talukaName}_VillageProgress`);
 

@@ -13,6 +13,7 @@ type FilterGroup = {
   options: FilterOption[];
   value?: string;
   onChange?: (value: string) => void;
+  fieldName?: string; // Field name in the data object (e.g., 'taluka_name', 'village_name')
 };
 
 type TabOption = {
@@ -113,9 +114,13 @@ export function Tabviewtable<T extends object>({
     if (filterOptions.length > 0) {
       tempData = tempData.filter((row) => {
         const r = row as Record<string, unknown>;
-        return Object.entries(filters).every(([key, value]) => {
-          if (!value) return true;
-          return String(r[key]) === String(value);
+        return filterOptions.every((group) => {
+          // Use value from filterOptions if provided, otherwise use filters state
+          const filterValue = group.value !== undefined ? group.value : filters[group.label];
+          if (!filterValue) return true;
+          // Use fieldName if provided, otherwise use label
+          const fieldName = group.fieldName || group.label;
+          return String(r[fieldName] ?? "") === String(filterValue);
         });
       });
     }
@@ -174,10 +179,15 @@ export function Tabviewtable<T extends object>({
               <select
                 key={`${group.label}-${index}`}
                 className="border rounded px-3 py-2 min-w-[150px]"
-                value={filters[group.label] || ""}
+                value={group.value !== undefined ? group.value : (filters[group.label] || "")}
                 onChange={(e) => {
-                  group.onChange?.(e.target.value);
-                  handleFilterChange(group.label, e.target.value);
+                  const value = e.target.value;
+                  // Call the custom onChange handler if provided
+                  if (group.onChange) {
+                    group.onChange(value);
+                  }
+                  // Also update internal filters state for backward compatibility
+                  handleFilterChange(group.label, value);
                 }}
               >
                 <option value="">All {group.label}</option>

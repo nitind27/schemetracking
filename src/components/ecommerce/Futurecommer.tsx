@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 import { Column } from "../tables/tabletype";
 
@@ -34,6 +34,12 @@ type SelectOption = { label: string; value: string };
 const Futurecommer: React.FC<Props> = ({ serverData }) => {
     const [data] = useState<Futureworktype[]>(serverData || []);
     const [selectedWork, setSelectedWork] = useState<Futureworktype | null>(null);
+    const [filters, setFilters] = useState<Record<string, string>>({});
+    
+    // Store all available options from API
+    const [allTalukaOptions, setAllTalukaOptions] = useState<SelectOption[]>([]);
+    const [allVillageOptions, setAllVillageOptions] = useState<SelectOption[]>([]);
+    const [allGpOptions, setAllGpOptions] = useState<SelectOption[]>([]);
 
     type ModalField = {
         key: keyof Futureworktype;
@@ -74,11 +80,7 @@ const Futurecommer: React.FC<Props> = ({ serverData }) => {
         )
     );
 
-    // Dropdown options
-    const [talukaOptions, setTalukaOptions] = useState<SelectOption[]>([]);
-    const [villageOptions, setVillageOptions] = useState<SelectOption[]>([]);
-    const [gpOptions, setGpOptions] = useState<SelectOption[]>([]);
-
+    // Fetch all options from API on component mount
     useEffect(() => {
         const base = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -96,21 +98,24 @@ const Futurecommer: React.FC<Props> = ({ serverData }) => {
                     gRes.json(),
                 ]);
 
-                setTalukaOptions(
+                // Set all taluka options
+                setAllTalukaOptions(
                     (Array.isArray(talukas) ? talukas : []).map((t) => ({
                         label: t.name ?? String(t.taluka_name ?? ""),
                         value: t.name ?? String(t.taluka_name ?? ""),
                     }))
                 );
 
-                setVillageOptions(
+                // Set all village options
+                setAllVillageOptions(
                     (Array.isArray(villages) ? villages : []).map((v) => {
                         const name = v.marathi_name ?? v.name ?? "";
                         return { label: String(name), value: String(name) };
                     })
                 );
 
-                setGpOptions(
+                // Set all grampanchayat options
+                setAllGpOptions(
                     (Array.isArray(gps) ? gps : []).map((g) => ({
                         label: g.gpname ?? String(g.gp_name ?? ""),
                         value: g.gpname ?? String(g.gp_name ?? ""),
@@ -123,6 +128,81 @@ const Futurecommer: React.FC<Props> = ({ serverData }) => {
 
         fetchAll();
     }, []);
+
+    // Generate cascading filter options
+    const filterOptions = useMemo(() => {
+        // Show all taluka options
+        const talukaOptions = allTalukaOptions;
+
+        // Filter grampanchayat options based on selected taluka
+        let gpOptions = allGpOptions;
+        if (filters["taluka_name"]) {
+            // Filter GP options based on data - show only GPs that exist in selected taluka's data
+            const gpData = data.filter(item => item.taluka_name === filters["taluka_name"]);
+            const availableGps = Array.from(
+                new Set(gpData.map(item => item.gp_name).filter(Boolean))
+            );
+            gpOptions = allGpOptions.filter(gp => 
+                availableGps.includes(gp.value)
+            );
+        }
+
+        // Filter village options based on selected taluka and grampanchayat
+        let villageOptions = allVillageOptions;
+        if (filters["taluka_name"] || filters["gp_name"]) {
+            let villageData = data;
+            if (filters["taluka_name"]) {
+                villageData = villageData.filter(item => item.taluka_name === filters["taluka_name"]);
+            }
+            if (filters["gp_name"]) {
+                villageData = villageData.filter(item => item.gp_name === filters["gp_name"]);
+            }
+            const availableVillages = Array.from(
+                new Set(villageData.map(item => item.village_name).filter(Boolean))
+            );
+            villageOptions = allVillageOptions.filter(village => 
+                availableVillages.includes(village.value)
+            );
+        }
+
+        return [
+            {
+                label: "Taluka",
+                fieldName: "taluka_name",
+                options: talukaOptions,
+                value: filters["taluka_name"] || "",
+                onChange: (value: string) => {
+                    setFilters({
+                        "taluka_name": value,
+                        "gp_name": "", // Reset grampanchayat when taluka changes
+                        "village_name": "" // Reset village when taluka changes
+                    });
+                }
+            },
+            {
+                label: "Grampanchayat",
+                fieldName: "gp_name",
+                options: gpOptions,
+                value: filters["gp_name"] || "",
+                onChange: (value: string) => {
+                    setFilters(prev => ({
+                        ...prev,
+                        "gp_name": value,
+                        "village_name": "" // Reset village when grampanchayat changes
+                    }));
+                }
+            },
+            {
+                label: "Village",
+                fieldName: "village_name",
+                options: villageOptions,
+                value: filters["village_name"] || "",
+                onChange: (value: string) => {
+                    setFilters(prev => ({ ...prev, "village_name": value }));
+                }
+            }
+        ];
+    }, [data, filters, allTalukaOptions, allVillageOptions, allGpOptions]);
 
     const columns: Column<Futureworktype>[] = [
         {
@@ -158,21 +238,6 @@ const Futurecommer: React.FC<Props> = ({ serverData }) => {
             )
         },
         
-    ];
-
-    const filterOptions = [
-        {
-            label: 'Taluka',
-            options: talukaOptions,
-        },
-        {
-            label: 'Village',
-            options: villageOptions,
-        },
-        {
-            label: 'Grampanchayat',
-            options: gpOptions,
-        },
     ];
 
     return (
