@@ -134,7 +134,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
             const record = farmer.farmer_record?.split('|') || [];
             const geoPhotos = farmer.geo_photo ? farmer.geo_photo.split('|').join(', ') : "";
             const gisData = farmer.gis ? farmer.gis.split('|').join('; ') : "";
-            
+
             return {
                 'Sr No': index + 1,
                 'IFR Name': record[0] || "",
@@ -209,7 +209,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
         if (!taluka_id) return;
 
         const villages = getVillagesForTaluka(taluka_id);
-        
+
         // Map to progress info and filter out villages with 0 total (matching UI behavior)
         let villageProgressArr = villages.map((village) => {
             const { total, filledCount, percent, color } = getVillageProgress(village.village_id);
@@ -221,13 +221,13 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                 color,
             };
         });
-        
+
         // Filter out villages with 0 total (matching UI display)
         villageProgressArr = villageProgressArr.filter(v => v.total > 0);
-        
+
         // Sort by color and percent (matching UI sorting)
         villageProgressArr = sortByColorAndPercent(villageProgressArr);
-        
+
         // Create Excel data with proper sequential numbering
         const villageData = villageProgressArr.map((village, index) => {
             return {
@@ -258,7 +258,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
 
         const worksheet = XLSX.utils.json_to_sheet(villageData);
         worksheet['!cols'] = columnWidths;
-        
+
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, `${talukaName}_VillageProgress`);
 
