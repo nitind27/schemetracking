@@ -57,7 +57,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 			out = Buffer.from(modified, 'utf-8');
 		}
 
-		return new NextResponse(out, {
+		return new NextResponse(new Uint8Array(out), {
 			status: 200,
 			headers: {
 				'Content-Type': 'application/vnd.google-earth.kml+xml; charset=UTF-8',
