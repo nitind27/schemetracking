@@ -45,12 +45,14 @@ export async function POST(request: Request) {
         const taluka_id = parseInt(formData.get('taluka_id') as string, 10);
         const gp_id = parseInt(formData.get('gp_id') as string, 10);
         const village_id = parseInt(formData.get('village_id') as string, 10);
+        const unit = formData.get('unit') as string;
+        const type = formData.get('type') as string;
 
         const [result] = await pool.query<ResultSetHeader>(
             `INSERT INTO future_work 
-        (work_name, total_area, department_name, estimated_amount, implementing_method, work_status, user_id, work_year, taluka_id, gp_id, village_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [work_name, total_area, department_name, estimated_amount, implementing_method, work_status, user_id, work_year, taluka_id, gp_id, village_id]
+        (work_name, total_area, department_name, estimated_amount, implementing_method, work_status, user_id, work_year, taluka_id, gp_id, village_id, unit, type) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [work_name, total_area, department_name, estimated_amount, implementing_method, work_status, user_id, work_year, taluka_id, gp_id, village_id, unit, type]
         );
 
         return NextResponse.json({ error: false, message: 'Inserted successfully', id: result.insertId });
@@ -77,13 +79,16 @@ export async function PUT(request: Request) {
         const taluka_id = parseInt(formData.get('taluka_id') as string, 10);
         const gp_id = parseInt(formData.get('gp_id') as string, 10);
         const village_id = parseInt(formData.get('village_id') as string, 10);
+        const unit = formData.get('unit') as string;
+        const type = formData.get('type') as string;
+
         // const status = formData.get('status') as string;
 
         await pool.query<ResultSetHeader>(
             `UPDATE future_work 
        SET work_name = ?, total_area = ?, department_name = ?, 
            estimated_amount = ?, implementing_method = ?, 
-           work_status = ?, user_id = ?, work_year = ?, taluka_id = ?, gp_id = ?, village_id = ?
+           work_status = ?, user_id = ?, work_year = ?, taluka_id = ?, gp_id = ?, village_id = ?, unit = ?, type = ?
        WHERE future_work_id = ?`,
             [
                 work_name,
@@ -92,12 +97,14 @@ export async function PUT(request: Request) {
                 estimated_amount,
                 implementing_method,
                 work_status,
-                user_id,
-                future_work_id, 
+                user_id, 
                 work_year,
                 taluka_id,
                 gp_id,
                 village_id,
+                unit,
+                type,
+                future_work_id,
             ]
         );
 

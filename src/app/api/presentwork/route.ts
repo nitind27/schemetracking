@@ -1,7 +1,7 @@
 import pool from '@/lib/db';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
 // Get all active work records
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
         const work_name = formData.get('work_name');
         const total_area = formData.get('total_area');
         const estimated_cost = formData.get('estimated_cost');
+        const department_name = formData.get('department_name') as string;
         const implementing_method = formData.get('implementing_method');
         const work_status = formData.get('work_status');
         const start_date = formData.get('start_date');
@@ -47,6 +48,10 @@ export async function POST(request: Request) {
         const taluka_id = formData.get('taluka_id');
         const village_id = formData.get('village_id');
         const gp_id = formData.get('gp_id');
+        const work_year = formData.get('work_year') as string;
+        const unit = formData.get('unit') as string;
+        const type =  formData.get('type') as string;
+
 
         // File upload
         const file = formData.get('work_photo');
@@ -55,22 +60,23 @@ export async function POST(request: Request) {
             const buffer = Buffer.from(await file.arrayBuffer());
 
             const filename = `${file.name}`;
-            const folder = path.join(process.cwd(), 'public', 'uploads', 'presentwork');
+            const folder = path.join(process.cwd(), 'tmp', 'uploads', 'presentwork');
+            await mkdir(folder, { recursive: true });
             const fullPath = path.join(folder, filename);
 
             await writeFile(fullPath, buffer);
-            photoPath = `/uploads/presentwork/${filename}`;
+            photoPath = `${filename}`;
         }
 
         const [result] = await pool.query<ResultSetHeader>(
             `INSERT INTO works (
-                work_name, total_area, estimated_cost, implementing_method,
+                work_name, total_area, estimated_cost, department_name, implementing_method,
                 work_status, work_photo, start_date, end_date,
-                worker_number, user_id, status, taluka_id, village_id, gp_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                worker_number, user_id, status, taluka_id, village_id, gp_id, work_year, unit, type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                work_name, total_area, estimated_cost, implementing_method,
-                work_status, photoPath, start_date, end_date, worker_number, user_id, 'Active', taluka_id, village_id, gp_id
+                work_name, total_area, estimated_cost, department_name, implementing_method,
+                work_status, photoPath, start_date, end_date, worker_number, user_id, 'Active', taluka_id, village_id, gp_id, work_year, unit, type
             ]
         );
         return NextResponse.json({ error: false, message: "Work inserted successfully", insertId: result.insertId });
@@ -94,6 +100,13 @@ export async function PUT(request: Request) {
         const end_date = formData.get('end_date');
         const worker_number = formData.get('worker_number');
         const user_id = formData.get('user_id');
+        const department_name = formData.get('department_name') as string;
+        const work_year = formData.get('work_year') as string;
+        const unit = formData.get('unit') as string;
+        const type =  formData.get('type') as string;
+        const taluka_id = formData.get('taluka_id');
+        const village_id = formData.get('village_id');
+        const gp_id = formData.get('gp_id');
 
         // File upload
         const file = formData.get('work_photo');
@@ -101,22 +114,23 @@ export async function PUT(request: Request) {
         if (file && typeof file === 'object' && 'arrayBuffer' in file) {
             const buffer = Buffer.from(await file.arrayBuffer());
             const filename = `${file.name}`;
-            const folder = path.join(process.cwd(), 'public', 'uploads', 'presentwork');
+            const folder = path.join(process.cwd(), 'tmp', 'uploads', 'presentwork');
+            await mkdir(folder, { recursive: true });
             const fullPath = path.join(folder, filename);
 
             await writeFile(fullPath, buffer);
-            photoPath = `/uploads/presentwork/${filename}`;
+            photoPath = `${filename}`;
         }
 
         const [result] = await pool.query<ResultSetHeader>(
             `UPDATE works SET 
                 work_name = ?, total_area = ?, estimated_cost = ?, implementing_method = ?,
                 work_status = ?, work_photo = ?, start_date = ?, end_date = ?,
-                worker_number = ?, user_id = ?
+                worker_number = ?, user_id = ?, department_name = ?, work_year = ?, unit = ?, type = ?, taluka_id = ?, village_id = ?, gp_id = ?
             WHERE work_id = ?`,
             [
                 work_name, total_area, estimated_cost, implementing_method,
-                work_status, photoPath, start_date, end_date, worker_number, user_id, work_id
+                work_status, photoPath, start_date, end_date, worker_number, user_id, department_name, work_year, unit, type, taluka_id, village_id, gp_id, work_id
             ]
         );
         return NextResponse.json({ error: false, message: "Work updated successfully", affectedRows: result.affectedRows });
