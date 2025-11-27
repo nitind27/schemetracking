@@ -1,10 +1,11 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
 
 import Ifrsmaplocations from '../farmersdata/Ifrsmaplocations';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { UserData } from '../usersdata/Userdata';
 // import Image from 'next/image';
 
 // Type definitions (adjust if your types are different)
@@ -84,7 +85,41 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
     const [selectedFarmer, setSelectedFarmer] = useState<Farmer | null>(null); // NEW
     const [photoOpenIndexes, setPhotoOpenIndexes] = useState<Record<string, boolean>>({}); // <-- NEW
     const [fullImage, setFullImage] = useState<string | null>(null); // <-- NEW
+    const [usersData, setUsersData] = useState<UserData[]>([]);
     const itemsPerPage = 10;
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchUsers = async () => {
+            try {
+                const res = await fetch('/api/users');
+                if (!res.ok) {
+                    throw new Error('Failed to fetch users');
+                }
+                const data: UserData[] = await res.json();
+                if (isMounted) {
+                    setUsersData(data);
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        };
+
+        fetchUsers();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    const usersByTalukaVillage = React.useMemo(() => {
+        return usersData.reduce<Record<string, string[]>>((acc, user) => {
+            const key = `${String(user.taluka_id)}-${String(user.village_id)}`;
+            if (!acc[key]) acc[key] = [];
+            if (user.name) acc[key].push(user.name);
+            return acc;
+        }, {});
+    }, [usersData]);
 
     // Find taluka_id by name
     const getTalukaIdByName = (name: string) => {
@@ -264,6 +299,108 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
 
         // Generate filename
         const fileName = `${talukaName}_Village_Wise_Serve_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+        XLSX.writeFile(workbook, fileName);
+    };
+
+    // Export function matching the image format
+    const exportTalukaDataToExcel = (talukaName: string) => {
+        const taluka_id = getTalukaIdByName(talukaName);
+        if (!taluka_id) return;
+
+        const villages = getVillagesForTaluka(taluka_id);
+
+        // Get current date and previous date (yesterday)
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const formatDate = (date: Date) => {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        };
+
+        const currentDateStr = formatDate(today);
+        const previousDateStr = formatDate(yesterday);
+
+        // Map to progress info and filter out villages with 0 total
+        let villageProgressArr = villages.map((village) => {
+            const { total, filledCount } = getVillageProgress(village.village_id);
+            // Since we don't have historical date tracking in update_record,
+            // we'll show previous date as 0 and current as filledCount
+            // You can enhance this if you have date-based tracking in your database
+            const previousCount = 0; // Previous day count - enhance if you have date tracking
+            const currentCount = filledCount; // Current surveyed count
+            const change = currentCount - previousCount;
+            
+            return {
+                ...village,
+                total,
+                filledCount,
+                previousCount,
+                currentCount,
+                change,
+            };
+        });
+
+        // Filter out villages with 0 total
+        villageProgressArr = villageProgressArr.filter(v => v.total > 0);
+
+        // Sort by color and percent
+        villageProgressArr = sortByColorAndPercent(villageProgressArr.map(v => {
+            const percent = v.total > 0 ? Math.round((v.filledCount / v.total) * 100) : 0;
+            let color: 'red' | 'orange' | 'green' = 'red';
+            if (percent >= 80) color = 'green';
+            else if (percent >= 50) color = 'orange';
+            return { ...v, percent, color };
+        }));
+
+        // Create Excel data matching the image format
+        const excelData = villageProgressArr.map((village, index) => {
+            // Show "Completed" if all households are surveyed, otherwise show the change
+            const changeValue = village.currentCount === village.total 
+                ? 'Completed' 
+                : village.change;
+            
+            const key = `${String(taluka_id)}-${String(village.village_id)}`;
+            const names = usersByTalukaVillage[key] || [];
+            const personConcerned = names.length ? names.join(', ') : 'N/A';
+
+            return {
+                'Sr No': index + 1,
+                'Tah_No': taluka_id,
+                'VILLAGE': village.marathi_name || village.name,
+                'Person Concerned': personConcerned,
+                'TARGET House Holds': village.total,
+                [previousDateStr]: village.previousCount,
+                [currentDateStr]: village.currentCount,
+                'Change since yesterday': changeValue,
+            };
+        });
+
+        // Create worksheet
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+        // Set column widths
+        const columnWidths = [
+            { wch: 8 },   // Sr No
+            { wch: 10 },  // Tah_No
+            { wch: 25 },  // VILLAGE
+            { wch: 25 },  // Person Concerned
+            { wch: 18 },  // TARGET House Holds
+            { wch: 15 },  // Previous Date
+            { wch: 15 },  // Current Date
+            { wch: 20 },  // Change since yesterday
+        ];
+        worksheet['!cols'] = columnWidths;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, `${talukaName}_Data`);
+
+        // Generate filename
+        const fileName = `${talukaName}_Export_${currentDateStr}.xlsx`;
 
         XLSX.writeFile(workbook, fileName);
     };
@@ -468,6 +605,13 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                         Villages
                                     </button>
 
+                                    <button
+                                        type="button"
+                                        className="min-w-[120px] bg-gradient-to-r from-green-500 to-green-600 border border-green-600 text-white hover:opacity-90 focus:ring-2 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+                                        onClick={() => exportTalukaDataToExcel(talukaName)}
+                                    >
+                                        Export
+                                    </button>
 
                                 </div>
                             </div>
