@@ -370,7 +370,6 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
 
             return {
                 'Sr No': index + 1,
-                'Tah_No': taluka_id,
                 'VILLAGE': village.marathi_name || village.name,
                 'Person Concerned': personConcerned,
                 'TARGET House Holds': village.total,
@@ -380,13 +379,20 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
             };
         });
 
-        // Create worksheet
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        // Create worksheet and add heading with taluka details above the table
+        const worksheet = XLSX.utils.aoa_to_sheet([]);
+        const headingRows = [
+            ['Taluka Wise Survey Report'],
+            [`Taluka Name: ${talukaName}`],
+            [`Tahesil Number: ${taluka_id}`],
+            [],
+        ];
+        XLSX.utils.sheet_add_aoa(worksheet, headingRows, { origin: 'A1' });
+        XLSX.utils.sheet_add_json(worksheet, excelData, { origin: 'A5' });
 
         // Set column widths
         const columnWidths = [
             { wch: 8 },   // Sr No
-            { wch: 10 },  // Tah_No
             { wch: 25 },  // VILLAGE
             { wch: 25 },  // Person Concerned
             { wch: 18 },  // TARGET House Holds
@@ -599,7 +605,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                         className={`min-w-[120px] ${colorClassbtn[info.color]} hover:opacity-90 focus:ring-2 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2`}
                                         onClick={() => {
                                             setOpenTaluka(talukaName);
-                                            setVillageSearch(""); // <-- Reset search when opening a new taluka
+                        setVillageSearch(""); // <-- Reset search when opening a new taluka
                                         }}
                                     >
                                         Villages
@@ -607,10 +613,25 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
 
                                     <button
                                         type="button"
-                                        className="min-w-[120px] bg-gradient-to-r from-green-500 to-green-600 border border-green-600 text-white hover:opacity-90 focus:ring-2 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+                                        aria-label="Export taluka data"
+                                        className="p-2 rounded-full border border-green-600 text-green-700 hover:bg-green-50 transition-colors"
                                         onClick={() => exportTalukaDataToExcel(talukaName)}
+                                        title="Download Excel"
                                     >
-                                        Export
+                                        <svg
+                                            className="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12v9m0-9l-3 3m3-3l3 3M12 3v9"
+                                            />
+                                        </svg>
                                     </button>
 
                                 </div>
