@@ -390,10 +390,11 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
 
         // Create Excel data matching the image format
         const excelData = villageProgressArr.map((village, index) => {
-            // Show "Completed" if all households are surveyed, otherwise show the change
+            // Show "Completed" if all households are surveyed; otherwise clamp delta to avoid negatives
+            const changeDelta = Math.max(0, village.change);
             const changeValue = village.currentCount === village.total 
                 ? 'Completed' 
-                : village.change;
+                : changeDelta;
             
             const key = `${String(taluka_id)}-${String(village.village_id)}`;
             const names = usersByTalukaVillage[key] || [];
@@ -402,8 +403,8 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
             return {
                 'Sr No': index + 1,
                 'VILLAGE': village.marathi_name || village.name,
-                'Person Concerned': personConcerned,
-                'TARGET House Holds': village.total,
+                'PESA Mobilizer Concerned': personConcerned,
+                'Target IFR Holders': village.total,
                 [previousDateStrDisplay]: village.previousCount,
                 [currentDateStrDisplay]: village.currentCount,
                 'Change since yesterday': changeValue,
@@ -425,8 +426,8 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
         const columnWidths = [
             { wch: 8 },   // Sr No
             { wch: 25 },  // VILLAGE
-            { wch: 25 },  // Person Concerned
-            { wch: 18 },  // TARGET House Holds
+            { wch: 25 },  // PESA Mobilizer Concerned
+            { wch: 18 },  // Target IFR Holders
             { wch: 15 },  // Previous Date
             { wch: 15 },  // Current Date
             { wch: 20 },  // Change since yesterday
