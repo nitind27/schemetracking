@@ -56,7 +56,7 @@ const Futurecommer: React.FC<Props> = ({ serverData }) => {
         { key: 'department_name', label: 'Department Name' },
         { key: 'implementing_method', label: 'Implementing Method' },
         { key: 'work_status', label: 'Work Status' },
-        { key: 'username', label: 'User ID' },
+        { key: 'username', label: 'User Name' },
         { key: 'user_id', label: 'Internal User ID' },
         { key: 'status', label: 'Status' },
       

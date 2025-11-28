@@ -32,15 +32,14 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 	const [selectedWork, setSelectedWork] = useState<presentworktype | null>(null); // <-- NEW
 	console.log("serverData", data1);
 	function formatDate(dateString: string | undefined | null): string {
-		if (!dateString) return 'उपलब्ध नाही';
+		if (!dateString) return 'N/A';
 		const date = new Date(dateString);
-		if (isNaN(date.getTime())) return 'उपलब्ध नाही';
+		if (isNaN(date.getTime())) return 'N/A';
 		const day = String(date.getDate()).padStart(2, '0');
 		const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
 		const year = date.getFullYear();
 		return `${day}-${month}-${year}`;
 	}
-
 	// Modal content for selected work
 	// Helper for modal field config
 	type ModalField = {
@@ -72,7 +71,7 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 		{ key: "start_date", label: "Work Start Date", render: row => formatDate(row.start_date) },
 		{ key: "end_date", label: "Work End Date", render: row => formatDate(row.end_date) },
 		{ key: "worker_number", label: "Work Number" },
-		{ key: "username", label: "User ID" },
+		{ key: "username", label: "User Name" },
 	];
 
 	const renderWorkModal = () => (
