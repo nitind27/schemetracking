@@ -25,7 +25,6 @@ interface Grampanchayat {
 
 type Props = {
   users: UserData[];
-  datavillage: Village[];
   datataluka: Taluka[];
   datausercategorycrud: UserCategory[];
 };
@@ -42,7 +41,7 @@ type FormErrors = {
   Grampanchayat?: string;
 
 };
-const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Props) => {
+const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
 
   const [data, setData] = useState<UserData[]>(users || []);
   const [usercategory, setUsercategory] = useState(0);
@@ -92,7 +91,7 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
         // Create mapping of village_id to gp_id from basic_village_details
         if (Array.isArray(basicDetailsData)) {
           const mapping: Record<number, number> = {};
-          basicDetailsData.forEach((detail: any) => {
+          basicDetailsData.forEach((detail: { village_id?: number; gp_id?: number }) => {
             if (detail.village_id && detail.gp_id) {
               mapping[Number(detail.village_id)] = Number(detail.gp_id);
             }
@@ -149,7 +148,7 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
     if (Village && villageGpMapping[Village] && !isPESAMobilizer()) {
       setGrampanchayat(villageGpMapping[Village]);
     }
-  }, [Village, villageGpMapping]);
+  }, [Village, villageGpMapping, usercategory, datausercategorycrud]);
 
   const reset = () => {
     setUsercategory(Number(""))
@@ -220,7 +219,19 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
 
     try {
       // Always include village_id, and add gp_id for non-PESA Mobilizer categories
-      const requestBody: any = {
+      const requestBody: {
+        user_id: number | null;
+        name: string;
+        user_category_id: number;
+        username: string;
+        password: string;
+        contact_no: string;
+        address: string;
+        taluka_id: number;
+        village_id: number;
+        gp_id?: number;
+        status: string;
+      } = {
         user_id: editId,
         name: name,
         user_category_id: usercategory,

@@ -175,7 +175,7 @@ export async function PUT(request: Request) {
         'status = ?'
       ].join(', ');
 
-      const params: any[] = [
+      const params: (string | number | null | undefined)[] = [
         name,
         user_category_id,
         username,

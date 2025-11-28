@@ -4,18 +4,12 @@ import Breadcrumbs from '@/components/common/BreadcrumbItem';
 import Usersdatas from '@/components/usersdata/Usersdatas';
 import { UserData } from '@/components/usersdata/Userdata';
 import { Taluka } from '@/components/Taluka/Taluka';
-import { Village } from '@/components/Village/village';
 import { UserCategory } from '@/components/usercategory/userCategory';
 import { Suspense } from 'react';
 import Loader from '@/common/Loader';
 
 const getUsers = async (): Promise<UserData[]> => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, { cache: 'no-store' });
-  return res.json();
-};
-
-const getVillages = async (): Promise<Village[]> => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/villages`, { cache: 'no-store' });
   return res.json();
 };
 
@@ -30,9 +24,8 @@ const getUserCategories = async (): Promise<UserCategory[]> => {
 };
 
 const Page = async () => {
-  const [users, villages, talukas, categories] = await Promise.all([
+  const [users, talukas, categories] = await Promise.all([
     getUsers(),
-    getVillages(),
     getTalukas(),
     getUserCategories()
   ]);
@@ -50,7 +43,6 @@ const Page = async () => {
         <Breadcrumbs title="Users" breadcrumbs={breadcrumbItems} />
         <Usersdatas
           users={users}
-          datavillage={villages}
           datataluka={talukas}
           datausercategorycrud={categories}
         />
