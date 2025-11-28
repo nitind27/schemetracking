@@ -48,6 +48,8 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
   const [villages, setVillages] = useState<Village[]>([]);
   const [grampanchayats, setGrampanchayats] = useState<Grampanchayat[]>([]);
   const [villageGpMapping, setVillageGpMapping] = useState<Record<number, number>>({});
+  const [gpVillageMapping, setGpVillageMapping] = useState<Record<number, number[]>>({});
+  const [talukaGpMapping, setTalukaGpMapping] = useState<Record<number, number[]>>({});
 
   const [name, setName] = useState('');
   const [Contact, setContact] = useState('');
@@ -89,14 +91,45 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
         setGrampanchayats(Array.isArray(grampanchayatsData) ? grampanchayatsData : []);
         
         // Create mapping of village_id to gp_id from basic_village_details
+        // Also create reverse mapping of gp_id to array of village_ids
+        // And create mapping of taluka_id to array of gp_ids
         if (Array.isArray(basicDetailsData)) {
           const mapping: Record<number, number> = {};
-          basicDetailsData.forEach((detail: { village_id?: number; gp_id?: number }) => {
+          const reverseMapping: Record<number, number[]> = {};
+          const talukaGpMap: Record<number, Set<number>> = {};
+          basicDetailsData.forEach((detail: { village_id?: number; gp_id?: number; taluka_id?: number | string }) => {
             if (detail.village_id && detail.gp_id) {
-              mapping[Number(detail.village_id)] = Number(detail.gp_id);
+              const villageId = Number(detail.village_id);
+              const gpId = Number(detail.gp_id);
+              mapping[villageId] = gpId;
+              
+              // Create reverse mapping: gp_id -> array of village_ids
+              if (!reverseMapping[gpId]) {
+                reverseMapping[gpId] = [];
+              }
+              reverseMapping[gpId].push(villageId);
+            }
+            
+            // Create taluka to gp mapping
+            if (detail.taluka_id && detail.gp_id) {
+              const talukaId = Number(detail.taluka_id);
+              const gpId = Number(detail.gp_id);
+              if (!talukaGpMap[talukaId]) {
+                talukaGpMap[talukaId] = new Set();
+              }
+              talukaGpMap[talukaId].add(gpId);
             }
           });
+          
+          // Convert Set to Array for talukaGpMapping
+          const talukaGpMappingFinal: Record<number, number[]> = {};
+          Object.keys(talukaGpMap).forEach(talukaId => {
+            talukaGpMappingFinal[Number(talukaId)] = Array.from(talukaGpMap[Number(talukaId)]);
+          });
+          
           setVillageGpMapping(mapping);
+          setGpVillageMapping(reverseMapping);
+          setTalukaGpMapping(talukaGpMappingFinal);
         }
       } catch (error) {
         console.error('Error fetching villages and grampanchayats:', error);
@@ -135,7 +168,7 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
     }
   }, [usercategory]);
 
-  // Reset village when taluka changes
+  // Reset grampanchayat and village when taluka changes
   useEffect(() => {
     if (Taluka) {
       setVillage(0);
@@ -143,12 +176,19 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
     }
   }, [Taluka]);
 
-  // Auto-select grampanchayat when village is selected
+  // Reset village when grampanchayat changes (only if not in edit mode)
   useEffect(() => {
-    if (Village && villageGpMapping[Village] && !isPESAMobilizer()) {
+    if (Grampanchayat && !isEditMode) {
+      setVillage(0);
+    }
+  }, [Grampanchayat, isEditMode]);
+
+  // Auto-set grampanchayat from village mapping when editing (for backward compatibility)
+  useEffect(() => {
+    if (isEditMode && Village && !Grampanchayat && !isPESAMobilizer() && villageGpMapping[Village]) {
       setGrampanchayat(villageGpMapping[Village]);
     }
-  }, [Village, villageGpMapping, usercategory, datausercategorycrud]);
+  }, [Village, villageGpMapping, isEditMode, Grampanchayat, usercategory, datausercategorycrud]);
 
   const reset = () => {
     setUsercategory(Number(""))
@@ -518,29 +558,6 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
               )}
             </div>
 
-            {/* Village field - Always visible */}
-            <div>
-              <Label>Village</Label>
-              <select name="" id="" className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Village ? "border-red-500" : ""
-                }`}
-                value={Village}
-                onChange={(e) => setVillage(Number(e.target.value))}
-                disabled={!Taluka}
-              >
-                <option value="">{Taluka ? "Select Village" : "Select Taluka first"}</option>
-                {Taluka && villages.filter((data) => data.taluka_id == Taluka.toString()).map((village) => (
-                  <option key={village.village_id} value={village.village_id}>
-                    {village.name || village.marathi_name}
-                  </option>
-                ))}
-              </select>
-              {error && (
-                <div className="text-red-500 text-sm mt-1 pl-1">
-                  {error.Village}
-                </div>
-              )}
-            </div>
-
             {/* Grampanchayat field - Hide only for PESA Mobilizer */}
             {!isPESAMobilizer() && (
               <div>
@@ -549,24 +566,19 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
                   }`}
                   value={Grampanchayat}
                   onChange={(e) => setGrampanchayat(Number(e.target.value))}
-                  disabled={!Taluka || !Village}
+                  disabled={!Taluka}
                 >
                   <option value="">
-                    {!Taluka ? "Select Taluka first" : !Village ? "Select Village first" : "Select Grampanchayat"}
+                    {!Taluka ? "Select Taluka first" : "Select Grampanchayat"}
                   </option>
-                  {Taluka && Village && (() => {
-                    // Get gp_id for selected village
-                    const villageGpId = villageGpMapping[Village];
-                    // Filter grampanchayats - show the one matching the village's gp_id, or all if no mapping
-                    const filteredGps = villageGpId 
-                      ? grampanchayats.filter(gp => gp.gp_id === villageGpId)
-                      : grampanchayats.filter((gp) => {
-                          // If grampanchayat has taluka_id, filter by it
-                          if (gp.taluka_id !== undefined && gp.taluka_id !== null) {
-                            return gp.taluka_id === Taluka;
-                          }
-                          return true;
-                        });
+                  {Taluka && (() => {
+                    // Get gp_ids for the selected taluka from the mapping
+                    const gpIdsForTaluka = talukaGpMapping[Taluka] || [];
+                    
+                    // Filter grampanchayats that belong to this taluka
+                    const filteredGps = grampanchayats.filter((gp) => 
+                      gpIdsForTaluka.includes(gp.gp_id)
+                    );
                     
                     return filteredGps.map((gp) => (
                       <option key={gp.gp_id} value={gp.gp_id}>
@@ -582,6 +594,48 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
                 )}
               </div>
             )}
+
+            {/* Village field - Always visible */}
+            <div>
+              <Label>Village</Label>
+              <select name="" id="" className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Village ? "border-red-500" : ""
+                }`}
+                value={Village}
+                onChange={(e) => setVillage(Number(e.target.value))}
+                disabled={!Taluka || (!isPESAMobilizer() && !Grampanchayat)}
+              >
+                <option value="">
+                  {!Taluka ? "Select Taluka first" : !isPESAMobilizer() && !Grampanchayat ? "Select Grampanchayat first" : "Select Village"}
+                </option>
+                {Taluka && (() => {
+                  // For PESA Mobilizer: show villages filtered by taluka
+                  // For others: show villages filtered by grampanchayat
+                  let filteredVillages: Village[] = [];
+                  
+                  if (isPESAMobilizer()) {
+                    // Filter villages by taluka_id
+                    filteredVillages = villages.filter((v) => v.taluka_id === Taluka.toString());
+                  } else if (Grampanchayat) {
+                    // Filter villages by grampanchayat using the reverse mapping
+                    const villageIds = gpVillageMapping[Grampanchayat] || [];
+                    filteredVillages = villages.filter((v) => 
+                      villageIds.includes(v.village_id) && v.taluka_id === Taluka.toString()
+                    );
+                  }
+                  
+                  return filteredVillages.map((village) => (
+                    <option key={village.village_id} value={village.village_id}>
+                      {village.name || village.marathi_name}
+                    </option>
+                  ));
+                })()}
+              </select>
+              {error && (
+                <div className="text-red-500 text-sm mt-1 pl-1">
+                  {error.Village}
+                </div>
+              )}
+            </div>
 
           </div>
         }
