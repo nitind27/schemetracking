@@ -17,6 +17,12 @@ import { Village } from '../Village/village';
 import DefaultModal from '../example/ModalExample/DefaultModal';
 import { FaEdit } from 'react-icons/fa';
 
+interface Grampanchayat {
+  gp_id: number;
+  gpname: string;
+  taluka_id?: number;
+}
+
 type Props = {
   users: UserData[];
   datavillage: Village[];
@@ -33,12 +39,16 @@ type FormErrors = {
   address?: string;
   Taluka?: string;
   Village?: string;
+  Grampanchayat?: string;
 
 };
 const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Props) => {
 
   const [data, setData] = useState<UserData[]>(users || []);
   const [usercategory, setUsercategory] = useState(0);
+  const [villages, setVillages] = useState<Village[]>([]);
+  const [grampanchayats, setGrampanchayats] = useState<Grampanchayat[]>([]);
+  const [villageGpMapping, setVillageGpMapping] = useState<Record<number, number>>({});
 
   const [name, setName] = useState('');
   const [Contact, setContact] = useState('');
@@ -47,10 +57,55 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
   const [address, setaddress] = useState('');
   const [Taluka, setTaluka] = useState(0);
   const [Village, setVillage] = useState(0);
+  const [Grampanchayat, setGrampanchayat] = useState(0);
   const [editId, setEditId] = useState<number | null>(null);
   const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen, isvalidation, setisvalidation } = useToggleContext();
   const [loading, setLoading] = useState(false);
   const [error, setErrors] = useState<FormErrors>({});
+
+  // Check if selected category is "PESA Mobilizer"
+  const isPESAMobilizer = () => {
+    const selectedCategory = datausercategorycrud.find(cat => cat.user_category_id === usercategory);
+    return selectedCategory?.category_name?.toLowerCase() === 'pesa mobilizer';
+  };
+
+  // Fetch villages, grampanchayats and village-gp mapping from API
+  useEffect(() => {
+    const fetchVillagesAndGrampanchayats = async () => {
+      try {
+        const base = process.env.NEXT_PUBLIC_API_URL || '';
+        const [villagesRes, grampanchayatsRes, basicDetailsRes] = await Promise.all([
+          fetch(`${base}/api/villages`, { cache: 'no-store' }),
+          fetch(`${base}/api/grampanchyat`, { cache: 'no-store' }),
+          fetch(`${base}/api/basicdetailsofvillage`, { cache: 'no-store' })
+        ]);
+        
+        const [villagesData, grampanchayatsData, basicDetailsData] = await Promise.all([
+          villagesRes.json(),
+          grampanchayatsRes.json(),
+          basicDetailsRes.json()
+        ]);
+        
+        setVillages(Array.isArray(villagesData) ? villagesData : []);
+        setGrampanchayats(Array.isArray(grampanchayatsData) ? grampanchayatsData : []);
+        
+        // Create mapping of village_id to gp_id from basic_village_details
+        if (Array.isArray(basicDetailsData)) {
+          const mapping: Record<number, number> = {};
+          basicDetailsData.forEach((detail: any) => {
+            if (detail.village_id && detail.gp_id) {
+              mapping[Number(detail.village_id)] = Number(detail.gp_id);
+            }
+          });
+          setVillageGpMapping(mapping);
+        }
+      } catch (error) {
+        console.error('Error fetching villages and grampanchayats:', error);
+      }
+    };
+    
+    fetchVillagesAndGrampanchayats();
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -73,6 +128,29 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
     }
   }, [isvalidation])
 
+  // Reset village/grampanchayat when category changes
+  useEffect(() => {
+    if (usercategory) {
+      setVillage(0);
+      setGrampanchayat(0);
+    }
+  }, [usercategory]);
+
+  // Reset village when taluka changes
+  useEffect(() => {
+    if (Taluka) {
+      setVillage(0);
+      setGrampanchayat(0);
+    }
+  }, [Taluka]);
+
+  // Auto-select grampanchayat when village is selected
+  useEffect(() => {
+    if (Village && villageGpMapping[Village] && !isPESAMobilizer()) {
+      setGrampanchayat(villageGpMapping[Village]);
+    }
+  }, [Village, villageGpMapping]);
+
   const reset = () => {
     setUsercategory(Number(""))
 
@@ -83,6 +161,7 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
     setaddress("")
     setTaluka(Number(""))
     setVillage(Number(""))
+    setGrampanchayat(Number(""))
     setEditId(0);
   }
 
@@ -119,10 +198,16 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
     if (!Taluka) {
       newErrors.Taluka = "Taluka is required";
     }
+    
+    // Village is always required
     if (!Village) {
       newErrors.Village = "Village is required";
     }
-
+    
+    // Grampanchayat is required only for non-PESA Mobilizer categories
+    if (!isPESAMobilizer() && !Grampanchayat) {
+      newErrors.Grampanchayat = "Grampanchayat is required";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -134,22 +219,29 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
     const method = isEditMode ? 'PUT' : 'POST';
 
     try {
+      // Always include village_id, and add gp_id for non-PESA Mobilizer categories
+      const requestBody: any = {
+        user_id: editId,
+        name: name,
+        user_category_id: usercategory,
+        username: Username,
+        password: Password,
+        contact_no: Contact,
+        address: address,
+        taluka_id: Taluka,
+        village_id: Village,
+        status: "Active"
+      };
+
+      // Add gp_id for non-PESA Mobilizer categories
+      if (!isPESAMobilizer() && Grampanchayat) {
+        requestBody.gp_id = Grampanchayat;
+      }
+
       const response = await fetch(apiUrl, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: editId,
-          name: name,
-          user_category_id: usercategory,
-          username: Username,
-          password: Password,
-          contact_no: Contact,
-          address: address,
-          taluka_id: Taluka,
-          village_id: Village,
-          status: "Active"
-
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -190,7 +282,8 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
     setPassword(item.password)
     setaddress(item.address)
     setTaluka(item.taluka_id)
-    setVillage(item.village_id)
+    setVillage(item.village_id || 0)
+    setGrampanchayat(item.gp_id || 0)
   };
 
   const columns: Column<UserData>[] = [
@@ -414,17 +507,19 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
               )}
             </div>
 
+            {/* Village field - Always visible */}
             <div>
               <Label>Village</Label>
               <select name="" id="" className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Village ? "border-red-500" : ""
                 }`}
                 value={Village}
                 onChange={(e) => setVillage(Number(e.target.value))}
+                disabled={!Taluka}
               >
-                <option value="">Village</option>
-                {datavillage.filter((data) => data.taluka_id == Taluka.toString()).map((category) => (
-                  <option key={category.village_id} value={category.village_id}>
-                    {category.name}
+                <option value="">{Taluka ? "Select Village" : "Select Taluka first"}</option>
+                {Taluka && villages.filter((data) => data.taluka_id == Taluka.toString()).map((village) => (
+                  <option key={village.village_id} value={village.village_id}>
+                    {village.name || village.marathi_name}
                   </option>
                 ))}
               </select>
@@ -434,6 +529,48 @@ const Usersdatas = ({ users, datavillage, datataluka, datausercategorycrud }: Pr
                 </div>
               )}
             </div>
+
+            {/* Grampanchayat field - Hide only for PESA Mobilizer */}
+            {!isPESAMobilizer() && (
+              <div>
+                <Label>Grampanchayat</Label>
+                <select name="" id="" className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Grampanchayat ? "border-red-500" : ""
+                  }`}
+                  value={Grampanchayat}
+                  onChange={(e) => setGrampanchayat(Number(e.target.value))}
+                  disabled={!Taluka || !Village}
+                >
+                  <option value="">
+                    {!Taluka ? "Select Taluka first" : !Village ? "Select Village first" : "Select Grampanchayat"}
+                  </option>
+                  {Taluka && Village && (() => {
+                    // Get gp_id for selected village
+                    const villageGpId = villageGpMapping[Village];
+                    // Filter grampanchayats - show the one matching the village's gp_id, or all if no mapping
+                    const filteredGps = villageGpId 
+                      ? grampanchayats.filter(gp => gp.gp_id === villageGpId)
+                      : grampanchayats.filter((gp) => {
+                          // If grampanchayat has taluka_id, filter by it
+                          if (gp.taluka_id !== undefined && gp.taluka_id !== null) {
+                            return gp.taluka_id === Taluka;
+                          }
+                          return true;
+                        });
+                    
+                    return filteredGps.map((gp) => (
+                      <option key={gp.gp_id} value={gp.gp_id}>
+                        {gp.gpname}
+                      </option>
+                    ));
+                  })()}
+                </select>
+                {error && (
+                  <div className="text-red-500 text-sm mt-1 pl-1">
+                    {error.Grampanchayat}
+                  </div>
+                )}
+              </div>
+            )}
 
           </div>
         }

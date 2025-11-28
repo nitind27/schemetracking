@@ -14,6 +14,7 @@ interface User {
   address?: string | null;
   taluka_id?: number | null;
   village_id?: number | null;
+  gp_id?: number | null;
   status?: string | null;
 }
 
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
       address,
       taluka_id,
       village_id,
+      gp_id,
       status
     } = await request.json();
 
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
 
     // Database operation
     try {
+      // Include gp_id if provided, otherwise use null
       const [result] = await pool.query<ResultSetHeader>(
         `INSERT INTO users (
           name,
@@ -51,19 +54,33 @@ export async function POST(request: Request) {
           address,
           taluka_id,
           village_id,
+          ${gp_id !== undefined ? 'gp_id,' : ''}
           status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          name,
-          user_category_id,
-          username,
-          password,
-          contact_no,
-          address,
-          taluka_id,
-          village_id,
-          status
-        ]
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ${gp_id !== undefined ? '?, ' : ''}?)`,
+        gp_id !== undefined
+          ? [
+              name,
+              user_category_id,
+              username,
+              password,
+              contact_no,
+              address,
+              taluka_id,
+              village_id,
+              gp_id,
+              status
+            ]
+          : [
+              name,
+              user_category_id,
+              username,
+              password,
+              contact_no,
+              address,
+              taluka_id,
+              village_id,
+              status
+            ]
       );
 
       const insertId = result.insertId;
@@ -131,6 +148,7 @@ export async function PUT(request: Request) {
       address,
       taluka_id,
       village_id,
+      gp_id,
       status
     } = await request.json();
 
@@ -143,30 +161,37 @@ export async function PUT(request: Request) {
     }
 
     try {
+      // Include gp_id in update if provided
+      const updateFields = [
+        'name = ?',
+        'user_category_id = ?',
+        'username = ?',
+        'password = ?',
+        'contact_no = ?',
+        'address = ?',
+        'taluka_id = ?',
+        'village_id = ?',
+        ...(gp_id !== undefined ? ['gp_id = ?'] : []),
+        'status = ?'
+      ].join(', ');
+
+      const params: any[] = [
+        name,
+        user_category_id,
+        username,
+        password,
+        contact_no,
+        address,
+        taluka_id,
+        village_id,
+        ...(gp_id !== undefined ? [gp_id] : []),
+        status,
+        user_id
+      ];
+
       const [result] = await pool.query<ResultSetHeader>(
-        `UPDATE users SET
-          name = ?,
-          user_category_id = ?,
-          username = ?,
-          password = ?,
-          contact_no = ?,
-          address = ?,
-          taluka_id = ?,
-          village_id = ?,
-          status = ?
-        WHERE user_id = ?`,
-        [
-          name,
-          user_category_id,
-          username,
-          password,
-          contact_no,
-          address,
-          taluka_id,
-          village_id,
-          status,
-          user_id
-        ]
+        `UPDATE users SET ${updateFields} WHERE user_id = ?`,
+        params
       );
 
       if (result.affectedRows === 0) {

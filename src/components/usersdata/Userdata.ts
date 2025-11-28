@@ -10,6 +10,8 @@ export interface UserData {
     taluka_name: string;
     village_id: number;
     village_name: string;
+    gp_id?: number;
+    grampanchayat_name?: string;
     user_category_name: string;
     status: string;
   }

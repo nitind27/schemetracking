@@ -28,7 +28,8 @@ export async function GET() {
         users.*,
         user_category.category_name AS user_category_name,
         taluka.name AS taluka_name,
-        village.name AS village_name
+        village.name AS village_name,
+        grampanchyat.gpname AS grampanchayat_name
       FROM users
       LEFT JOIN user_category 
         ON users.user_category_id = user_category.user_category_id
@@ -36,6 +37,8 @@ export async function GET() {
         ON users.taluka_id = taluka.taluka_id
       LEFT JOIN village 
         ON users.village_id = village.village_id
+      LEFT JOIN grampanchyat
+        ON users.gp_id = grampanchyat.gp_id
     `);
 
     // Type-safe mapping

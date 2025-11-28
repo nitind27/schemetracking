@@ -303,6 +303,24 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
         XLSX.writeFile(workbook, fileName);
     };
 
+    // Helper function to count farmers by date from update_record
+    const countFarmersByDate = (village_id: string | number, targetDateStr: string) => {
+        const villageFarmers = farmers.filter(
+            (f) => String(f.village_id) === String(village_id)
+        );
+        
+        return villageFarmers.filter(farmer => {
+            if (!farmer.update_record) return false;
+            
+            // Split the update_record by pipe and check each segment
+            return farmer.update_record.split('|').some(segment => {
+                // Extract the date part from each segment (format: something/yyyy-MM-dd)
+                const datePart = segment.split('/')[1];
+                return datePart === targetDateStr;
+            });
+        }).length;
+    };
+
     // Export function matching the image format
     const exportTalukaDataToExcel = (talukaName: string) => {
         const taluka_id = getTalukaIdByName(talukaName);
@@ -315,24 +333,37 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
 
-        const formatDate = (date: Date) => {
+        // Format for display (dd-MM-yyyy)
+        const formatDateDisplay = (date: Date) => {
             const day = String(date.getDate()).padStart(2, '0');
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const year = date.getFullYear();
             return `${day}-${month}-${year}`;
         };
 
-        const currentDateStr = formatDate(today);
-        const previousDateStr = formatDate(yesterday);
+        // Format for database comparison (yyyy-MM-dd)
+        const formatDateDB = (date: Date) => {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${year}-${month}-${day}`;
+        };
+
+        const currentDateStrDisplay = formatDateDisplay(today);
+        const previousDateStrDisplay = formatDateDisplay(yesterday);
+        const currentDateStrDB = formatDateDB(today);
+        const previousDateStrDB = formatDateDB(yesterday);
 
         // Map to progress info and filter out villages with 0 total
         let villageProgressArr = villages.map((village) => {
             const { total, filledCount } = getVillageProgress(village.village_id);
-            // Since we don't have historical date tracking in update_record,
-            // we'll show previous date as 0 and current as filledCount
-            // You can enhance this if you have date-based tracking in your database
-            const previousCount = 0; // Previous day count - enhance if you have date tracking
-            const currentCount = filledCount; // Current surveyed count
+            
+            // Count farmers updated on previous date (yesterday)
+            const previousCount = countFarmersByDate(village.village_id, previousDateStrDB);
+            
+            // Count farmers updated on current date (today)
+            const currentCount = countFarmersByDate(village.village_id, currentDateStrDB);
+            
             const change = currentCount - previousCount;
             
             return {
@@ -373,8 +404,8 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                 'VILLAGE': village.marathi_name || village.name,
                 'Person Concerned': personConcerned,
                 'TARGET House Holds': village.total,
-                [previousDateStr]: village.previousCount,
-                [currentDateStr]: village.currentCount,
+                [previousDateStrDisplay]: village.previousCount,
+                [currentDateStrDisplay]: village.currentCount,
                 'Change since yesterday': changeValue,
             };
         });
@@ -406,7 +437,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
         XLSX.utils.book_append_sheet(workbook, worksheet, `${talukaName}_Data`);
 
         // Generate filename
-        const fileName = `${talukaName}_Export_${currentDateStr}.xlsx`;
+        const fileName = `${talukaName}_Export_${currentDateStrDisplay}.xlsx`;
 
         XLSX.writeFile(workbook, fileName);
     };
