@@ -665,16 +665,12 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                             />
                                         </svg>
                                     </button>
-
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 ))}
             </div>
-
-
             {/* Modal */}
             {openTaluka && (
                 <div className="fixed inset-0 bg-[#0303033f] bg-opacity-50 z-9999 flex items-center justify-center ">

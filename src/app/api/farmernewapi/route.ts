@@ -35,6 +35,7 @@ export async function POST(request: Request) {
     const files4 = formData.getAll('files4') as File[];
     const files5 = formData.getAll('files5') as File[];
     const files6 = formData.getAll('files6') as File[];
+    const files7 = formData.getAll('files7') as File[];
 
     // const updatableFields = [
     //     'name', 'adivasi', 'village_id', 'taluka_id', 'gat_no',
@@ -57,10 +58,11 @@ export async function POST(request: Request) {
         const profileDocDir = path.join(tmpBasePath, 'uploadsprofile');
         const geophotoDir = path.join(tmpBasePath, 'geophotos');
         const audioDir = path.join(tmpBasePath, 'audio');
+        const activityLogsDir = path.join(tmpBasePath, 'activitylogs');
 
 
 
-        for (const dir of [farmerDocDir, schemeDocDir, aadhaarDocDir, profileDocDir, geophotoDir, audioDir]) {
+        for (const dir of [farmerDocDir, schemeDocDir, aadhaarDocDir, profileDocDir, geophotoDir, audioDir, activityLogsDir]) {
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
             }
@@ -138,6 +140,30 @@ export async function POST(request: Request) {
             newAudioNames.push(safeFileName);
         }
 
+        // Handle files7 - single file upload to activitylogs directory (not saved to database)
+        let activityLogFileName: string | null = null;
+        if (files7 && files7.length > 0 && files7[0]) {
+            const file = files7[0];
+            
+            // Validate file type (allow xlsx, xls, csv, and other common formats)
+            const allowedExtensions = ['.xlsx', '.xls', '.csv', '.pdf', '.doc', '.docx', '.txt', '.json'];
+            const fileExtension = path.extname(file.name).toLowerCase();
+            
+            if (!allowedExtensions.includes(fileExtension)) {
+                console.warn(`File extension ${fileExtension} not allowed for activity logs. Allowed: ${allowedExtensions.join(', ')}`);
+            }
+            
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const originalFileName = file.name;
+
+            // Sanitize filename to prevent directory traversal (keep original name but ensure it's safe)
+            const safeFileName = path.basename(originalFileName);
+            const filePath = path.join(activityLogsDir, safeFileName);
+
+            await fs.promises.writeFile(filePath, buffer);
+            activityLogFileName = safeFileName;
+        }
+
         connection = await pool.getConnection();
 
         const updateFields: string[] = [];
@@ -166,6 +192,7 @@ export async function POST(request: Request) {
             uploadedProfileDocs: newProfileDocNames,
             geophotos1: geophotos,
             uploadedAudio: newAudioNames,
+            uploadedActivityLog: activityLogFileName,
     });
 
     } catch (error) {
