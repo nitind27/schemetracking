@@ -50,6 +50,8 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
   const [villageGpMapping, setVillageGpMapping] = useState<Record<number, number>>({});
   const [gpVillageMapping, setGpVillageMapping] = useState<Record<number, number[]>>({});
   const [talukaGpMapping, setTalukaGpMapping] = useState<Record<number, number[]>>({});
+  const [availableTalukaIds, setAvailableTalukaIds] = useState<number[]>([]);
+  const [talukaVillageMapping, setTalukaVillageMapping] = useState<Record<number, number[]>>({});
 
   const [name, setName] = useState('');
   const [Contact, setContact] = useState('');
@@ -93,10 +95,14 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
         // Create mapping of village_id to gp_id from basic_village_details
         // Also create reverse mapping of gp_id to array of village_ids
         // And create mapping of taluka_id to array of gp_ids
+        // And track available taluka_ids and taluka to village mapping
         if (Array.isArray(basicDetailsData)) {
           const mapping: Record<number, number> = {};
           const reverseMapping: Record<number, number[]> = {};
           const talukaGpMap: Record<number, Set<number>> = {};
+          const talukaSet: Set<number> = new Set();
+          const talukaVillageMap: Record<number, Set<number>> = {};
+          
           basicDetailsData.forEach((detail: { village_id?: number; gp_id?: number; taluka_id?: number | string }) => {
             if (detail.village_id && detail.gp_id) {
               const villageId = Number(detail.village_id);
@@ -110,14 +116,28 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
               reverseMapping[gpId].push(villageId);
             }
             
-            // Create taluka to gp mapping
+            // Create taluka to gp mapping and track available talukas
             if (detail.taluka_id && detail.gp_id) {
               const talukaId = Number(detail.taluka_id);
               const gpId = Number(detail.gp_id);
+              talukaSet.add(talukaId);
+              
               if (!talukaGpMap[talukaId]) {
                 talukaGpMap[talukaId] = new Set();
               }
               talukaGpMap[talukaId].add(gpId);
+            }
+            
+            // Create taluka to village mapping for PESA Mobilizer
+            if (detail.taluka_id && detail.village_id) {
+              const talukaId = Number(detail.taluka_id);
+              const villageId = Number(detail.village_id);
+              talukaSet.add(talukaId);
+              
+              if (!talukaVillageMap[talukaId]) {
+                talukaVillageMap[talukaId] = new Set();
+              }
+              talukaVillageMap[talukaId].add(villageId);
             }
           });
           
@@ -127,9 +147,17 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
             talukaGpMappingFinal[Number(talukaId)] = Array.from(talukaGpMap[Number(talukaId)]);
           });
           
+          // Convert Set to Array for talukaVillageMapping
+          const talukaVillageMappingFinal: Record<number, number[]> = {};
+          Object.keys(talukaVillageMap).forEach(talukaId => {
+            talukaVillageMappingFinal[Number(talukaId)] = Array.from(talukaVillageMap[Number(talukaId)]);
+          });
+          
           setVillageGpMapping(mapping);
           setGpVillageMapping(reverseMapping);
           setTalukaGpMapping(talukaGpMappingFinal);
+          setAvailableTalukaIds(Array.from(talukaSet));
+          setTalukaVillageMapping(talukaVillageMappingFinal);
         }
       } catch (error) {
         console.error('Error fetching villages and grampanchayats:', error);
@@ -544,11 +572,13 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
               >
                 <option value="">Taluka</option>
 
-                {datataluka.map((category) => (
-                  <option key={category.taluka_id} value={category.taluka_id}>
-                    {category.name}
-                  </option>
-                ))}
+                {datataluka
+                  .filter((taluka) => availableTalukaIds.includes(taluka.taluka_id))
+                  .map((category) => (
+                    <option key={category.taluka_id} value={category.taluka_id}>
+                      {category.name}
+                    </option>
+                  ))}
 
               </select>
               {error && (
@@ -569,7 +599,7 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
                   disabled={!Taluka}
                 >
                   <option value="">
-                    {!Taluka ? "Select Taluka first" : "Select Grampanchayat"}
+                    {!Taluka ? "Select Grampanchayat" : "Select Grampanchayat"}
                   </option>
                   {Taluka && (() => {
                     // Get gp_ids for the selected taluka from the mapping
@@ -605,21 +635,24 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
                 disabled={!Taluka || (!isPESAMobilizer() && !Grampanchayat)}
               >
                 <option value="">
-                  {!Taluka ? "Select Taluka first" : !isPESAMobilizer() && !Grampanchayat ? "Select Grampanchayat first" : "Select Village"}
+                  {!Taluka ? "Select Village" : !isPESAMobilizer() && !Grampanchayat ? "Select Village" : "Select Village"}
                 </option>
                 {Taluka && (() => {
-                  // For PESA Mobilizer: show villages filtered by taluka
-                  // For others: show villages filtered by grampanchayat
+                  // For PESA Mobilizer: show villages filtered by taluka from basicdetailsofvillage mapping
+                  // For others: show villages filtered by grampanchayat from basicdetailsofvillage mapping
                   let filteredVillages: Village[] = [];
                   
                   if (isPESAMobilizer()) {
-                    // Filter villages by taluka_id
-                    filteredVillages = villages.filter((v) => v.taluka_id === Taluka.toString());
+                    // Filter villages by taluka using talukaVillageMapping (from basicdetailsofvillage)
+                    const villageIdsForTaluka = talukaVillageMapping[Taluka] || [];
+                    filteredVillages = villages.filter((v) => 
+                      villageIdsForTaluka.includes(v.village_id)
+                    );
                   } else if (Grampanchayat) {
-                    // Filter villages by grampanchayat using the reverse mapping
+                    // Filter villages by grampanchayat using the gpVillageMapping (from basicdetailsofvillage)
                     const villageIds = gpVillageMapping[Grampanchayat] || [];
                     filteredVillages = villages.filter((v) => 
-                      villageIds.includes(v.village_id) && v.taluka_id === Taluka.toString()
+                      villageIds.includes(v.village_id)
                     );
                   }
                   
