@@ -1,6 +1,3 @@
-
-
-
 // app/api/uploadsvillagekml/[filename]/route.ts
 import { NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
@@ -41,6 +38,10 @@ export async function GET(
     return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': contentType,
+        'Content-Disposition': `inline; filename="${safeFilename}"`,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Range',
         'Cache-Control': 'public, max-age=31536000, immutable'
       }
     });
@@ -48,7 +49,19 @@ export async function GET(
     console.error('File read error:', error);
     return NextResponse.json(
       { error: 'File not found' },
-      { status: 404 }
+      { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Range',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
 }
