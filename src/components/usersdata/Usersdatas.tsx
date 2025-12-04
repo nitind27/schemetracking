@@ -51,7 +51,7 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
   const [gpVillageMapping, setGpVillageMapping] = useState<Record<number, number[]>>({});
   const [talukaGpMapping, setTalukaGpMapping] = useState<Record<number, number[]>>({});
   const [availableTalukaIds, setAvailableTalukaIds] = useState<number[]>([]);
-  const [talukaVillageMapping, setTalukaVillageMapping] = useState<Record<number, number[]>>({});
+  // const [talukaVillageMapping, setTalukaVillageMapping] = useState<Record<number, number[]>>({});
 
   const [name, setName] = useState('');
   const [Contact, setContact] = useState('');
@@ -157,7 +157,7 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
           setGpVillageMapping(reverseMapping);
           setTalukaGpMapping(talukaGpMappingFinal);
           setAvailableTalukaIds(Array.from(talukaSet));
-          setTalukaVillageMapping(talukaVillageMappingFinal);
+          // setTalukaVillageMapping(talukaVillageMappingFinal);
         }
       } catch (error) {
         console.error('Error fetching villages and grampanchayats:', error);
@@ -638,15 +638,14 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
                   {!Taluka ? "Select Village" : !isPESAMobilizer() && !Grampanchayat ? "Select Village" : "Select Village"}
                 </option>
                 {Taluka && (() => {
-                  // For PESA Mobilizer: show villages filtered by taluka from basicdetailsofvillage mapping
+                  // For PESA Mobilizer: show villages filtered directly by taluka_id from village table
                   // For others: show villages filtered by grampanchayat from basicdetailsofvillage mapping
                   let filteredVillages: Village[] = [];
                   
                   if (isPESAMobilizer()) {
-                    // Filter villages by taluka using talukaVillageMapping (from basicdetailsofvillage)
-                    const villageIdsForTaluka = talukaVillageMapping[Taluka] || [];
+                    // Filter villages directly by taluka_id from the village data
                     filteredVillages = villages.filter((v) => 
-                      villageIdsForTaluka.includes(v.village_id)
+                      Number(v.taluka_id) === Taluka
                     );
                   } else if (Grampanchayat) {
                     // Filter villages by grampanchayat using the gpVillageMapping (from basicdetailsofvillage)
