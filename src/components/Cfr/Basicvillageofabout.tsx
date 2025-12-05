@@ -259,7 +259,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                     <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
                       <h2 className="text-lg font-semibold text-gray-800">CFR प्रमाणपत्र</h2>
                     </div>
-                    {selectedVillage.certificate_img}
+                  
                     <div className="p-4">
                       <div className="rounded-lg h-40 flex items-center justify-center bg-gray-100 overflow-hidden">
                         <img
