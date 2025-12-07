@@ -51,6 +51,8 @@ export interface basicdetailsofvillagetype {
     total_cfr_area: string;
     room_number: string;
     photo: string;
+    tharav: string;
+    prociding: string;
     certificate_no: string;
     date: string;
     cfrmc_details: string;
@@ -86,6 +88,8 @@ export interface basicdetailsofvillagetype {
     village_name: string;
     gp_name: string;
     kmlfile: string;
+    gis: string;
+    gis_2: string;
     status: string;
     created_at: string;
     updated_at: string;
