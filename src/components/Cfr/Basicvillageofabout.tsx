@@ -11,6 +11,8 @@ import KMLMapdata from '../common/KMLMapdata';
 import CFRStatusSummary from './CFRStatusSummary';
 import { EnhancedVillageTable } from '../tables/EnhancedVillageTable';
 
+import Ifrgis from '../farmersdata/Ifrgis';
+
 interface Sabhasad {
   id?: number | string;
   name?: string;
@@ -399,20 +401,34 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                 )}
               </div>
             </div>
-            {/* GIS Map Card */}
+            {/* GIS Map Card - IFR Map */}
             <div className="bg-white rounded-lg shadow border border-gray-200 mt-4 max-w-full mx-full w-full">
               <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-800">GIS (FRA सिमांकित नकाशा)</h2>
               </div>
               <div className="p-4 flex justify-center items-center">
-                {selectedVillage?.kmlfile ? (
-                  <KMLMapButton
-                    kmlFile={`https://fra.weclocks.online/api/uploadsvillagekml/${selectedVillage.gis_2}`}
-                    title="Open KML in new tab"
-                  />
-                ) : (
-                  <div className="text-sm text-gray-500">KML not available</div>
-                )}
+                {(() => {
+                  const coordinates = selectedVillage?.gis
+                    ?.split('|')
+                    .map((entry) => {
+                      const parts = entry.split('}');
+                      if (parts.length >= 2) {
+                        const lat = parseFloat(parts[0]);
+                        const lng = parseFloat(parts[1]);
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                          return { lat, lng };
+                        }
+                      }
+                      return null;
+                    })
+                    .filter((coord): coord is { lat: number; lng: number } => coord !== null);
+
+                  return coordinates && coordinates.length > 0 ? (
+                    <Ifrgis coordinates={coordinates}  />
+                  ) : (
+                    <div className="text-sm text-gray-500">GIS data not available</div>
+                  );
+                })()}
               </div>
             </div>
           </div>

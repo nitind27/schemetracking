@@ -37,6 +37,7 @@ export async function POST(request: Request) {
   v.photo,
   v.tharav,
   v.prociding,
+  v.gis,
   COALESCE(
     (
       SELECT CONCAT(
