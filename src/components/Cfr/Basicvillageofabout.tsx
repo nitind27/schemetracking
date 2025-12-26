@@ -11,11 +11,14 @@ import KMLMapdata from '../common/KMLMapdata';
 import CFRStatusSummary from './CFRStatusSummary';
 import { EnhancedVillageTable } from '../tables/EnhancedVillageTable';
 
+import Ifrgis from '../farmersdata/Ifrgis';
+
 interface Sabhasad {
   id?: number | string;
   name?: string;
   position?: string;
   Position?: string;
+  photo?: string;
   contact_number?: string;
 }
 
@@ -241,7 +244,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                   <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                     <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
                       <h2 className="text-lg font-semibold text-gray-800">CFR फलक फोटो</h2>
-                    </div>{selectedVillage.photo}
+                    </div>
                     <div className="p-4">
                       <div className="rounded-lg h-40 flex items-center justify-center bg-gray-100 overflow-hidden">
                         <img
@@ -278,12 +281,72 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                   <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
                     <h2 className="text-lg font-semibold text-gray-800">सभासद</h2>
                   </div>
+                  {selectedVillage?.tharav && (
+              <div className="flex flex-row gap-2">
+               
+                <div className="p-4 flex justify-center items-center">
+                  {selectedVillage.tharav.toLowerCase().endsWith('.pdf') ? (
+                    <a
+                      href={`https://fra.weclocks.online/api/uploadsvillagetharav/${selectedVillage.tharav}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      ग्रामसभेची ठराव 
+                    </a>
+                  ) : (
+                    <a
+                      href={`https://fra.weclocks.online/api/uploadsvillagetharav/${selectedVillage.tharav}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      ग्रामसभेची ठराव 
+                    </a>
+                  )}
+                </div>
+                <div className="p-4 flex justify-center items-center">
+                  {selectedVillage.prociding.toLowerCase().endsWith('.pdf') ? (
+                    <a
+                      href={`https://fra.weclocks.online/api/uploadsvillagetharav/${selectedVillage.prociding}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      ग्रामसभेची कार्यवाही
+                    </a>
+                  ) : (
+                    <a
+                    href={`https://fra.weclocks.online/api/uploadsvillagetharav/${selectedVillage.prociding}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    ग्रामसभेची कार्यवाही
+                  </a>
+                  )}
+                </div>
+              </div>
+            )}
                   <div className="p-4">
                     <div className="overflow-x-auto">
                       <table className="w-full table-fixed border border-gray-300 text-[12px] whitespace-nowrap">
                         <thead>
                           <tr className="bg-gray-100">
                             <th className="w-20 border border-gray-300 px-2 py-1 text-center">अ.न.</th>
+                            <th className="border border-gray-300 px-2 py-1 text-center">फोटो</th>
                             <th className="w-32 border border-gray-300 px-2 py-1 text-center">सभासदाचे नाव</th>
                             <th className="w-40 border border-gray-300 px-2 py-1 text-center">पद</th>
                             <th className="border border-gray-300 px-2 py-1 text-center">संपर्क क्र</th>
@@ -293,9 +356,22 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                           {sabhasadList.map((r, idx) => (
                             <tr key={r.id ?? idx} className="odd:bg-white even:bg-gray-50">
                               <td className="border border-gray-300 px-2 py-1 text-center">{idx + 1}</td>
+                              <td className="border border-gray-300 px-2 py-1 text-center">
+                                {r.photo ? (
+                                  <img
+                                    src={`https://vishalnawle.in/vishalnavle/flutter_api_fra/village_member_profile/${r.photo}`}
+                                    alt={r.name || 'सभासद फोटो'}
+                                    className="w-10 h-10 object-cover rounded-full mx-auto cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                                    onClick={() => handleImageClick(`https://vishalnawle.in/vishalnavle/flutter_api_fra/village_member_profile/${r.photo}`, r.name || 'सभासद फोटो')}
+                                  />
+                                ) : (
+                                  <span className="text-gray-400 text-xs">फोटो नाही</span>
+                                )}
+                              </td>
                               <td className="border border-gray-300 px-2 py-1 text-center">{r.name ?? ''}</td>
                               <td className="border border-gray-300 px-2 py-1 text-center">{r.Position ?? r.position ?? ''}</td>
                               <td className="border border-gray-300 px-2 py-1 text-center">{r.contact_number ?? ''}</td>
+                              
                             </tr>
                           ))}
                         </tbody>
@@ -306,6 +382,9 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
               </div>
             </div>
 
+            {/* Tharav Document Card */}
+         
+
             {/* GIS Map Card */}
             <div className="bg-white rounded-lg shadow border border-gray-200 mt-4 max-w-full mx-full w-full">
               <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
@@ -314,12 +393,42 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
               <div className="p-4 flex justify-center items-center">
                 {selectedVillage?.kmlfile ? (
                   <KMLMapButton
-                    kmlFile={`/kml/${selectedVillage.kmlfile}`}
+                    kmlFile={`https://fra.weclocks.online/api/uploadsvillagekml/${selectedVillage.kmlfile}`}
                     title="Open KML in new tab"
                   />
                 ) : (
                   <div className="text-sm text-gray-500">KML not available</div>
                 )}
+              </div>
+            </div>
+            {/* GIS Map Card - IFR Map */}
+            <div className="bg-white rounded-lg shadow border border-gray-200 mt-4 max-w-full mx-full w-full">
+              <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-800">GIS (FRA सिमांकित नकाशा)</h2>
+              </div>
+              <div className="p-4 flex justify-center items-center">
+                {(() => {
+                  const coordinates = selectedVillage?.gis
+                    ?.split('|')
+                    .map((entry) => {
+                      const parts = entry.split('}');
+                      if (parts.length >= 2) {
+                        const lat = parseFloat(parts[0]);
+                        const lng = parseFloat(parts[1]);
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                          return { lat, lng };
+                        }
+                      }
+                      return null;
+                    })
+                    .filter((coord): coord is { lat: number; lng: number } => coord !== null);
+
+                  return coordinates && coordinates.length > 0 ? (
+                    <Ifrgis coordinates={coordinates}  />
+                  ) : (
+                    <div className="text-sm text-gray-500">GIS data not available</div>
+                  );
+                })()}
               </div>
             </div>
           </div>

@@ -14,6 +14,9 @@ export async function GET() {
   v.kmlfile,
   v.certificate_img,
   v.photo,
+  v.tharav,	
+  v.prociding,
+  v.gis,
   COALESCE(
     (
       SELECT CONCAT(
@@ -21,9 +24,10 @@ export async function GET() {
         GROUP_CONCAT(
           CONCAT(
             '{\"id\":', s.id,
-            ',\"name\":\"', s.name,
-            '\",\"contact_number\":\"', s.contact_number,
-            '\",\"Position\":\"', s.Position,
+            ',\"name\":\"', IFNULL(s.name, ''),
+            '\",\"contact_number\":\"', IFNULL(s.contact_number, ''),
+            '\",\"Position\":\"', IFNULL(s.Position, ''),
+            '\",\"photo\":\"', IFNULL(s.photo, ''),
             '\"}'
           )
           SEPARATOR ','
