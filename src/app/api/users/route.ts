@@ -39,6 +39,7 @@ export async function GET() {
         ON users.village_id = village.village_id
       LEFT JOIN grampanchyat
         ON users.gp_id = grampanchyat.gp_id
+      WHERE users.status = 'Active'
     `);
 
     // Type-safe mapping

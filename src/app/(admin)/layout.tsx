@@ -19,8 +19,8 @@ export default function AdminLayout({
     setCategoryId(category_id);
   }, []);
 
-  // Hide sidebar completely when category_id = 32
-  const shouldHideSidebar = categoryId === "32";
+  // Hide sidebar completely when category_id = 32 or 37 (PESA Coordinator)
+  const shouldHideSidebar = categoryId === "32" || categoryId === "37";
 
   // Dynamic class for main content margin based on sidebar state
   const mainContentMargin = shouldHideSidebar

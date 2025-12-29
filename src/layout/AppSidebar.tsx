@@ -269,8 +269,8 @@ const AppSidebar: React.FC = () => {
     });
   };
 
-  // Hide sidebar completely when category_id = 32
-  if (storedValuecategory_name === "32") {
+  // Hide sidebar completely when category_id = 32 or 37 (PESA Coordinator)
+  if (storedValuecategory_name === "32" || storedValuecategory_name === "37") {
     return null;
   }
 

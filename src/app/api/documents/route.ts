@@ -54,7 +54,7 @@ export async function PUT(request: Request) {
   }
 }
 
-// Delete document category
+// Delete document category (soft delete - set status to Inactive)
 export async function DELETE(request: Request) {
   const { id } = await request.json();
 
@@ -63,8 +63,8 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    await pool.query('DELETE FROM documents WHERE id = ?', [id]);
-    return NextResponse.json({ message: 'Document category deleted' });
+    await pool.query('UPDATE documents SET status = ? WHERE id = ?', ['Inactive', id]);
+    return NextResponse.json({ message: 'Document category deleted successfully' });
   } catch (error) {
     console.error('Deletion error:', error);
     return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });

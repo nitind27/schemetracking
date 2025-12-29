@@ -62,6 +62,7 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
   const [Village, setVillage] = useState(0);
   const [Grampanchayat, setGrampanchayat] = useState(0);
   const [editId, setEditId] = useState<number | null>(null);
+  const [editVillageId, setEditVillageId] = useState<number | null>(null);
   const { isActive, setIsActive, isEditMode, setIsEditmode, setIsmodelopen, isvalidation, setisvalidation } = useToggleContext();
   const [loading, setLoading] = useState(false);
   const [error, setErrors] = useState<FormErrors>({});
@@ -188,21 +189,21 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
     }
   }, [isvalidation])
 
-  // Reset village/grampanchayat when category changes
+  // Reset village/grampanchayat when category changes (but not during edit mode initialization)
   useEffect(() => {
-    if (usercategory) {
+    if (usercategory && !isEditMode) {
       setVillage(0);
       setGrampanchayat(0);
     }
-  }, [usercategory]);
+  }, [usercategory, isEditMode]);
 
-  // Reset grampanchayat and village when taluka changes
+  // Reset grampanchayat and village when taluka changes (but not during edit mode initialization)
   useEffect(() => {
-    if (Taluka) {
+    if (Taluka && !isEditMode) {
       setVillage(0);
       setGrampanchayat(0);
     }
-  }, [Taluka]);
+  }, [Taluka, isEditMode]);
 
   // Reset village when grampanchayat changes (only if not in edit mode)
   useEffect(() => {
@@ -217,6 +218,29 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
       setGrampanchayat(villageGpMapping[Village]);
     }
   }, [Village, villageGpMapping, isEditMode, Grampanchayat, usercategory, datausercategorycrud]);
+  
+  // Set village when taluka is ready during edit mode
+  useEffect(() => {
+    if (isEditMode && editVillageId && Taluka) {
+      // For PESA Mobilizer: only need Taluka to filter villages
+      // For others: need Grampanchayat to filter villages, but set village_id immediately
+      if (isPESAMobilizer()) {
+        // For PESA Mobilizer, set village immediately when taluka is set
+        setVillage(editVillageId);
+        setEditVillageId(null);
+      } else if (Grampanchayat) {
+        // For others, set village when both taluka and grampanchayat are set
+        setVillage(editVillageId);
+        setEditVillageId(null);
+      }
+      // If grampanchayat is not set yet but we have village_id, still set it
+      // The village will be shown in dropdown even if filter is not ready
+      if (!isPESAMobilizer() && !Grampanchayat && editVillageId) {
+        // Set village anyway, it will be included in dropdown options
+        setVillage(editVillageId);
+      }
+    }
+  }, [isEditMode, editVillageId, Taluka, Grampanchayat, isPESAMobilizer]);
 
   const reset = () => {
     setUsercategory(Number(""))
@@ -230,6 +254,7 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
     setVillage(Number(""))
     setGrampanchayat(Number(""))
     setEditId(0);
+    setEditVillageId(null);
   }
 
   useEffect(() => {
@@ -353,6 +378,7 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
     setIsActive(!isActive)
     setIsmodelopen(true);
     setIsEditmode(true);
+    // Set all values in proper order
     setUsercategory(Number(item.user_category_id))
     setEditId(item.user_id)
     setName(item.name)
@@ -360,9 +386,17 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
     setUsername(item.username)
     setPassword(item.password)
     setaddress(item.address)
-    setTaluka(item.taluka_id)
-    setVillage(item.village_id || 0)
-    setGrampanchayat(item.gp_id || 0)
+    // Set taluka first
+    setTaluka(Number(item.taluka_id))
+    // Set grampanchayat
+    setGrampanchayat(Number(item.gp_id) || 0)
+    // Store village_id to set it properly after taluka is set
+    if (item.village_id) {
+      setEditVillageId(Number(item.village_id));
+    } else {
+      setVillage(0);
+      setEditVillageId(null);
+    }
   };
 
   const columns: Column<UserData>[] = [
@@ -630,14 +664,23 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
               <Label>Village</Label>
               <select name="" id="" className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Village ? "border-red-500" : ""
                 }`}
-                value={Village}
-                onChange={(e) => setVillage(Number(e.target.value))}
+                value={Village ? Number(Village) : ""}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setVillage(val || 0);
+                  if (val && editVillageId) {
+                    setEditVillageId(null);
+                  }
+                }}
                 disabled={!Taluka || (!isPESAMobilizer() && !Grampanchayat)}
               >
                 <option value="">
                   {!Taluka ? "Select Village" : !isPESAMobilizer() && !Grampanchayat ? "Select Village" : "Select Village"}
                 </option>
                 {Taluka && (() => {
+                  // Get the village_id that should be selected (for edit mode)
+                  const villageIdToCheck = Village || editVillageId;
+                  
                   // For PESA Mobilizer: show villages filtered directly by taluka_id from village table
                   // For others: show villages filtered by grampanchayat from basicdetailsofvillage mapping
                   let filteredVillages: Village[] = [];
@@ -645,18 +688,39 @@ const Usersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
                   if (isPESAMobilizer()) {
                     // Filter villages directly by taluka_id from the village data
                     filteredVillages = villages.filter((v) => 
-                      Number(v.taluka_id) === Taluka
+                      Number(v.taluka_id) === Number(Taluka)
                     );
                   } else if (Grampanchayat) {
                     // Filter villages by grampanchayat using the gpVillageMapping (from basicdetailsofvillage)
                     const villageIds = gpVillageMapping[Grampanchayat] || [];
                     filteredVillages = villages.filter((v) => 
-                      villageIds.includes(v.village_id)
+                      villageIds.includes(Number(v.village_id))
                     );
                   }
                   
+                  // In edit mode, ensure the current village is ALWAYS included even if not in filtered list
+                  if (isEditMode && villageIdToCheck) {
+                    const currentVillage = villages.find((v) => Number(v.village_id) === Number(villageIdToCheck));
+                    if (currentVillage) {
+                      // Check if village is already in filtered list
+                      const existsInFiltered = filteredVillages.some((v) => Number(v.village_id) === Number(villageIdToCheck));
+                      if (!existsInFiltered) {
+                        // Add current village to the beginning of the list so it's visible and selected
+                        filteredVillages.unshift(currentVillage);
+                      }
+                    }
+                  }
+                  
+                  // If no villages found but we have a village_id in edit mode, show at least that village
+                  if (filteredVillages.length === 0 && isEditMode && villageIdToCheck) {
+                    const currentVillage = villages.find((v) => Number(v.village_id) === Number(villageIdToCheck));
+                    if (currentVillage) {
+                      filteredVillages.push(currentVillage);
+                    }
+                  }
+                  
                   return filteredVillages.map((village) => (
-                    <option key={village.village_id} value={village.village_id}>
+                    <option key={village.village_id} value={Number(village.village_id)}>
                       {village.name || village.marathi_name}
                     </option>
                   ));

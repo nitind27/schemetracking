@@ -222,6 +222,7 @@ export async function PUT(request: Request) {
 }
 
 
+// Delete user (soft delete - set status to Inactive)
 export async function DELETE(request: Request) {
   const { user_id } = await request.json();
 
@@ -230,10 +231,30 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    await pool.query('DELETE FROM users WHERE user_id  = ?', [user_id]);
-    return NextResponse.json({ message: 'User deleted' });
+    await pool.query('UPDATE users SET status = ? WHERE user_id = ?', ['Inactive', user_id]);
+    return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Deletion failed:', error);
-    return NextResponse.json({ error: 'Failed to delete scheme' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+  }
+}
+
+// Update user status (activate/deactivate)
+export async function PATCH(request: Request) {
+  const { user_id, status } = await request.json();
+
+  if (!user_id || !status) {
+    return NextResponse.json({ error: 'User ID and status are required' }, { status: 400 });
+  }
+
+  try {
+    await pool.query(
+      'UPDATE users SET status = ? WHERE user_id = ?',
+      [status, user_id]
+    );
+    return NextResponse.json({ message: `User ${status === 'Active' ? 'activated' : 'deactivated'}` });
+  } catch (error) {
+    console.error('Status update error:', error);
+    return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
   }
 }

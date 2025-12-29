@@ -1,9 +1,9 @@
 // app/ecommerce/page.tsx
 import type { Metadata } from "next";
-import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
-// import Showschemstable from "@/components/ecommerce/Showschemstable";
-import { Suspense } from "react";
-import Loader from "@/common/Loader";
+// import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
+// // import Showschemstable from "@/components/ecommerce/Showschemstable";
+// import { Suspense } from "react";
+// import Loader from "@/common/Loader";
 // import GraphData from "@/components/ecommerce/GraphData";
 // import SchemesBarChart from "@/components/ecommerce/SchemesBarChart";
     // import { Documents } from "@/components/Documentsdata/documents";
@@ -12,13 +12,7 @@ import Loader from "@/common/Loader";
     // import { Taluka } from "@/components/Taluka/Taluka";
     // import { Village } from "@/components/Village/village";
 // import DistrictMap from "@/components/ecommerce/DistrictMap";
-import { CFREcommer } from "@/components/ecommerce/CFREcommer";
-import TabView from "@/components/common/TabView";
-// import NotificationTabs from "@/components/Notifications/NotificationTabs";
-import Section32Tabs from "@/components/common/Section32Tabs";
-// import AadhaarStatusChart from "@/components/ecommerce/AadhaarStatusChart";
-// import DocumentAvailabilityChart from "@/components/ecommerce/DocumentAvailabilityChart";
-import DashboardTalukatabview from "@/components/ecommerce/DashboardTalukatabview";
+import DashboardTabsWrapper from "@/components/ecommerce/DashboardTabsWrapper";
 
 export const metadata: Metadata = {
   title: "Scheme Monitoring & Tracking System",
@@ -132,60 +126,7 @@ export default async function Ecommerce() {
   const farmersData = await fetchFarmersData();
   // const { farmers, villages, talukas, schemes, documents } = await getData();
 
-  // Main Dashboard Content Component
-  const MainDashboardContent = () => (
-    <div className="grid grid-cols-6 gap-4 md:gap-6">
-      <div className="col-span-12 space-y-2 xl:col-span-7">
-        <Suspense fallback={<Loader />}>
-          <EcommerceMetrics metrics={metrics} />
-          <DashboardTalukatabview farmersData={farmersData} />
-           
-         {/*} 
-          <AadhaarStatusChart farmersData={farmersData} />
-          <DocumentAvailabilityChart farmersData={farmersData} />
-          <SchemesBarChart farmersData={farmersData} />
-          <Showschemstable farmersData={farmersData} /> */}
-          
-        </Suspense>
-      </div>
-    </div>
-  );
-
-  // CFR Dashboard Content Component
-  const CFRDashboardContent = () => (
-    <div className="grid grid-cols-6 gap-4 md:gap-6">
-      <div className="col-span-12 space-y-6 xl:col-span-7">
-        <CFREcommer />
-      </div>
-    </div>
-  );
-
-  const tabs = [
-    {
-      id: "main-dashboard",
-      label: "IFR Dashboard",
-      content: <MainDashboardContent />
-    },
-    {
-      id: "cfr-dashboard", 
-      label: "CFR Dashboard",
-      content: <CFRDashboardContent />
-    },
-    {
-      id: "notification",
-      label: "Section 3(2)",
-      content: <div className="grid grid-cols-6 gap-4 md:gap-6">
-        <div className="col-span-12 space-y-6 xl:col-span-7">
-        <Section32Tabs />
-        </div>
-      </div>
-      }
-    
-  ];
-
   return (
-    <div className="w-full">
-      <TabView tabs={tabs} defaultTab="main-dashboard" />
-    </div>
+    <DashboardTabsWrapper metrics={metrics} farmersData={farmersData} />
   );
 }

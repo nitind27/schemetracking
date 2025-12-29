@@ -73,20 +73,20 @@ export async function PUT(request: Request) {
 }
 
 
-// Delete document category
+// Delete supported document (soft delete - set status to Inactive)
 export async function DELETE(request: Request) {
-    const { id } = await request.json();
+    const { supported_id } = await request.json();
 
-    if (!id) {
-        return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
+    if (!supported_id) {
+        return NextResponse.json({ error: 'Supported document ID is required' }, { status: 400 });
     }
 
     try {
-        await pool.query('DELETE FROM documents WHERE id = ?', [id]);
-        return NextResponse.json({ message: 'Document category deleted' });
+        await pool.query('UPDATE supported_documents SET status = ? WHERE supported_id = ?', ['Inactive', supported_id]);
+        return NextResponse.json({ message: 'Supported document deleted successfully' });
     } catch (error) {
         console.error('Deletion error:', error);
-        return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to delete supported document' }, { status: 500 });
     }
 }
 

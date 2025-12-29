@@ -63,7 +63,7 @@ export async function PUT(request: Request) {
   }
 }
 
-// Delete Year
+// Delete Year (soft delete - set status to Inactive)
 export async function DELETE(request: Request) {
   try {
     const { scheme_year_id } = await request.json();
@@ -76,11 +76,11 @@ export async function DELETE(request: Request) {
     }
 
     await pool.query(
-      'DELETE FROM scheme_year WHERE scheme_year_id = ?', 
-      [scheme_year_id]
+      'UPDATE scheme_year SET status = ? WHERE scheme_year_id = ?', 
+      ['Inactive', scheme_year_id]
     );
 
-    return NextResponse.json({ message: 'Year deleted' });
+    return NextResponse.json({ message: 'Year deleted successfully' });
   } catch (error) {
     console.error("Error deleting scheme_year:", error);
     return NextResponse.json({ error: 'Failed to delete Year' }, { status: 500 });

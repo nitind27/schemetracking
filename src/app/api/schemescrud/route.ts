@@ -145,7 +145,7 @@ export async function PUT(request: Request) {
   }
 }
 
-// Delete scheme
+// Delete scheme (soft delete - set status to Inactive)
 export async function DELETE(request: Request) {
   const { scheme_id } = await request.json();
 
@@ -154,8 +154,8 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    await pool.query('DELETE FROM schemes WHERE scheme_id  = ?', [scheme_id]);
-    return NextResponse.json({ message: 'Scheme deleted' });
+    await pool.query('UPDATE schemes SET status = ? WHERE scheme_id = ?', ['Inactive', scheme_id]);
+    return NextResponse.json({ message: 'Scheme deleted successfully' });
   } catch (error) {
     console.error('Deletion failed:', error);
     return NextResponse.json({ error: 'Failed to delete scheme' }, { status: 500 });

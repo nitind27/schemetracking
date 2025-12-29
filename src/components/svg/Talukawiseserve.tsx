@@ -86,6 +86,8 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
     const [photoOpenIndexes, setPhotoOpenIndexes] = useState<Record<string, boolean>>({}); // <-- NEW
     const [fullImage, setFullImage] = useState<string | null>(null); // <-- NEW
     const [usersData, setUsersData] = useState<UserData[]>([]);
+    const [categoryId, setCategoryId] = useState<string | null>(null);
+    const [userTalukaId, setUserTalukaId] = useState<string | null>(null);
     const itemsPerPage = 10;
 
     useEffect(() => {
@@ -110,6 +112,13 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
         return () => {
             isMounted = false;
         };
+    }, []);
+
+    useEffect(() => {
+        const category_id = sessionStorage.getItem('category_id');
+        const taluka_id = sessionStorage.getItem('taluka_id');
+        setCategoryId(category_id);
+        setUserTalukaId(taluka_id);
     }, []);
 
     const usersByTalukaVillage = React.useMemo(() => {
@@ -502,8 +511,23 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
 
     // --- NEW: Sorted Taluka List ---
     const sortedTalukaEntries = React.useMemo(() => {
+        // Filter for PESA Coordinator (category_id = 37) - show only user's taluka
+        const isPESACoordinator = categoryId === "37";
+        let filteredTalukaCounts = talukaCounts;
+        
+        if (isPESACoordinator && userTalukaId) {
+            // Find the taluka name by taluka_id
+            const userTaluka = datataluka.find(t => String(t.taluka_id) === String(userTalukaId));
+            if (userTaluka) {
+                // Only show the user's taluka
+                filteredTalukaCounts = Object.fromEntries(
+                    Object.entries(talukaCounts).filter(([talukaName]) => talukaName === userTaluka.name)
+                );
+            }
+        }
+
         // Map to array with percent and color
-        const arr = Object.entries(talukaCounts).map(([talukaName, info]) => {
+        const arr = Object.entries(filteredTalukaCounts).map(([talukaName, info]) => {
             const percent = info.total > 0 ? Math.round((info.filledCount / info.total) * 100) : 0;
             return {
                 talukaName,
@@ -513,7 +537,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
             };
         });
         return sortByColorAndPercent(arr);
-    }, [talukaCounts]);
+    }, [talukaCounts, categoryId, userTalukaId, datataluka]);
 
     // Helper to get all farmer details in a readable format
     const getFarmerDetails = (farmer: Farmer) => {

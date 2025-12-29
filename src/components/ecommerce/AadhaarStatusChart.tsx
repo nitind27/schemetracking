@@ -82,11 +82,13 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
   // --- Aadhaar Chart Data ---
   const talukaId = sessionStorage.getItem('taluka_id');
   const userName = sessionStorage.getItem('userName');
-  const farmersdata = userName === "BDO" ? farmers.filter((data) => data.taluka_id == talukaId) : farmers;
+  const categoryId = sessionStorage.getItem('category_id');
+  const isPESACoordinator = categoryId === "37";
+  const farmersdata = (userName === "BDO" || isPESACoordinator) ? farmers.filter((data) => data.taluka_id == talukaId) : farmers;
 
   let chartData: ChartData[];
 
-  if (userName === "BDO") {
+  if (userName === "BDO" || isPESACoordinator) {
     chartData = taluka
       .filter((data) => data.taluka_id == Number(talukaId))
       .map((t) => {
