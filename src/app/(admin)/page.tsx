@@ -127,6 +127,8 @@ export default async function Ecommerce() {
   // const { farmers, villages, talukas, schemes, documents } = await getData();
 
   return (
+    <>
     <DashboardTabsWrapper metrics={metrics} farmersData={farmersData} />
+    </>
   );
 }

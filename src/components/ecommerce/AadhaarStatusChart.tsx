@@ -287,13 +287,6 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
   const [surveyFilter, setSurveyFilter] = useState<"all" | "surveyed" | "yetToBeSurveyed">("all");
   const [surveyPage, setSurveyPage] = useState(1);
 
-  // --- State for Surveyed Aadhaar Modal ---
-  const [surveyedAadhaarModalOpen, setSurveyedAadhaarModalOpen] = useState(false);
-  const [surveyedAadhaarModalTalukaId, setSurveyedAadhaarModalTalukaId] = useState<number | null>(null);
-  const [surveyedAadhaarModalTalukaName, setSurveyedAadhaarModalTalukaName] = useState<string>("");
-  const [surveyedAadhaarFilter, setSurveyedAadhaarFilter] = useState<"all" | "with" | "without">("all");
-  const [surveyedAadhaarPage, setSurveyedAadhaarPage] = useState(1);
-
   // --- State for Aadhaar Modal ---
   const [aadhaarModalOpen, setAadhaarModalOpen] = useState(false);
   const [aadhaarModalTalukaId, setAadhaarModalTalukaId] = useState<number | null>(null);
@@ -331,30 +324,6 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
     return aadhaarFilteredFarmers.slice(start, start + PAGE_SIZE);
   }, [aadhaarFilteredFarmers, aadhaarPage]);
 
-  // --- Surveyed Aadhaar Modal Data (memoized) ---
-  const surveyedAadhaarFilteredFarmers = useMemo(() => {
-    if (!surveyedAadhaarModalTalukaId) return [];
-    // First filter by taluka and surveyed status
-    const talukaFarmers = farmers.filter(
-      f => Number(f.taluka_id) === surveyedAadhaarModalTalukaId && 
-      f.update_record && f.update_record.trim() !== ""
-    );
-    // Then filter by Aadhaar status
-    if (surveyedAadhaarFilter === "with") {
-      return talukaFarmers.filter(f => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== "");
-    }
-    if (surveyedAadhaarFilter === "without") {
-      return talukaFarmers.filter(f => !f.farmer_record?.split('|')[5] || f.farmer_record?.split('|')[5].trim() === "");
-    }
-    return talukaFarmers;
-  }, [farmers, surveyedAadhaarModalTalukaId, surveyedAadhaarFilter]);
-
-  const surveyedAadhaarTotalPages = Math.ceil(surveyedAadhaarFilteredFarmers.length / PAGE_SIZE);
-  const surveyedAadhaarPaginatedFarmers = useMemo(() => {
-    const start = (surveyedAadhaarPage - 1) * PAGE_SIZE;
-    return surveyedAadhaarFilteredFarmers.slice(start, start + PAGE_SIZE);
-  }, [surveyedAadhaarFilteredFarmers, surveyedAadhaarPage]);
-
   // --- Survey Modal Data (memoized) ---
   const surveyFilteredFarmers = useMemo(() => {
     if (!surveyModalTalukaId) return [];
@@ -373,38 +342,6 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
     const start = (surveyPage - 1) * PAGE_SIZE;
     return surveyFilteredFarmers.slice(start, start + PAGE_SIZE);
   }, [surveyFilteredFarmers, surveyPage]);
-
-  // --- Surveyed Aadhaar Modal Open Handler ---
-  const openSurveyedAadhaarModal = (talukaId: number, talukaName: string) => {
-    setSurveyedAadhaarModalTalukaId(talukaId);
-    setSurveyedAadhaarModalTalukaName(talukaName);
-    setSurveyedAadhaarFilter("all");
-    setSurveyedAadhaarPage(1);
-    setSurveyedAadhaarModalOpen(true);
-  };
-
-  // --- Surveyed Aadhaar Download Excel Handler ---
-  const handleSurveyedAadhaarDownload = () => {
-    if (!surveyedAadhaarModalTalukaId) return;
-    const data = surveyedAadhaarFilteredFarmers.map((farmer) => ({
-      FarmerID: farmer.farmer_id,
-      Name: farmer.farmer_record?.split('|')[0] || "",
-      ClaimID: farmer.farmer_record?.split('|')[15] || "",
-      Aadhaar: farmer.farmer_record?.split('|')[5] || "",
-      Village: villages.find((v) => v.village_id === Number(farmer.village_id))?.marathi_name || "",
-      Taluka: surveyedAadhaarModalTalukaName,
-      HasAadhaar: farmer.farmer_record?.split('|')[5] && farmer.farmer_record?.split('|')[5].trim() !== "" ? "Yes" : "No",
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Surveyed Farmers");
-    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    saveAs(
-      new Blob([excelBuffer], { type: "application/octet-stream" }),
-      `${surveyedAadhaarModalTalukaName.replace(/\s+/g, "_")}_Surveyed_Farmers_Aadhaar.xlsx`
-    );
-  };
 
   // --- Survey Modal Open Handler ---
   const openSurveyModal = (talukaId: number, talukaName: string) => {
@@ -568,141 +505,6 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
       </div>
     ) : null;
 
-  // --- Surveyed Aadhaar Modal Component ---
-  const SurveyedAadhaarModal = () =>
-    surveyedAadhaarModalOpen ? (
-      <div
-        className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-99999 overflow-y-auto"
-        onClick={() => setSurveyedAadhaarModalOpen(false)}
-      >
-        <div
-          className="bg-white rounded-lg md:rounded-xl shadow-xl p-2 md:p-6 w-full max-w-full md:max-w-4xl relative mx-2 my-4"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl"
-            onClick={() => setSurveyedAadhaarModalOpen(false)}
-          >
-            &times;
-          </button>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-            <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-0">
-              Surveyed IFR Holders Aadhaar Availability in {" "}
-              <span className="text-blue-600 underline">{surveyedAadhaarModalTalukaName}</span>{" "}
-              taluka
-            </h3>
-            <div className="flex flex-col md:flex-row gap-2 flex-wrap">
-              <div className="card bg-gray-200 rounded w-full md:w-auto">
-                <select
-                  value={surveyedAadhaarFilter}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                    const value = e.target.value as "all" | "with" | "without";
-                    setSurveyedAadhaarFilter(value);
-                    setSurveyedAadhaarPage(1);
-                  }}
-                  className="border rounded px-2 py-1 w-full"
-                >
-                  <option value="all">All</option>
-                  <option value="with">With Aadhaar</option>
-                  <option value="without">Without Aadhaar</option>
-                </select>
-              </div>
-              <button
-                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 w-full md:w-auto mr-5"
-                onClick={handleSurveyedAadhaarDownload}
-              >
-                Download Excel
-              </button>
-            </div>
-          </div>
-          <div className="overflow-x-auto max-h-[60vh]">
-            <table className="min-w-full border text-xs md:text-sm">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border px-2 py-1">#</th>
-                  <th className="border px-2 py-1">Claim ID</th>
-                  <th className="border px-2 py-1">Name</th>
-                  <th className="border px-2 py-1">Aadhaar</th>
-                  <th className="border px-2 py-1">Village</th>
-                  <th className="border px-2 py-1">Availability</th>
-                </tr>
-              </thead>
-              <tbody>
-                {surveyedAadhaarPaginatedFarmers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-4">
-                      No data found.
-                    </td>
-                  </tr>
-                ) : (
-                  surveyedAadhaarPaginatedFarmers.map((farmer, idx) => {
-                    const hasAadhaar = farmer.farmer_record?.split('|')[5] && farmer.farmer_record?.split('|')[5].trim() !== "";
-                    return (
-                      <tr key={farmer.farmer_id}>
-                        <td className="border px-2 py-1">
-                          {(surveyedAadhaarPage - 1) * PAGE_SIZE + idx + 1}
-                        </td>
-                        <td className="border px-2 py-1">
-                          {farmer.farmer_record?.split('|')[15] || ""}
-                        </td>
-                        <td className="border px-2 py-1">
-                          {farmer.farmer_record?.split('|')[0] || ""}
-                        </td>
-                        <td className="border px-2 py-1">
-                          {farmer.farmer_record?.split('|')[5] || ""}
-                        </td>
-                        <td className="border px-2 py-1">
-                          {villages.find((v) => v.village_id === Number(farmer.village_id))?.marathi_name || ""}
-                        </td>
-                        <td className="border px-2 py-1">
-                          {hasAadhaar ? (
-                            <span className="text-green-600 font-semibold">
-                              Available
-                            </span>
-                          ) : (
-                            <span className="text-red-600 font-semibold">
-                              Not Available
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-          {/* Pagination Controls */}
-          <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-2">
-            <span className="text-sm">
-              Showing {(surveyedAadhaarPage - 1) * PAGE_SIZE + 1}-
-              {Math.min(surveyedAadhaarPage * PAGE_SIZE, surveyedAadhaarFilteredFarmers.length)} of{" "}
-              {surveyedAadhaarFilteredFarmers.length}
-            </span>
-            <div className="flex gap-2">
-              <button
-                className="px-3 py-1 border rounded disabled:opacity-50 text-sm"
-                onClick={() => setSurveyedAadhaarPage((p) => Math.max(1, p - 1))}
-                disabled={surveyedAadhaarPage === 1}
-              >
-                Prev
-              </button>
-              <span className="text-sm">
-                Page {surveyedAadhaarPage} of {surveyedAadhaarTotalPages}
-              </span>
-              <button
-                className="px-3 py-1 border rounded disabled:opacity-50 text-sm"
-                onClick={() => setSurveyedAadhaarPage((p) => Math.min(surveyedAadhaarTotalPages, p + 1))}
-                disabled={surveyedAadhaarPage === surveyedAadhaarTotalPages}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    ) : null;
-
   // --- Aadhaar Modal Open Handler ---
   const openAadhaarModal = (talukaId: number, talukaName: string) => {
     setAadhaarModalTalukaId(talukaId);
@@ -711,6 +513,15 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
     setAadhaarPage(1);
     setAadhaarModalOpen(true);
   };
+
+  // --- Aadhaar Modal Open Handler ---
+  // const openAadhaarModal = (talukaId: number, talukaName: string) => {
+  //   setAadhaarModalTalukaId(talukaId);
+  //   setAadhaarModalTalukaName(talukaName);
+  //   setAadhaarFilter("all");
+  //   setAadhaarPage(1);
+  //   setAadhaarModalOpen(true);
+  // };
 
   // --- Aadhaar Download Excel Handler ---
   const handleAadhaarDownload = () => {
@@ -872,7 +683,7 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
       <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full overflow-x-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
           <h2 className="text-lg md:text-2xl font-bold text-gray-800">
-            Taluka Wise Survey
+          Surveyed IFR Holders Aadhaar Status Across Talukas
           </h2>
           {/* Overall summary card */}
           <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
@@ -986,123 +797,6 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
         <SurveyModal />
       </div>
 
-      {/* Surveyed Farmers Aadhaar Status Chart */}
-      <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full overflow-x-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-          <h2 className="text-lg md:text-2xl font-bold text-gray-800">
-            Surveyed IFR Holders Aadhaar Status Across Talukas
-          </h2>
-          {/* Overall summary card */}
-          <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
-            <div className="text-sm text-gray-700 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
-                <p>
-                  Total Surveyed: <strong>
-                    {
-                      farmersdata.filter(
-                        (f) => f.update_record && f.update_record.trim() !== ""
-                      ).length
-                    }
-                  </strong>
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
-                <p>
-                  With Aadhaar:{" "}
-                  <strong>
-                    {
-                      farmersdata.filter(
-                        (f) => 
-                          f.update_record && f.update_record.trim() !== "" &&
-                          f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
-                      ).length
-                    }
-                  </strong>
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
-                <p>
-                  Without Aadhaar:{" "}
-                  <strong>
-                    {
-                      farmersdata.filter(
-                        (f) => 
-                          f.update_record && f.update_record.trim() !== "" &&
-                          (!f.farmer_record?.split('|')[5] || f.farmer_record?.split('|')[5].trim() === "")
-                      ).length
-                    }
-                  </strong>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Bar chart */}
-        <div className="h-[500px] md:h-[500px] w-full min-w-[600px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={surveyedAadhaarChartData}
-              margin={{
-                top: 24,
-                right: isMobile ? 8 : 24,
-                left: isMobile ? 8 : 16,
-              }}
-              barSize={isMobile ? 20 : 40}
-              onClick={(state) => {
-                if (state?.activeLabel && state?.activePayload?.length) {
-                  const talukaItem = surveyedAadhaarChartData.find(d => d.taluka === state.activeLabel);
-                  if (talukaItem) openSurveyedAadhaarModal(talukaItem.taluka_id, talukaItem.taluka);
-                }
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="taluka"
-                angle={isMobile ? -45 : -35}
-                textAnchor="end"
-                interval={0}
-                height={isMobile ? 100 : 80}
-                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
-              />
-              <YAxis
-                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
-                domain={[0, "auto"]}
-                ticks={surveyedAadhaarTicks.length > 0 ? surveyedAadhaarTicks : undefined}
-              />
-              <Tooltip 
-                formatter={(value: number, name: string) => {
-                  if (name === "Total Surveyed") {
-                    return [`${value} (Surveyed)`, "Total Surveyed"];
-                  }
-                  return [value, name];
-                }}
-              />
-              <Bar
-                dataKey="totalSurveyed"
-                fill="#6366f1"
-                name="Total Surveyed (Only Surveyed Farmers)"
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                dataKey="surveyedWithAadhaar"
-                fill="#10b981"
-                name="With Aadhaar (Out of Surveyed)"
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                dataKey="surveyedWithoutAadhaar"
-                fill="#f87171"
-                name="Without Aadhaar (Out of Surveyed)"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <SurveyedAadhaarModal />
-      </div>
 
       {/* Aadhaar Status Chart */}
       <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full overflow-x-auto">
