@@ -115,7 +115,7 @@ const WorkTypePieCharts: React.FC<Props> = ({ serverData, basicVillageData }) =>
     dataLabels: {
       enabled: true,
       formatter: function (val: string) {
-        return val + "%";
+        return parseFloat(val).toFixed(2) + "%";
       },
       style: {
         fontSize: "0px",

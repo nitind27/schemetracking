@@ -56,7 +56,7 @@ const WorkStatusPieChart: React.FC<Props> = ({ serverData }) => {
     dataLabels: {
       enabled: true,
       formatter: function (val: string) {
-        return val + "%";
+        return parseFloat(val).toFixed(2) + "%";
       },
       style: {
         fontSize: "12px",

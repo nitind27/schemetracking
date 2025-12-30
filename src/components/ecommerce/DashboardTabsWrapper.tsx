@@ -111,14 +111,6 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   const talukaWiseSurveys: TalukaSurveyData[] = getTalukaWiseSurveys();
 
 
-  // Create taluka options for dropdown
-  const talukaOptions = [
-    { label: 'सर्व तालुका (All Talukas)', value: '' },
-    ...farmersData.taluka.map(taluka => ({
-      label: taluka.name,
-      value: taluka.taluka_id.toString()
-    }))
-  ];
 
   // Main Dashboard Content Component
   const MainDashboardContent = () => (
@@ -177,7 +169,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       <div className="w-full mb-4">
         <button
           onClick={() => setIsTodaySurveyModalOpen(true)}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg shadow-md transition-colors duration-200"
+          className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
         >
           <div className="flex flex-col items-center gap-2">
             <div className="flex items-center gap-3">
@@ -193,10 +185,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                 {talukaWiseSurveys.map((talukaData) => (
                   <div
                     key={talukaData.taluka_id}
-                    className={`px-2 py-1 rounded text-xs font-medium text-center ${
+                    className={`px-2 py-1 rounded text-xs font-medium text-center transition-all duration-200 ${
                       talukaData.count > 0
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-400 text-gray-200'
+                        ? 'bg-gradient-to-r from-emerald-400 to-teal-500 text-white shadow-sm hover:shadow-md'
+                        : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
                     }`}
                     title={`${talukaData.taluka_name}: ${talukaData.count} surveys`}
                   >
@@ -206,7 +198,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
               </div>
             </div>
 
-            <div className="text-xs opacity-90 mt-1">
+            <div className="text-xs text-emerald-100 mt-1">
               तालुका नुसार सर्वेक्षण संख्या | Taluka-wise Survey Count
             </div>
           </div>
@@ -269,7 +261,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                         </div>
 
                         {/* Show top 3 farmer names if any */}
-                        {talukaData.surveys.slice(0, 3).map((farmer, idx) => (
+                        {talukaData.surveys.slice(0, 3).map((farmer) => (
                           <div key={farmer.farmer_id} className="text-xs text-gray-500 dark:text-gray-400 truncate">
                             • {farmer.name || 'N/A'}
                           </div>
