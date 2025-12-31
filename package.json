@@ -35,6 +35,7 @@
     "formidable": "^3.5.4",
     "fs": "^0.0.1-security",
     "google-translate-api": "^2.3.0",
+    "html2canvas": "^1.4.1",
     "i": "^0.3.7",
     "i18next": "^25.2.1",
     "jquery": "^3.7.1",
