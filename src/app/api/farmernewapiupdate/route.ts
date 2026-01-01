@@ -29,11 +29,27 @@ export async function GET() {
 export async function POST(request: Request) {
     const formData = await request.formData();
     const farmerJson = formData.get('farmer_json') as string;
-    const files3 = formData.getAll('files3') as File[];
-    const files4 = formData.getAll('files4') as File[];
-    const files5 = formData.getAll('files5') as File[];
-    const files6 = formData.getAll('files6') as File[];
-    const files7 = formData.getAll('files7') as File[];
+    // const files3 = formData.getAll('files3') as File[];
+    // const files4 = formData.getAll('files4') as File[];
+    // const files5 = formData.getAll('files5') as File[];
+    // const files6 = formData.getAll('files6') as File[];
+    // const files7 = formData.getAll('files7') as File[];
+    // Try both formats: files3 and files3[]
+    const files3 = (formData.getAll('files3') as File[]).length > 0
+        ? formData.getAll('files3') as File[]
+        : formData.getAll('files3[]') as File[];
+    const files4 = (formData.getAll('files4') as File[]).length > 0
+        ? formData.getAll('files4') as File[]
+        : formData.getAll('files4[]') as File[];
+    const files5 = (formData.getAll('files5') as File[]).length > 0
+        ? formData.getAll('files5') as File[]
+        : formData.getAll('files5[]') as File[];
+    const files6 = (formData.getAll('files6') as File[]).length > 0
+        ? formData.getAll('files6') as File[]
+        : formData.getAll('files6[]') as File[];
+    const files7 = (formData.getAll('files7') as File[]).length > 0
+        ? formData.getAll('files7') as File[]
+        : formData.getAll('files7[]') as File[];
 
     if (!farmerJson) {
         return NextResponse.json({ message: 'farmer_json is required' }, { status: 400 });

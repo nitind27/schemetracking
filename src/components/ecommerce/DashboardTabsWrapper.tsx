@@ -279,34 +279,61 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedTalukaData.surveys.map((farmer, index) => (
-                      <tr 
-                        key={farmer.farmer_id}
-                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                      >
-                        <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{index + 1}</td>
-                        <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{farmer.name || 'N/A'}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{farmer.farmer_id}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{farmer.adivasi || 'N/A'}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                          {farmersData.villages.find(v => v.village_id.toString() === farmer.village_id)?.name || farmer.village_id || 'N/A'}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{farmer.gat_no || 'N/A'}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{farmer.vanksetra || 'N/A'}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{farmer.nivas_seti || 'N/A'}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{farmer.aadhaar_no || 'N/A'}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{farmer.contact_no || 'N/A'}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{farmer.email || 'N/A'}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{farmer.kisan_id || 'N/A'}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{farmer.genger || 'N/A'}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs max-w-xs truncate" title={farmer.update_record || ''}>
-                          {farmer.update_record || 'N/A'}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs max-w-xs truncate" title={farmer.schemes || ''}>
-                          {farmer.schemes || 'N/A'}
-                        </td>
-                      </tr>
-                    ))}
+                    {selectedTalukaData.surveys.map((farmer, index) => {
+                      // Parse farmer_record string
+                      const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+
+                      return (
+                        <tr
+                          key={farmer.farmer_id}
+                          className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{index + 1}</td>
+                          <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
+                            {(farmerRecord.length > 0 ? farmerRecord[0] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 15 ? farmerRecord[15] : '').trim() || farmer.farmer_id || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 1 ? farmerRecord[1] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 13 ? farmerRecord[13] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 2 ? farmerRecord[2] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 3 ? farmerRecord[3] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 4 ? farmerRecord[4] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 5 ? farmerRecord[5] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 6 ? farmerRecord[6] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 7 ? farmerRecord[7] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 8 ? farmerRecord[8] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                            {(farmerRecord.length > 10 ? farmerRecord[10] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs max-w-xs truncate" title={(farmerRecord.length > 17 ? farmerRecord[17] : '').trim() || ''}>
+                            {(farmerRecord.length > 17 ? farmerRecord[17] : '').trim() || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs max-w-xs truncate" title={(farmerRecord.length > 14 ? farmerRecord[14] : '').trim() || ''}>
+                            {(farmerRecord.length > 14 ? farmerRecord[14] : '').trim() || 'N/A'}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
