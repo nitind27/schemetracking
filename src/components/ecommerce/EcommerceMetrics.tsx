@@ -47,7 +47,10 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
       filters.categoryName === "33" ?
         filteredFarmersbdo.length
         :
-        filteredFarmers.length,
+        filters.categoryName === "37" ?
+          filteredFarmersbdo.length // PESA Coordinator sees only their taluka data
+          :
+          filteredFarmers.length,
     schemes: metrics?.schemes.length ?? 0,
     users: metrics?.users.length ?? 0,
     vanakshetra: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "4" || filters.categoryName === "32"
@@ -60,7 +63,7 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
       icon: <GroupIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,
       label: "IFR holders",
       value: counts.farmers,
-      href: filters.categoryName === "33" ? "/ifrholderwisevillages" : "/farmerspage",
+      href: filters.categoryName === "33" || filters.categoryName === "37" ? "/ifrholderwisevillages" : "/farmerspage",
       show: true
     },
     {
