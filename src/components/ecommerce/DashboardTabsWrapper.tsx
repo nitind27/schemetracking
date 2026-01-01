@@ -67,15 +67,29 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     const today = new Date();
     const dateStr = format(today, 'yyyy-MM-dd');
 
+    // Get user information from sessionStorage for filtering
+    const userCategoryId = sessionStorage.getItem('category_id');
+    const userTalukaId = sessionStorage.getItem('taluka_id');
+
     return metrics.farmers.filter(farmer => {
       if (!farmer.update_record) return false;
 
       // Split the update_record by pipe and check each segment
-      return farmer.update_record.split('|').some(segment => {
+      const hasTodaySurvey = farmer.update_record.split('|').some(segment => {
         // Extract the date part from each segment
         const datePart = segment.split('/')[1];
         return datePart === dateStr;
       });
+
+      if (!hasTodaySurvey) return false;
+
+      // If user is PESA Coordinator (category_id = 37), only show surveys from their assigned taluka
+      if (userCategoryId === '37' && userTalukaId) {
+        return farmer.taluka_id === userTalukaId;
+      }
+
+      // For all other users, show all surveys
+      return true;
     });
   };
 
@@ -86,8 +100,18 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   const getTalukaWiseSurveys = (): TalukaSurveyData[] => {
     const talukaMap = new Map();
 
-    // Initialize all talukas with count 0
-    farmersData.taluka.forEach(taluka => {
+    // Get user information from sessionStorage
+    const userCategoryId = sessionStorage.getItem('category_id');
+    const userTalukaId = sessionStorage.getItem('taluka_id');
+
+    // If user is PESA Coordinator (category_id = 37), only show their assigned taluka
+    // Otherwise, show all talukas
+    const talukasToShow = userCategoryId === '37' && userTalukaId
+      ? farmersData.taluka.filter(taluka => taluka.taluka_id.toString() === userTalukaId)
+      : farmersData.taluka;
+
+    // Initialize talukas with count 0
+    talukasToShow.forEach(taluka => {
       talukaMap.set(taluka.taluka_id.toString(), {
         taluka_id: taluka.taluka_id,
         taluka_name: taluka.name,
