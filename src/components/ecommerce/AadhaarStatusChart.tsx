@@ -711,7 +711,7 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
             <div className="flex items-center gap-2">
               <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
               <p>
-                Not Available:{" "}
+                Survey Remains:{" "}
                 <strong>
                   {
                     farmersdata.filter(
@@ -773,7 +773,7 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
             <Bar
               dataKey="withoutAadhaar"
               fill="#f87171"
-              name="Not Available"
+              name="Survey Remains"
               radius={[4, 4, 0, 0]}
             />
           </BarChart>
