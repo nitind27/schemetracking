@@ -122,7 +122,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
     // Count surveys for each taluka
     todaySurveys.forEach(farmer => {
-      const talukaId = farmer.taluka_id;
+      const talukaId = farmer.taluka_id?.toString() || '';
       if (talukaMap.has(talukaId)) {
         const talukaData = talukaMap.get(talukaId);
         talukaData.count += 1;
@@ -195,17 +195,26 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       <div className="w-full mb-4">
         <button
           onClick={() => setShowTalukaList(!showTalukaList)}
-          className="w-full bg-white hover:bg-gray-50 text-black font-semibold py-4 px-6 rounded-lg shadow-lg border-2 border-gray-200 transition-all duration-200"
+          className="w-full bg-white hover:bg-gray-50 text-black font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl border-2 border-gray-200 hover:border-blue-300 transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.99]"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <svg 
+                className="w-6 h-6 text-blue-600 transition-all duration-300 transform hover:scale-110 hover:rotate-12" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+              >
                 <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
               </svg>
-              <span className="text-lg font-bold">आजचे सर्वेक्षण: {todaySurveyCount}</span>
+              <span className="text-lg font-bold">
+                आजचे सर्वेक्षण: 
+                <span className="ml-2 inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-extrabold animate-pulse">
+                  {todaySurveyCount}
+                </span>
+              </span>
             </div>
             <svg 
-              className={`w-5 h-5 text-gray-600 transition-transform duration-200 ${showTalukaList ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 text-gray-600 transition-all duration-300 ease-in-out transform ${showTalukaList ? 'rotate-180' : 'rotate-0'} hover:scale-125`}
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -216,12 +225,26 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         </button>
 
         {/* Taluka List - Expandable */}
-        {showTalukaList && (
-          <div className="mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-lg p-4">
-            <h3 className="text-lg font-semibold mb-3 text-gray-800">तालुका नुसार सर्वेक्षण (Taluka-wise Surveys)</h3>
+        <div 
+          className={`mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden transition-all duration-500 ease-in-out ${
+            showTalukaList 
+              ? 'max-h-[1000px] opacity-100 transform translate-y-0' 
+              : 'max-h-0 opacity-0 transform -translate-y-4 pointer-events-none'
+          }`}
+        >
+          <div className="p-4">
+            <h3 className="text-lg font-semibold mb-3 text-gray-800">
+              तालुका नुसार सर्वेक्षण (Taluka-wise Surveys)
+            </h3>
             <div className="max-h-96 overflow-y-auto">
+              {talukaWiseSurveys.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="text-lg">कोणतेही तालुका सापडले नाहीत</p>
+                  <p className="text-sm mt-2">No talukas found</p>
+                </div>
+              ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {talukaWiseSurveys.map((talukaData) => (
+                {talukaWiseSurveys.map((talukaData, index) => (
                   <button
                     key={talukaData.taluka_id}
                     onClick={() => {
@@ -232,35 +255,41 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       }
                     }}
                     disabled={talukaData.count === 0}
-                    className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                    style={{
+                      transitionDelay: showTalukaList ? `${index * 50}ms` : '0ms',
+                      opacity: showTalukaList ? 1 : 0,
+                      transform: showTalukaList ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)'
+                    }}
+                    className={`p-4 rounded-lg border-2 transition-all duration-300 text-left transform hover:scale-105 active:scale-95 ${
                       talukaData.count > 0
-                        ? 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 hover:shadow-md cursor-pointer'
-                        : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                        ? 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 hover:shadow-lg cursor-pointer'
+                        : 'border-gray-200 bg-gray-50 cursor-not-allowed'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-gray-900 text-base">
-                        {talukaData.taluka_name}
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-gray-900 text-base flex-1 text-left">
+                        {talukaData.taluka_name || 'N/A'}
                       </h4>
-                      <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      <div className={`ml-3 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap ${
                         talukaData.count > 0
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-300 text-gray-600'
                       }`}>
-                        {talukaData.count}
+                        {talukaData.count || 0}
                       </div>
                     </div>
                     {talukaData.count > 0 && (
-                      <p className="text-xs text-gray-600 mt-2">
+                      <p className="text-xs text-gray-600 mt-2 text-left">
                         क्लिक करा तपशील पहाण्यासाठी (Click to view details)
                       </p>
                     )}
                   </button>
                 ))}
               </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       <TabView tabs={tabs} defaultTab="main-dashboard" />
