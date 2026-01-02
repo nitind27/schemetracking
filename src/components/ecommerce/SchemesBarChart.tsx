@@ -16,6 +16,7 @@ import { FarmdersType } from "../farmersdata/farmers";
 import { Schemesdatas } from "../schemesdata/schemes";
 import { Taluka } from "../Taluka/Taluka";
 import { Village } from "../Village/village";
+import Tabviewflex from "../common/Tabviewflex";
 
 interface AllFarmersData {
   schemes: Schemesdatas[];
@@ -93,27 +94,45 @@ const SchemeStatusBarChart = ({
   farmersData: AllFarmersData;
 }) => {
   const { farmers, schemes, taluka, villages } = farmersData;
+  
+  // Get user info for filtering
+  const talukaId = sessionStorage.getItem('taluka_id');
+  const userName = sessionStorage.getItem('userName');
+  const categoryId = sessionStorage.getItem('category_id');
+  const isPESACoordinator = categoryId === "37";
+  const farmersdata = (userName === "BDO" || isPESACoordinator) ? farmers.filter((data) => data.taluka_id == talukaId) : farmers;
+  
+  // Surveyed farmers (only farmers with update_record)
+  const surveyedFarmers = farmersdata.filter((f) => f.update_record && f.update_record.trim() !== "");
+
   const [modalLevel, setModalLevel] = useState<"none" | "scheme" | "taluka" | "village">("none");
   const [selectedScheme, setSelectedScheme] = useState<Schemesdatas | null>(null);
   const [selectedTaluka, setSelectedTaluka] = useState<Taluka | null>(null);
   const [selectedVillage, setSelectedVillage] = useState<Village | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<"Benefited" | "NotApplied" | "Applied">("Benefited");
   const [page, setPage] = useState(1);
-  const [villageSearchTerm, setVillageSearchTerm] = useState(""); // Add this line
+  const [villageSearchTerm, setVillageSearchTerm] = useState("");
 
-  // Chart Data
+  // Chart Data for all farmers
   const chartData = useMemo(() => {
-    const stats = getSchemeStats(farmers, schemes);
+    const stats = getSchemeStats(farmersdata, schemes);
     // Sort descending by benefitedPercent
     return stats.sort((a, b) => b.benefitedPercent! - a.benefitedPercent!);
-  }, [farmers, schemes]);
+  }, [farmersdata, schemes]);
+
+  // Chart Data for surveyed farmers only
+  const surveyedChartData = useMemo(() => {
+    const stats = getSchemeStats(surveyedFarmers, schemes);
+    // Sort descending by benefitedPercent
+    return stats.sort((a, b) => b.benefitedPercent! - a.benefitedPercent!);
+  }, [surveyedFarmers, schemes]);
 
   // Taluka-wise stats for selected scheme and status
   const talukaStats = useMemo(() => {
     if (!selectedScheme) return [];
     return taluka
       .map((t) => {
-        const farmersInTaluka = farmers.filter((f) => Number(f.taluka_id) === t.taluka_id);
+        const farmersInTaluka = farmersdata.filter((f) => Number(f.taluka_id) === t.taluka_id);
         let count = 0;
         farmersInTaluka.forEach((farmer) => {
           const statuses = getLatestSchemeStatuses(farmer.schemes);
@@ -131,8 +150,8 @@ const SchemeStatusBarChart = ({
           percent: farmersInTaluka.length ? (count / farmersInTaluka.length) * 100 : 0,
         };
       })
-      .sort((a, b) => b.percent - a.percent); // <-- sort descending
-  }, [selectedScheme, selectedStatus, farmers, taluka]);
+      .sort((a, b) => b.percent - a.percent);
+  }, [selectedScheme, selectedStatus, farmersdata, taluka]);
 
   // Village-wise stats for selected taluka+scheme+status
   const villageStats = useMemo(() => {
@@ -140,7 +159,7 @@ const SchemeStatusBarChart = ({
     const villagesInTaluka = villages.filter((v) => Number(v.taluka_id) === selectedTaluka.taluka_id);
     return villagesInTaluka
       .map((v) => {
-        const farmersInVillage = farmers.filter((f) => Number(f.village_id) === v.village_id);
+        const farmersInVillage = farmersdata.filter((f) => Number(f.village_id) === v.village_id);
         let count = 0;
         farmersInVillage.forEach((farmer) => {
           const statuses = getLatestSchemeStatuses(farmer.schemes);
@@ -158,8 +177,8 @@ const SchemeStatusBarChart = ({
           percent: farmersInVillage.length ? (count / farmersInVillage.length) * 100 : 0,
         };
       })
-      .sort((a, b) => b.percent - a.percent); // <-- sort descending
-  }, [selectedScheme, selectedTaluka, selectedStatus, farmers, villages]);
+      .sort((a, b) => b.percent - a.percent);
+  }, [selectedScheme, selectedTaluka, selectedStatus, farmersdata, villages]);
 
   // Filtered village stats based on search term
   const filteredVillageStats = useMemo(() => {
@@ -172,14 +191,14 @@ const SchemeStatusBarChart = ({
   // Beneficiaries list for selected village+scheme+status
   const filteredFarmers = useMemo(() => {
     if (!selectedScheme || !selectedVillage) return [];
-    return farmers.filter((f) => {
+    return farmersdata.filter((f) => {
       if (Number(f.village_id) !== selectedVillage.village_id) return false;
       const statuses = getLatestSchemeStatuses(f.schemes);
       const status = statuses[String(selectedScheme.scheme_id)];
       if (selectedStatus === "NotApplied") return !status || status === "NotApplied";
       return status === selectedStatus;
     });
-  }, [selectedScheme, selectedVillage, selectedStatus, farmers]);
+  }, [selectedScheme, selectedVillage, selectedStatus, farmersdata]);
 
   const totalPages = Math.ceil(filteredFarmers.length / PAGE_SIZE);
   const paginatedFarmers = useMemo(() => {
@@ -247,79 +266,186 @@ const SchemeStatusBarChart = ({
   // UI
   const selectedStatusColor = STATUS_LABELS.find(s => s.value === selectedStatus)?.color || "#22c55e";
 
-  return (
-    <>
-      {/* Main Bar Chart */}
-      <div className="w-full mt-3">
-        <div className="bg-white p-4 rounded-xl shadow-lg w-full overflow-x-auto">
-          <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-4">
-            Scheme wise IFR holders
+  // Chart component for all farmers
+  const AllFarmersChart = () => (
+    <div className="w-full mt-3">
+      <div className="bg-white p-4 rounded-xl shadow-lg w-full overflow-x-auto">
+        <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-4">
+          Scheme wise IFR holders
+        </h2>
+        <div className="h-[300px] md:h-[500px] w-full min-w-[600px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 20, right: 24, left: 16, bottom: 60 }}
+              barCategoryGap="5%"
+              barGap={2}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="schemeName"
+                interval={0}
+                height={80}
+                tick={{ fill: "#4b5563", fontSize: 12 }}
+                angle={-35}
+                textAnchor="end"
+              />
+              <YAxis tick={{ fill: "#4b5563", fontSize: 12 }} />
+              <Tooltip />
+              {/* Benefited */}
+              <Bar
+                dataKey="Benefited"
+                fill="#22c55e"
+                name="Benefited"
+                onClick={(_data) => {
+                  const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
+                  setSelectedScheme(scheme || null);
+                  setSelectedStatus("Benefited");
+                  setModalLevel("scheme");
+                }}
+                cursor="pointer"
+                barSize={48}
+              />
+              {/* Not Benefited */}
+              <Bar
+                dataKey="NotApplied"
+                fill="#facc15"
+                name="Not Benefited"
+                onClick={(_data) => {
+                  const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
+                  setSelectedScheme(scheme || null);
+                  setSelectedStatus("NotApplied");
+                  setModalLevel("scheme");
+                }}
+                cursor="pointer"
+                barSize={48}
+              />
+              {/* Applied */}
+              <Bar
+                dataKey="Applied"
+                fill="#3b82f6"
+                name="Applied"
+                onClick={(_data) => {
+                  const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
+                  setSelectedScheme(scheme || null);
+                  setSelectedStatus("Applied");
+                  setModalLevel("scheme");
+                }}
+                cursor="pointer"
+                barSize={48}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Chart component for surveyed farmers only
+  const SurveyedFarmersChart = () => (
+    <div className="w-full mt-3">
+      <div className="bg-white p-4 rounded-xl shadow-lg w-full overflow-x-auto">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+          <h2 className="text-lg md:text-2xl font-bold text-gray-800">
+            Surveyed IFR Holders Scheme Status Across Talukas
           </h2>
-          <div className="h-[300px] md:h-[500px] w-full min-w-[600px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                margin={{ top: 20, right: 24, left: 16, bottom: 60 }}
-                barCategoryGap="5%"
-                barGap={2}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="schemeName"
-                  interval={0}
-                  height={80}
-                  tick={{ fill: "#4b5563", fontSize: 12 }}
-                  angle={-35}
-                  textAnchor="end"
-                />
-                <YAxis tick={{ fill: "#4b5563", fontSize: 12 }} />
-                <Tooltip />
-                {/* Benefited */}
-                <Bar
-                  dataKey="Benefited"
-                  fill="#22c55e"
-                  name="Benefited"
-                  onClick={(_data) => {
-                    const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
-                    setSelectedScheme(scheme || null);
-                    setSelectedStatus("Benefited");
-                    setModalLevel("scheme");
-                  }}
-                  cursor="pointer"
-                  barSize={48}
-                />
-                {/* Not Benefited */}
-                <Bar
-                  dataKey="NotApplied"
-                  fill="#facc15"
-                  name="Not Benefited"
-                  onClick={(_data) => {
-                    const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
-                    setSelectedScheme(scheme || null);
-                    setSelectedStatus("Benefited");
-                    setModalLevel("scheme");
-                  }}
-                  cursor="pointer"
-                  barSize={48}
-                />
-                {/* Applied */}
-                <Bar
-                  dataKey="Applied"
-                  fill="#3b82f6"
-                  name="Applied"
-                  onClick={(_data) => {
-                    const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
-                    setSelectedScheme(scheme || null);
-                    setSelectedStatus("Benefited");
-                    setModalLevel("scheme");
-                  }}
-                  cursor="pointer"
-                  barSize={48}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Overall summary card */}
+          <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
+            <div className="text-sm text-gray-700 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
+                <p>
+                  Total Surveyed: <strong>{surveyedFarmers.length}</strong>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
+        <div className="h-[300px] md:h-[500px] w-full min-w-[600px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={surveyedChartData}
+              margin={{ top: 20, right: 24, left: 16, bottom: 60 }}
+              barCategoryGap="5%"
+              barGap={2}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="schemeName"
+                interval={0}
+                height={80}
+                tick={{ fill: "#4b5563", fontSize: 12 }}
+                angle={-35}
+                textAnchor="end"
+              />
+              <YAxis tick={{ fill: "#4b5563", fontSize: 12 }} />
+              <Tooltip />
+              {/* Benefited */}
+              <Bar
+                dataKey="Benefited"
+                fill="#22c55e"
+                name="Benefited"
+                onClick={(_data) => {
+                  const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
+                  setSelectedScheme(scheme || null);
+                  setSelectedStatus("Benefited");
+                  setModalLevel("scheme");
+                }}
+                cursor="pointer"
+                barSize={48}
+              />
+              {/* Not Benefited */}
+              <Bar
+                dataKey="NotApplied"
+                fill="#facc15"
+                name="Not Benefited"
+                onClick={(_data) => {
+                  const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
+                  setSelectedScheme(scheme || null);
+                  setSelectedStatus("NotApplied");
+                  setModalLevel("scheme");
+                }}
+                cursor="pointer"
+                barSize={48}
+              />
+              {/* Applied */}
+              <Bar
+                dataKey="Applied"
+                fill="#3b82f6"
+                name="Applied"
+                onClick={(_data) => {
+                  const scheme = schemes.find(s => s.scheme_id === _data.schemeId);
+                  setSelectedScheme(scheme || null);
+                  setSelectedStatus("Applied");
+                  setModalLevel("scheme");
+                }}
+                cursor="pointer"
+                barSize={48}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+
+  const tabs = [
+    {
+      id: "all-farmers",
+      label: "All IFR Holders",
+      content: <AllFarmersChart />
+    },
+    {
+      id: "surveyed-farmers",
+      label: "Surveyed IFR Holders",
+      content: <SurveyedFarmersChart />
+    }
+  ];
+
+  return (
+    <>
+      <div className="w-full">
+        <Tabviewflex tabs={tabs} defaultTab="all-farmers" />
       </div>
 
       {/* Modal: Taluka-wise Progress */}

@@ -23,6 +23,7 @@ import { Documents } from "../Documentsdata/documents";
 import { Taluka } from "../Taluka/Taluka";
 import { Village } from "../Village/village";
 import { Schemesubcategorytype } from "../Schemesubcategory/Schemesubcategory";
+import Tabviewflex from "../common/Tabviewflex";
 
 // type ActivePayloadItem = {
 //   payload: {
@@ -133,7 +134,7 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
   }
 
   const maxValue = Math.max(...chartData.map((item) => item.total), 1000);
-  const ticks = [];
+  const ticks: number[] = [];
   for (let i = 1000; i <= maxValue + 1000; i += 1000) {
     ticks.push(i);
   }
@@ -268,7 +269,7 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
   }
 
   const surveyedAadhaarMaxValue = Math.max(...surveyedAadhaarChartData.map((item) => item.totalSurveyed), 0);
-  const surveyedAadhaarTicks = [];
+  const surveyedAadhaarTicks: number[] = [];
   if (surveyedAadhaarMaxValue <= 1000) {
     const interval = surveyedAadhaarMaxValue <= 500 ? 100 : 200;
     for (let i = 0; i <= surveyedAadhaarMaxValue + interval; i += interval) {
@@ -677,133 +678,13 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
       </div>
     ) : null;
 
-  return (
-    <div className="space-y-6">
-      {/* Taluka Wise Survey Chart */}
-      <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full overflow-x-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-          <h2 className="text-lg md:text-2xl font-bold text-gray-800">
-          Surveyed IFR Holders Aadhaar Status Across Talukas
-          </h2>
-          {/* Overall summary card */}
-          <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
-            <div className="text-sm text-gray-700 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
-                <p>
-                  Total Surveyed: <strong>
-                    {
-                      farmersdata.filter(
-                        (f) => f.update_record && f.update_record.trim() !== ""
-                      ).length
-                    }
-                  </strong>
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
-                <p>
-                  With Aadhaar:{" "}
-                  <strong>
-                    {
-                      farmersdata.filter(
-                        (f) => 
-                          f.update_record && f.update_record.trim() !== "" &&
-                          f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
-                      ).length
-                    }
-                  </strong>
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
-                <p>
-                  Without Aadhaar:{" "}
-                  <strong>
-                    {
-                      farmersdata.filter(
-                        (f) => 
-                          f.update_record && f.update_record.trim() !== "" &&
-                          (!f.farmer_record?.split('|')[5] || f.farmer_record?.split('|')[5].trim() === "")
-                      ).length
-                    }
-                  </strong>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Bar chart */}
-        <div className="h-[500px] md:h-[500px] w-full min-w-[600px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={surveyChartData}
-              margin={{
-                top: 24,
-                right: isMobile ? 8 : 24,
-                left: isMobile ? 8 : 16,
-              }}
-              barSize={isMobile ? 20 : 40}
-              onClick={(state) => {
-                if (state?.activeLabel && state?.activePayload?.length) {
-                  const talukaItem = surveyChartData.find(d => d.taluka === state.activeLabel);
-                  if (talukaItem) openSurveyModal(talukaItem.taluka_id, talukaItem.taluka);
-                }
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="taluka"
-                angle={isMobile ? -45 : -35}
-                textAnchor="end"
-                interval={0}
-                height={isMobile ? 100 : 80}
-                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
-              />
-              <YAxis
-                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
-                domain={[0, "auto"]}
-                ticks={surveyTicks.length > 0 ? surveyTicks : undefined}
-              />
-              <Tooltip 
-                formatter={(value: number, name: string) => {
-                  if (name === "Total Surveyed") {
-                    return [`${value} (Surveyed)`, "Total Surveyed"];
-                  }
-                  return [value, name];
-                }}
-              />
-              <Bar
-                dataKey="total"
-                fill="#6366f1"
-                name="Total Surveyed (Only Surveyed Farmers)"
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                dataKey="surveyed"
-                fill="#10b981"
-                name="With Aadhaar (Out of Surveyed)"
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                dataKey="yetToBeSurveyed"
-                fill="#f87171"
-                name="Without Aadhaar (Out of Surveyed)"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <SurveyModal />
-      </div>
-
-
-      {/* Aadhaar Status Chart */}
-      <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full overflow-x-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-          <h2 className="text-lg md:text-2xl font-bold text-gray-800">
-            Aadhaar Status of IFR Beneficiaries Across Talukas
-          </h2>
+  // All Aadhaar Status Chart Component
+  const AllAadhaarStatusChart = () => (
+    <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full overflow-x-auto">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+        <h2 className="text-lg md:text-2xl font-bold text-gray-800">
+          Aadhaar Status of IFR Beneficiaries Across Talukas
+        </h2>
         {/* Overall summary card */}
         <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
           <div className="text-sm text-gray-700 space-y-2">
@@ -830,7 +711,7 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
             <div className="flex items-center gap-2">
               <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
               <p>
-                Not Availbale:{" "}
+                Not Available:{" "}
                 <strong>
                   {
                     farmersdata.filter(
@@ -899,7 +780,145 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
         </ResponsiveContainer>
       </div>
       <AadhaarModal />
+    </div>
+  );
+
+  // Surveyed Aadhaar Status Chart Component
+  const SurveyedAadhaarStatusChart = () => (
+    <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full overflow-x-auto">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+        <h2 className="text-lg md:text-2xl font-bold text-gray-800">
+          Surveyed IFR Holders Aadhaar Status Across Talukas
+        </h2>
+        {/* Overall summary card */}
+        <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
+          <div className="text-sm text-gray-700 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
+              <p>
+                Total Surveyed: <strong>
+                  {
+                    farmersdata.filter(
+                      (f) => f.update_record && f.update_record.trim() !== ""
+                    ).length
+                  }
+                </strong>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
+              <p>
+                With Aadhaar:{" "}
+                <strong>
+                  {
+                    farmersdata.filter(
+                      (f) => 
+                        f.update_record && f.update_record.trim() !== "" &&
+                        f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
+                    ).length
+                  }
+                </strong>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
+              <p>
+                Without Aadhaar:{" "}
+                <strong>
+                  {
+                    farmersdata.filter(
+                      (f) => 
+                        f.update_record && f.update_record.trim() !== "" &&
+                        (!f.farmer_record?.split('|')[5] || f.farmer_record?.split('|')[5].trim() === "")
+                    ).length
+                  }
+                </strong>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
+      {/* Bar chart */}
+      <div className="h-[500px] md:h-[500px] w-full min-w-[600px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={surveyedAadhaarChartData}
+            margin={{
+              top: 24,
+              right: isMobile ? 8 : 24,
+              left: isMobile ? 8 : 16,
+            }}
+            barSize={isMobile ? 20 : 40}
+            onClick={(state) => {
+              if (state?.activeLabel && state?.activePayload?.length) {
+                const talukaItem = surveyedAadhaarChartData.find(d => d.taluka === state.activeLabel);
+                if (talukaItem) openSurveyModal(talukaItem.taluka_id, talukaItem.taluka);
+              }
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="taluka"
+              angle={isMobile ? -45 : -35}
+              textAnchor="end"
+              interval={0}
+              height={isMobile ? 100 : 80}
+              tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
+            />
+            <YAxis
+              tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
+              domain={[0, "auto"]}
+              ticks={surveyedAadhaarTicks.length > 0 ? surveyedAadhaarTicks : undefined}
+            />
+            <Tooltip 
+              formatter={(value: number, name: string) => {
+                if (name === "Total Surveyed") {
+                  return [`${value} (Surveyed)`, "Total Surveyed"];
+                }
+                return [value, name];
+              }}
+            />
+            <Bar
+              dataKey="totalSurveyed"
+              fill="#6366f1"
+              name="Total Surveyed (Only Surveyed Farmers)"
+              radius={[4, 4, 0, 0]}
+            />
+            <Bar
+              dataKey="surveyedWithAadhaar"
+              fill="#10b981"
+              name="With Aadhaar (Out of Surveyed)"
+              radius={[4, 4, 0, 0]}
+            />
+            <Bar
+              dataKey="surveyedWithoutAadhaar"
+              fill="#f87171"
+              name="Without Aadhaar (Out of Surveyed)"
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <SurveyModal />
+    </div>
+  );
+
+  const tabs = [
+    {
+      id: "all-aadhaar",
+      label: "All Aadhaar Status",
+      content: <AllAadhaarStatusChart />
+    },
+    {
+      id: "surveyed-aadhaar",
+      label: "Surveyed Aadhaar Status",
+      content: <SurveyedAadhaarStatusChart />
+    }
+  ];
+
+  return (
+    <div className="w-full">
+      <Tabviewflex tabs={tabs} defaultTab="all-aadhaar" />
     </div>
   );
 };

@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import Tabviewflex from "../common/Tabviewflex";
 
 // --- Type Definitions ---
 import { FarmdersType } from "../farmersdata/farmers";
@@ -86,11 +87,43 @@ const farmerHasAvailableDocument = (farmer: FarmdersType, docId: number) => {
 const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const { taluka, farmers, documents, villages } = farmersData;
 
+  // Get user info for filtering
+  const talukaId = sessionStorage.getItem('taluka_id');
+  const userName = sessionStorage.getItem('userName');
+  const categoryId = sessionStorage.getItem('category_id');
+  const isPESACoordinator = categoryId === "37";
+  const farmersdata = (userName === "BDO" || isPESACoordinator) ? farmers.filter((data) => data.taluka_id == talukaId) : farmers;
+
+  // All farmers chart data
   const documentChartData: DocumentBar[] = documents?.map((doc) => {
     let hasCount = 0;
     let notCount = 0;
 
-    farmers.forEach((farmer) => {
+    farmersdata.forEach((farmer) => {
+      const docMap = parseFarmerDocuments(farmer.documents);
+      if (docMap[String(doc.id)] && docMap[String(doc.id)].available === 'Yes') {
+        hasCount++;
+      } else {
+        notCount++;
+      }
+    });
+
+    return {
+      document: doc.document_name,
+      has: hasCount,
+      not: notCount,
+      id: doc.id,
+    };
+  }) || [];
+
+  // Surveyed farmers chart data (only farmers with update_record)
+  const surveyedFarmers = farmersdata.filter((f) => f.update_record && f.update_record.trim() !== "");
+  
+  const surveyedDocumentChartData: DocumentBar[] = documents?.map((doc) => {
+    let hasCount = 0;
+    let notCount = 0;
+
+    surveyedFarmers.forEach((farmer) => {
       const docMap = parseFarmerDocuments(farmer.documents);
       if (docMap[String(doc.id)] && docMap[String(doc.id)].available === 'Yes') {
         hasCount++;
@@ -130,13 +163,13 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
   const filteredFarmers = useMemo(() => {
     const docId = selectedDocDropdown ?? selectedDocId;
     if (!docId) return [];
-    return farmers.filter((farmer) => {
+    return farmersdata.filter((farmer) => {
       const hasAvailable = farmerHasAvailableDocument(farmer, docId);
       if (docFilter === "has") return hasAvailable;
       if (docFilter === "not") return !hasAvailable;
       return true;
     });
-  }, [farmers, docFilter, selectedDocDropdown, selectedDocId]);
+  }, [farmersdata, docFilter, selectedDocDropdown, selectedDocId]);
 
   // --- Document Dropdown Change Handler ---
   const handleDocDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -156,7 +189,7 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
     const docName =
       documents.find((d) => d.id === docId)?.document_name || "Document";
 
-    const farmersToExport = farmers.filter((farmer) => {
+    const farmersToExport = farmersdata.filter((farmer) => {
       const hasAvailable = farmerHasAvailableDocument(farmer, docId);
       if (docFilter === "has") return hasAvailable;
       if (docFilter === "not") return !hasAvailable;
@@ -371,7 +404,7 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
     if (!selectedDocumentId) return [];
     return taluka
       .map(t => {
-        const talukaFarmers = farmers.filter(f => Number(f.taluka_id) === Number(t.taluka_id));
+        const talukaFarmers = farmersdata.filter(f => Number(f.taluka_id) === Number(t.taluka_id));
         const withDoc = talukaFarmers.filter(f => farmerHasAvailableDocument(f, selectedDocumentId)).length;
         return {
           ...t,
@@ -381,14 +414,14 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
         };
       })
       .sort((a, b) => b.percent - a.percent);
-  }, [selectedDocumentId, taluka, farmers]);
+  }, [selectedDocumentId, taluka, farmersdata]);
 
   const villageProgress = useMemo(() => {
     if (!selectedDocumentId || !selectedTalukaId) return [];
     const villagesInTaluka = villages.filter(v => Number(v.taluka_id) === Number(selectedTalukaId));
     return villagesInTaluka
       .map(v => {
-        const villageFarmers = farmers.filter(
+        const villageFarmers = farmersdata.filter(
           f => Number(f.village_id) === Number(v.village_id) && Number(f.taluka_id) === Number(selectedTalukaId)
         );
         const withDoc = villageFarmers.filter(f => farmerHasAvailableDocument(f, selectedDocumentId)).length;
@@ -400,7 +433,7 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
         };
       })
       .sort((a, b) => b.percent - a.percent);
-  }, [selectedDocumentId, selectedTalukaId, villages, farmers]);
+  }, [selectedDocumentId, selectedTalukaId, villages, farmersdata]);
 
   const filteredVillageProgress = useMemo(() => {
     if (!villageSearch) return villageProgress;
@@ -412,10 +445,10 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
 
   const farmersInVillage = useMemo(() => {
     if (!selectedDocumentId || !selectedVillageId || !selectedTalukaId) return [];
-    return farmers.filter(
+    return farmersdata.filter(
       f => Number(f.village_id) === Number(selectedVillageId) && Number(f.taluka_id) === Number(selectedTalukaId)
     );
-  }, [selectedDocumentId, selectedVillageId, selectedTalukaId, farmers]);
+  }, [selectedDocumentId, selectedVillageId, selectedTalukaId, farmersdata]);
 
   const filteredFarmersInVillage = useMemo(() => {
     if (!selectedDocumentId) return [];
@@ -681,7 +714,8 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
     }
   };
 
-  return (
+  // Chart component for all farmers
+  const AllFarmersChart = () => (
     <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full mt-3 md:mt-3 overflow-x-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
         <h2 className="text-lg md:text-2xl font-bold text-gray-800">
@@ -740,6 +774,110 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
       {TalukaModal()}
       {VillageModal()}
       {FarmersModal()}
+    </div>
+  );
+
+  // Chart component for surveyed farmers only
+  const SurveyedFarmersChart = () => {
+    const handleSurveyedDocumentBarClick = (state: CategoricalChartState) => {
+      if (
+        state &&
+        state.activeLabel &&
+        state.activePayload &&
+        state.activePayload.length > 0
+      ) {
+        const doc = surveyedDocumentChartData.find(
+          (d) => d.document === state.activeLabel
+        );
+        if (doc) openTalukaModal(doc.id);
+      }
+    };
+
+    return (
+      <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full mt-3 md:mt-3 overflow-x-auto">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+          <h2 className="text-lg md:text-2xl font-bold text-gray-800">
+            Surveyed IFR Holders Document Availability Across Talukas
+          </h2>
+          {/* Overall summary card */}
+          <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
+            <div className="text-sm text-gray-700 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
+                <p>
+                  Total Surveyed: <strong>{surveyedFarmers.length}</strong>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
+                <p>
+                  Available
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
+                <p>
+                  Not Available
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="h-[500px] md:h-[500px] w-full min-w-[600px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={surveyedDocumentChartData}
+              margin={{
+                top: 24,
+                right: isMobile ? 8 : 24,
+                left: isMobile ? 8 : 16,
+                bottom: isMobile ? 80 : 60
+              }}
+              barSize={isMobile ? 20 : 40}
+              onClick={handleSurveyedDocumentBarClick}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="document"
+                angle={isMobile ? -45 : -35}
+                textAnchor="end"
+                interval={0}
+                height={isMobile ? 100 : 80}
+                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
+              />
+              <YAxis 
+                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
+              />
+              <Tooltip />
+              <Bar dataKey="has" fill="#10b981" name="उपलब्ध" />
+              <Bar dataKey="not" fill="#f87171" name="उपलब्ध नाही" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <Modal />
+        {TalukaModal()}
+        {VillageModal()}
+        {FarmersModal()}
+      </div>
+    );
+  };
+
+  const tabs = [
+    {
+      id: "all-farmers",
+      label: "All IFR Holders",
+      content: <AllFarmersChart />
+    },
+    {
+      id: "surveyed-farmers",
+      label: "Surveyed IFR Holders",
+      content: <SurveyedFarmersChart />
+    }
+  ];
+
+  return (
+    <div className="w-full">
+      <Tabviewflex tabs={tabs} defaultTab="all-farmers" />
     </div>
   );
 };
