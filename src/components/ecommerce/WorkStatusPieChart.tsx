@@ -119,7 +119,7 @@ const WorkStatusPieChart: React.FC<Props> = ({ serverData }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-[400px] flex flex-col">
+    <div className="bg-[#f3fff3] rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-[400px] flex flex-col">
       {/* Header */}
       <div className="mb-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">

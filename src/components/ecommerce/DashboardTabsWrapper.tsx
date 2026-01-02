@@ -312,7 +312,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             {selectedTalukaData && selectedTalukaData.surveys.length > 0 ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <table className="w-full text-sm text-left">
-                  <thead className="bg-blue-50 dark:bg-gray-700 sticky top-0">
+                  <thead className="bg-blue-50 dark:bg-gray-700 sticky top-0 whitespace-nowrap">
                     <tr>
                       <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600">#</th>
                       <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600">नाव (Name)</th>
@@ -339,7 +339,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       return (
                         <tr
                           key={farmer.farmer_id}
-                          className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                          className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors whitespace-nowrap"
                         >
                           <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{index + 1}</td>
                           <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
