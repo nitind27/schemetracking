@@ -189,7 +189,11 @@ const AppSidebar: React.FC = () => {
     ? allNavItems
     : (storedValuecategory_name === "8" || storedValuecategory_name === "33" || storedValuecategory_name === "4")
       ? dopodashboard
-      : dashboardOnly;
+      : storedValuecategory_name === "32"
+        ? dashboardOnly // District Collector sees only Dashboard
+        : storedValuecategory_name === "24"
+          ? dashboardOnly // RFO/DFO sees only Dashboard (Section 3(2) will show in tab)
+          : dashboardOnly;
 
   useEffect(() => {
     const value = sessionStorage.getItem('userName');
@@ -269,8 +273,9 @@ const AppSidebar: React.FC = () => {
     });
   };
 
-  // Hide sidebar completely when category_id = 32 or 37 (PESA Coordinator)
-  if (storedValuecategory_name === "32" || storedValuecategory_name === "37") {
+  // Hide sidebar completely when category_id = 37 (PESA Coordinator)
+  // Note: category_id = 32 (District Collector) should show sidebar
+  if (storedValuecategory_name === "37") {
     return null;
   }
 

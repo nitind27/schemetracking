@@ -20,6 +20,7 @@ import { Village } from "@/components/Village/village";
 import { Schemesubcategorytype } from "@/components/Schemesubcategory/Schemesubcategory";
 import { Modal } from "@/components/ui/modal";
 import { format } from 'date-fns';
+import CollectorDashboardWrapper from "@/components/proposalsdata/CollectorDashboardWrapper";
 
 interface Metrics {
   farmers: FarmdersType[];
@@ -161,6 +162,21 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
   // For PESA Coordinator (category_id = 37), show only Main Dashboard
   const isPESACoordinator = categoryId === "37";
+  
+  // For Collector (category_id = 32), show Collector Dashboard
+  const isCollector = categoryId === "32";
+  
+  // For RFO/DFO (category_id = 24) and PROJECT OFFICER (category_id = 8) - show only Section 3(2) tab
+  const isRFOorPO = categoryId === "24" || categoryId === "8";
+  
+  // If user is Collector, show Collector Dashboard
+  if (isCollector) {
+    return (
+      <div className="w-full">
+        <CollectorDashboardWrapper />
+      </div>
+    );
+  }
 
   const allTabs = [
     {
@@ -184,14 +200,23 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     }
   ];
 
-  // Filter tabs for PESA Coordinator - show only main dashboard
+  // Filter tabs:
+  // - PESA Coordinator: only main dashboard
+  // - RFO/DFO (24) and PROJECT OFFICER (8): only Section 3(2) tab
+  // - Others: all tabs
   const tabs = isPESACoordinator 
     ? allTabs.filter(tab => tab.id === "main-dashboard")
-    : allTabs;
+    : isRFOorPO
+      ? allTabs.filter(tab => tab.id === "notification") // Only Section 3(2) tab
+      : allTabs;
+  
+  // Set default tab
+  const defaultTab = isRFOorPO ? "notification" : "main-dashboard";
 
   return (
     <div className="w-full">
-      {/* Today's Survey Count Button */}
+      {/* Today's Survey Count Button - Hide for RFO/DFO and PROJECT OFFICER */}
+      {!isRFOorPO && (
       <div className="w-full mb-4">
         <button
           onClick={() => setShowTalukaList(!showTalukaList)}
@@ -291,8 +316,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
           </div>
         </div>
       </div>
+      )}
 
-      <TabView tabs={tabs} defaultTab="main-dashboard" />
+      <TabView tabs={tabs} defaultTab={defaultTab} />
 
       {/* Individual Taluka Detail Modal */}
       <Modal
