@@ -83,7 +83,7 @@ export async function POST(req: Request) {
       const recipientEmail = userWithEmail.email || `user${user.user_id}@${process.env.EMAIL_DOMAIN || 'schemetracking.com'}`;
       
       // Generate reset link
-      const resetLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+      const resetLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://fra.weclocks.online'}/reset-password?token=${resetToken}`;
 
       // Send email
       const emailSent = await sendEmail({
