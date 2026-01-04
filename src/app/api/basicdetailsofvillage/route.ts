@@ -17,6 +17,7 @@ export async function GET() {
   v.tharav,	
   v.prociding,
   v.gis,
+  v.cfrmp_pdf,
   COALESCE(
     (
       SELECT CONCAT(

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/modal';
 import Loader from '@/common/Loader';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 interface Proposal {
   proposal_id?: number;
@@ -33,6 +34,7 @@ interface Proposal {
 }
 
 export default function Section32Tabs() {
+  const router = useRouter();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
@@ -48,6 +50,7 @@ export default function Section32Tabs() {
   const [sendBackReason, setSendBackReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showSendBackModal, setShowSendBackModal] = useState(false);
+  const [showForwardConfirmModal, setShowForwardConfirmModal] = useState(false);
 
   useEffect(() => {
     fetchProposals();
@@ -114,18 +117,13 @@ export default function Section32Tabs() {
     // Check if proposal has been forwarded
     if (proposal.work_status === 'pending at DLC') {
       setIsForwarded(true);
-      // Load saved checkboxes if available
-      if (proposal.work_status_record) {
-        try {
-          const record = JSON.parse(proposal.work_status_record);
-          if (record.review_checkboxes) {
-            setReviewCheckboxes(record.review_checkboxes);
-          }
-        } catch (e) {
-          // If not JSON, ignore
-          console.error('Error parsing work status record:', e);
-        }
-      }
+      // Uncheck all checkboxes when disabled (forwarded)
+      setReviewCheckboxes({
+        siteInspection: false,
+        boundaryVerified: false,
+        fraCompliance: false,
+        treeCount: false
+      });
     } else {
       setIsForwarded(false);
       // Reset checkboxes for new review
@@ -137,6 +135,18 @@ export default function Section32Tabs() {
       });
     }
   };
+
+  // Uncheck disabled checkboxes if they are checked (when isForwarded changes)
+  useEffect(() => {
+    if (isForwarded) {
+      setReviewCheckboxes({
+        siteInspection: false,
+        boundaryVerified: false,
+        fraCompliance: false,
+        treeCount: false
+      });
+    }
+  }, [isForwarded]);
 
   const handleReject = () => {
     setShowRejectModal(true);
@@ -168,7 +178,8 @@ export default function Section32Tabs() {
         setShowRejectModal(false);
         setRejectReason('');
         setIsModalOpen(false);
-        fetchProposals();
+        await fetchProposals();
+        router.refresh();
       } else {
         toast.error('Failed to reject proposal');
       }
@@ -208,7 +219,8 @@ export default function Section32Tabs() {
         setShowSendBackModal(false);
         setSendBackReason('');
         setIsModalOpen(false);
-        fetchProposals();
+        await fetchProposals();
+        router.refresh();
       } else {
         toast.error('Failed to send back proposal');
       }
@@ -218,15 +230,18 @@ export default function Section32Tabs() {
     }
   };
 
-  const handleForwardToDLC = async () => {
-    if (!selectedProposal) return;
-
+  const handleForwardToDLC = () => {
     // Check if at least one checkbox is checked
     const hasAnyChecked = Object.values(reviewCheckboxes).some(v => v);
     if (!hasAnyChecked) {
       toast.error('Please complete at least one review criteria');
       return;
     }
+    setShowForwardConfirmModal(true);
+  };
+
+  const handleConfirmForwardToDLC = async () => {
+    if (!selectedProposal) return;
 
     try {
       const response = await fetch('/api/proposals/updatestatus', {
@@ -242,9 +257,13 @@ export default function Section32Tabs() {
       });
 
       if (response.ok) {
-        toast.success('Proposal forwarded to DLC');
+        toast.success('Proposal forwarded to DLC successfully');
+        setShowForwardConfirmModal(false);
+        setIsModalOpen(false);
         setIsForwarded(true);
-        fetchProposals();
+        await fetchProposals();
+        // Refresh the page to show updated list
+        router.refresh();
       } else {
         toast.error('Failed to forward proposal to DLC');
       }
@@ -357,13 +376,89 @@ export default function Section32Tabs() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Side - Review Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+            {/* Left Side - Proposal Information (Larger) */}
+            <div className="space-y-4 md:col-span-1">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                  Proposal information:
+                </h3>
+                <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg space-y-3">
+                  {selectedProposal && (
+                    <>
+                      <p className="text-base text-gray-700 dark:text-gray-300">
+                        <span className="font-semibold">Proposal ID:</span> #{selectedProposal.proposal_id}
+                      </p>
+                      {selectedProposal.land_details && (
+                        <p className="text-base text-gray-700 dark:text-gray-300">
+                          <span className="font-semibold">Land Details:</span> {selectedProposal.land_details}
+                        </p>
+                      )}
+                      {selectedProposal.taluka_name && (
+                        <p className="text-base text-gray-700 dark:text-gray-300">
+                          <span className="font-semibold">Taluka:</span> {selectedProposal.taluka_name}
+                        </p>
+                      )}
+                      {selectedProposal.village_name && (
+                        <p className="text-base text-gray-700 dark:text-gray-300">
+                          <span className="font-semibold">Village:</span> {selectedProposal.village_name}
+                        </p>
+                      )}
+                      {selectedProposal.gp_name && (
+                        <p className="text-base text-gray-700 dark:text-gray-300">
+                          <span className="font-semibold">Gram Panchayat:</span> {selectedProposal.gp_name}
+                        </p>
+                      )}
+                      {selectedProposal.beneficiaries && (
+                        <p className="text-base text-gray-700 dark:text-gray-300">
+                          <span className="font-semibold">Beneficiaries:</span> {selectedProposal.beneficiaries}
+                        </p>
+                      )}
+                      {selectedProposal.number_of_tree && (
+                        <p className="text-base text-gray-700 dark:text-gray-300">
+                          <span className="font-semibold">Number of Trees:</span> {selectedProposal.number_of_tree}
+                        </p>
+                      )}
+                      {selectedProposal.remarks && (
+                        <p className="text-base text-gray-700 dark:text-gray-300">
+                          <span className="font-semibold">Remarks:</span> {selectedProposal.remarks}
+                        </p>
+                      )}
+                      {selectedProposal.user_name && (
+                        <p className="text-base text-gray-700 dark:text-gray-300">
+                          <span className="font-semibold">Created By:</span> {selectedProposal.user_name}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons - Side by Side */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleReject}
+                  disabled={isForwarded}
+                  className="flex-1 px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Reject
+                </button>
+                <button
+                  onClick={handleSendBack}
+                  disabled={isForwarded}
+                  className="flex-1 px-3 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Send Back
+                </button>
+              </div>
+            </div>
+
+            {/* Right Side - Review Section (Larger) */}
+            <div className="space-y-4 md:col-span-1">
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
                 Review!
               </h3>
-              <div className="space-y-3">
-                <label className="flex items-center space-x-3 cursor-pointer">
+              <div className="space-y-4">
+                <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
                   <input
                     type="checkbox"
                     checked={reviewCheckboxes.siteInspection}
@@ -376,11 +471,11 @@ export default function Section32Tabs() {
                     disabled={isForwarded}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <span className="text-gray-700 dark:text-gray-300">
+                  <span className="text-base text-gray-700 dark:text-gray-300">
                     Site inspection Completed.
                   </span>
                 </label>
-                <label className="flex items-center space-x-3 cursor-pointer">
+                <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
                   <input
                     type="checkbox"
                     checked={reviewCheckboxes.boundaryVerified}
@@ -393,11 +488,11 @@ export default function Section32Tabs() {
                     disabled={isForwarded}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <span className="text-gray-700 dark:text-gray-300">
+                  <span className="text-base text-gray-700 dark:text-gray-300">
                     Boundary verified
                   </span>
                 </label>
-                <label className="flex items-center space-x-3 cursor-pointer">
+                <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
                   <input
                     type="checkbox"
                     checked={reviewCheckboxes.fraCompliance}
@@ -410,11 +505,11 @@ export default function Section32Tabs() {
                     disabled={isForwarded}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <span className="text-gray-700 dark:text-gray-300">
+                  <span className="text-base text-gray-700 dark:text-gray-300">
                     Compliance with FRA Section 3(2) norms
                   </span>
                 </label>
-                <label className="flex items-center space-x-3 cursor-pointer">
+                <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
                   <input
                     type="checkbox"
                     checked={reviewCheckboxes.treeCount}
@@ -427,86 +522,10 @@ export default function Section32Tabs() {
                     disabled={isForwarded}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <span className="text-gray-700 dark:text-gray-300">
+                  <span className="text-base text-gray-700 dark:text-gray-300">
                     Tree count and ecological impact noted.
                   </span>
                 </label>
-              </div>
-            </div>
-
-            {/* Right Side - Proposal Information & Actions */}
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
-                  Proposal information:
-                </h3>
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg space-y-2">
-                  {selectedProposal && (
-                    <>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <span className="font-medium">Proposal ID:</span> #{selectedProposal.proposal_id}
-                      </p>
-                      {selectedProposal.land_details && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Land Details:</span> {selectedProposal.land_details}
-                        </p>
-                      )}
-                      {selectedProposal.taluka_name && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Taluka:</span> {selectedProposal.taluka_name}
-                        </p>
-                      )}
-                      {selectedProposal.village_name && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Village:</span> {selectedProposal.village_name}
-                        </p>
-                      )}
-                      {selectedProposal.gp_name && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Gram Panchayat:</span> {selectedProposal.gp_name}
-                        </p>
-                      )}
-                      {selectedProposal.beneficiaries && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Beneficiaries:</span> {selectedProposal.beneficiaries}
-                        </p>
-                      )}
-                      {selectedProposal.number_of_tree && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Number of Trees:</span> {selectedProposal.number_of_tree}
-                        </p>
-                      )}
-                      {selectedProposal.remarks && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Remarks:</span> {selectedProposal.remarks}
-                        </p>
-                      )}
-                      {selectedProposal.user_name && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Created By:</span> {selectedProposal.user_name}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={handleReject}
-                  disabled={isForwarded}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Reject
-                </button>
-                <button
-                  onClick={handleSendBack}
-                  disabled={isForwarded}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Send Back
-                </button>
               </div>
             </div>
           </div>
@@ -605,6 +624,40 @@ export default function Section32Tabs() {
               className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
             >
               Confirm Send Back
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Forward to DLC Confirmation Modal */}
+      <Modal
+        isOpen={showForwardConfirmModal}
+        onClose={() => {
+          setShowForwardConfirmModal(false);
+        }}
+        className="max-w-md"
+      >
+        <div className="p-6">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
+            Confirm Forward to DLC
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Are you sure you want to forward this proposal to DLC? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={() => {
+                setShowForwardConfirmModal(false);
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmForwardToDLC}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Confirm Forward
             </button>
           </div>
         </div>

@@ -90,6 +90,7 @@ export interface basicdetailsofvillagetype {
     kmlfile: string;
     gis: string;
     gis_2: string;
+    cfrmp_pdf: string;
     status: string;
     created_at: string;
     updated_at: string;
