@@ -113,7 +113,7 @@ export default function Section32Tabs() {
   const handleOpenModal = (proposal: Proposal) => {
     setSelectedProposal(proposal);
     setIsModalOpen(true);
-    
+
     // Check if proposal has been forwarded
     if (proposal.work_status === 'pending at DLC') {
       setIsForwarded(true);
@@ -289,17 +289,16 @@ export default function Section32Tabs() {
     return (
       <span
         onClick={() => handleOpenModal(proposal)}
-        className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${
-          proposal.work_status === 'Under Review'
-            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-            : proposal.work_status === 'Rejected'
+        className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${proposal.work_status === 'Under Review'
+          ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+          : proposal.work_status === 'Rejected'
             ? 'bg-red-100 text-red-800 hover:bg-red-200'
             : proposal.work_status === 'Correction needed'
-            ? 'bg-orange-100 text-orange-800 hover:bg-orange-200'
-            : proposal.work_status === 'pending at DLC'
-            ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-        }`}
+              ? 'bg-orange-100 text-orange-800 hover:bg-orange-200'
+              : proposal.work_status === 'pending at DLC'
+                ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+          }`}
       >
         {proposal.work_status}
       </span>
@@ -360,7 +359,7 @@ export default function Section32Tabs() {
       {/* Work Under Review Modal */}
       <Modal
         isOpen={isModalOpen}
-          onClose={() => {
+        onClose={() => {
           setIsModalOpen(false);
           setSelectedProposal(null);
           setRejectReason('');
@@ -438,17 +437,26 @@ export default function Section32Tabs() {
                 <button
                   onClick={handleReject}
                   disabled={isForwarded}
-                  className="flex-1 px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   Reject
                 </button>
                 <button
                   onClick={handleSendBack}
                   disabled={isForwarded}
-                  className="flex-1 px-3 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   Send Back
                 </button>
+
+                <button
+                  onClick={handleForwardToDLC}
+                  disabled={isForwarded}
+                  className="flex-1 px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  Forward Recommendation to DLC
+                </button>
+
               </div>
             </div>
 
@@ -531,15 +539,7 @@ export default function Section32Tabs() {
           </div>
 
           {/* Forward to DLC Button */}
-          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={handleForwardToDLC}
-              disabled={isForwarded}
-              className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-            >
-              Forward Recommendation to DLC
-            </button>
-          </div>
+
         </div>
       </Modal>
 
