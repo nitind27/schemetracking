@@ -51,9 +51,13 @@ export default function Section32Tabs() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showSendBackModal, setShowSendBackModal] = useState(false);
   const [showForwardConfirmModal, setShowForwardConfirmModal] = useState(false);
+  const [userCategoryId, setUserCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProposals();
+    // Get user category from sessionStorage
+    const categoryId = sessionStorage.getItem('category_id');
+    setUserCategoryId(categoryId);
   }, []);
 
   const fetchProposals = async () => {
@@ -312,7 +316,7 @@ export default function Section32Tabs() {
   return (
     <div className="w-full bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
       <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-        RFO / DFO Login - Section 3(2)
+        {userCategoryId === "8" ? "District Collector" : "RFO / DFO Login"} - Section 3(2)
       </h2>
 
       <div className="overflow-x-auto">

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { serialize } from 'cookie'; // npm install cookie
+import crypto from 'crypto';
 
 // Reuse or define this interface if not already present
 interface User {
@@ -49,7 +50,11 @@ export async function POST(req: Request) {
 
     const user = users[0] as User;
    
-    if (password !== user.password) {
+    // Hash the incoming password with SHA256
+    const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+    
+    // Compare the hashed password with the stored hash
+    if (hashedPassword !== user.password) {
       return NextResponse.json(
         { message: 'Invalid credentials' },
         { status: 401 }

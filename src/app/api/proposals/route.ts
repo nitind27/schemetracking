@@ -11,7 +11,8 @@ export async function GET() {
         taluka.name AS taluka_name,
         grampanchyat.gpname AS gp_name,
         village.marathi_name AS village_name,
-        users.name AS user_name
+        users.name AS user_name,
+        users.user_category_id AS user_category_id
       FROM proposal
       LEFT JOIN taluka ON proposal.taluka_id = taluka.taluka_id
       LEFT JOIN grampanchyat ON proposal.gp_id = grampanchyat.gp_id

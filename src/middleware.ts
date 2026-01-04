@@ -4,9 +4,11 @@ export function middleware(req: NextRequest) {
   const authToken = req.cookies.get('auth_token');
   const isLoginPage = req.nextUrl.pathname === '/signin';
   const isPrivacyPolicyPage = req.nextUrl.pathname === '/privacy_policy';
+  const isForgotPasswordPage = req.nextUrl.pathname === '/forgot-password';
+  const isResetPasswordPage = req.nextUrl.pathname === '/reset-password';
 
-  // Allow privacy_policy page to be accessed without login
-  if (isPrivacyPolicyPage) {
+  // Allow these pages to be accessed without login
+  if (isPrivacyPolicyPage || isForgotPasswordPage || isResetPasswordPage) {
     return NextResponse.next();
   }
 
