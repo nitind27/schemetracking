@@ -1042,6 +1042,18 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                     {selectedTalukaData.surveys.map((farmer, index) => {
                       // Parse farmer_record string
                       const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+                      
+                      // Function to mask Aadhaar number (first 8 digits as *, last 4 digits as numbers)
+                      const maskAadhaar = (aadhaar: string): string => {
+                        if (!aadhaar || aadhaar.trim() === '' || aadhaar === 'N/A') {
+                          return 'N/A';
+                        }
+                        const cleaned = aadhaar.trim().replace(/\s+/g, '');
+                        if (cleaned.length !== 12 || !/^\d+$/.test(cleaned)) {
+                          return aadhaar; // Return original if not 12 digits
+                        }
+                        return '*'.repeat(8) + cleaned.slice(-4);
+                      };
 
                       return (
                         <tr
@@ -1074,7 +1086,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             {(farmerRecord.length > 4 ? farmerRecord[4] : '').trim() || 'N/A'}
                           </td>
                           <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                            {(farmerRecord.length > 5 ? farmerRecord[5] : '').trim() || 'N/A'}
+                            {maskAadhaar((farmerRecord.length > 5 ? farmerRecord[5] : '').trim() || 'N/A')}
                           </td>
                           <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                             {(farmerRecord.length > 6 ? farmerRecord[6] : '').trim() || 'N/A'}
