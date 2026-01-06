@@ -17,25 +17,59 @@ export async function POST(req: Request) {
     const connection = await pool.getConnection();
     
     try {
+      // First, check if email column exists in users table
+      let emailColumnExists = false;
+      try {
+        const [columns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'users' 
+          AND COLUMN_NAME = 'email'
+        `);
+        emailColumnExists = Array.isArray(columns) && columns.length > 0;
+        console.log('Email column exists:', emailColumnExists);
+      } catch (error) {
+        console.log('Error checking email column:', error);
+        // Assume email column doesn't exist
+        emailColumnExists = false;
+      }
+
       // Find user by contact_no or email
       let query = '';
       let params: string[] = [];
       
       if (contact_no) {
         // Search by contact number (primary method)
-        query = 'SELECT user_id, name, contact_no FROM users WHERE contact_no = ? AND status = "Active"';
+        if (emailColumnExists) {
+          query = 'SELECT user_id, name, contact_no, email FROM users WHERE contact_no = ? AND status = "Active"';
+        } else {
+          query = 'SELECT user_id, name, contact_no FROM users WHERE contact_no = ? AND status = "Active"';
+        }
         params = [contact_no];
       } else if (email) {
-        // Try to search by email (if email column exists in database)
-        // If email column doesn't exist, this will fail gracefully
-        query = 'SELECT user_id, name, contact_no FROM users WHERE email = ? AND status = "Active"';
+        if (!emailColumnExists) {
+          return NextResponse.json(
+            { message: 'Email feature is not available. Please use contact number or contact administrator.' },
+            { status: 400 }
+          );
+        }
+        // Search by email - check if email exists in database
+        query = 'SELECT user_id, name, contact_no, email FROM users WHERE email = ? AND status = "Active"';
         params = [email];
       }
 
       const [users] = await connection.query(query, params);
 
+      console.log('Query executed:', query);
+      console.log('Users found:', Array.isArray(users) ? users.length : 0);
+      if (Array.isArray(users) && users.length > 0) {
+        console.log('User data:', users[0]);
+      }
+
       if (!Array.isArray(users) || users.length === 0) {
         // Don't reveal if user exists or not for security
+        console.log('No user found with provided credentials');
         return NextResponse.json(
           { message: 'If an account exists with the provided information, a reset link has been sent.' },
           { status: 200 }
@@ -43,6 +77,30 @@ export async function POST(req: Request) {
       }
 
       const user = users[0] as { user_id: number; name: string; contact_no: string; email?: string };
+
+      // Get email from database - this is the email we'll send reset link to
+      const recipientEmail = (user).email || user.email;
+      console.log('Recipient email from database:', recipientEmail);
+      console.log('Full user object:', user);
+      
+      // If email was provided in the form, we must have email in database to send reset link
+      if (email && !recipientEmail) {
+        // User searched by email but database doesn't have email for this user
+        console.error('Email provided but not found in database for user:', user.user_id);
+        return NextResponse.json(
+          { message: 'Email address not found in your account. Please contact administrator.' },
+          { status: 400 }
+        );
+      }
+
+      // If no email in database at all, cannot send reset link
+      if (!recipientEmail || recipientEmail === null || recipientEmail === '') {
+        console.error('No email found in database for user:', user.user_id);
+        return NextResponse.json(
+          { message: 'Email address not found in your account. Please contact administrator to add your email address.' },
+          { status: 400 }
+        );
+      }
 
       // Generate reset token
       const resetToken = crypto.randomBytes(32).toString('hex');
@@ -75,24 +133,24 @@ export async function POST(req: Request) {
         'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
         [user.user_id, hashedToken, expiresAt]
       );
-
-      // Determine email address to send to
-      // Use email if available, otherwise construct from contact_no
-      // Note: In production, you should have a proper email field in users table
-      const userWithEmail = user as { user_id: number; name: string; contact_no: string; email?: string };
-      const recipientEmail = userWithEmail.email || `user${user.user_id}@${process.env.EMAIL_DOMAIN || 'schemetracking.com'}`;
       
       // Generate reset link
       const resetLink = `https://fra.weclocks.online/reset-password?token=${resetToken}`;
 
-      // Send email
+      // Send email to the email address stored in database
+      console.log('Attempting to send email to:', recipientEmail);
+      console.log('Reset link:', resetLink);
+      
       const emailSent = await sendEmail({
         to: recipientEmail,
         subject: 'Password Reset Request - Scheme Tracking System',
         html: generateResetEmailHtml(resetLink, user.name)
       });
 
+      console.log('Email sent result:', emailSent);
+
       if (!emailSent) {
+        console.error('Failed to send email. Check SMTP configuration.');
         return NextResponse.json(
           { message: 'Failed to send reset email. Please try again later.' },
           { status: 500 }
