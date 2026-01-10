@@ -15,8 +15,8 @@ const TabView: React.FC<TabViewProps> = ({ tabs, defaultTab }) => {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
 
   const colsClass =
-    tabs.length === 3
-      ? 'grid-cols-3'
+    tabs.length === 4
+      ? 'grid-cols-4'
       : tabs.length === 2
       ? 'grid-cols-2'
       : 'grid-cols-1';

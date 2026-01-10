@@ -21,6 +21,10 @@ import { Village } from "@/components/Village/village";
 import { Schemesubcategorytype } from "@/components/Schemesubcategory/Schemesubcategory";
 import { Modal } from "@/components/ui/modal";
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 interface Metrics {
   farmers: FarmdersType[];
@@ -158,6 +162,545 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   };
 
   const talukaWiseSurveys: TalukaSurveyData[] = getTalukaWiseSurveys();
+
+  // Death IFR Holder Dashboard Component
+  const DeathIFRHolderDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
+    const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
+    const [selectedTaluka, setSelectedTaluka] = useState<string>('all');
+    const [selectedVillage, setSelectedVillage] = useState<string>('all');
+    const [selectedGp, setSelectedGp] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showFilters, setShowFilters] = useState(true);
+
+    useEffect(() => {
+      applyFilters();
+    }, [farmersData, selectedTaluka, selectedVillage, selectedGp, searchQuery]);
+
+    const applyFilters = () => {
+      let filtered = farmersData.farmers.filter(farmer => {
+        // Check if farmer_record[20] exists and equals "होय"
+        const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+        const deathIFRHolder = farmerRecord.length > 20 ? farmerRecord[20]?.trim() : '';
+        return deathIFRHolder === 'होय';
+      });
+
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(farmer => {
+          const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+          return (
+            (farmerRecord.length > 0 ? farmerRecord[0] : '').toLowerCase().includes(query) ||
+            farmer.name?.toLowerCase().includes(query) ||
+            farmer.farmer_id?.toString().includes(query)
+          );
+        });
+      }
+
+      // Taluka filter
+      if (selectedTaluka !== 'all') {
+        filtered = filtered.filter(farmer => farmer.taluka_id === selectedTaluka);
+      }
+
+      // Village filter
+      if (selectedVillage !== 'all') {
+        filtered = filtered.filter(farmer => farmer.village_id === selectedVillage);
+      }
+
+      // Gram Panchayat filter
+      if (selectedGp !== 'all') {
+        filtered = filtered.filter(farmer => {
+          const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+          const gpName = farmerRecord.length > 9 ? farmerRecord[9].trim() : '';
+          return gpName === selectedGp;
+        });
+      }
+
+      setFilteredFarmers(filtered);
+    };
+
+    // Get unique talukas, villages, and gram panchayats for filters
+    const uniqueTalukas = Array.from(new Set(
+      farmersData.farmers
+        .filter(farmer => {
+          const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+          return farmerRecord.length > 20 && farmerRecord[20]?.trim() === 'होय';
+        })
+        .map(farmer => ({ id: farmer.taluka_id, name: farmersData.taluka.find(t => t.taluka_id.toString() === farmer.taluka_id)?.name }))
+        .filter(t => t.id && t.name)
+    )).map((t, i, arr) => arr.findIndex(x => x.id === t.id) === i ? t : null)
+      .filter(Boolean) as { id: string; name: string }[];
+
+    const uniqueVillages = Array.from(new Set(
+      farmersData.farmers
+        .filter(farmer => {
+          const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+          return farmerRecord.length > 20 && farmerRecord[20]?.trim() === 'होय' && (selectedTaluka === 'all' || farmer.taluka_id === selectedTaluka);
+        })
+        .map(farmer => ({ id: farmer.village_id, name: farmersData.villages.find(v => v.village_id.toString() === farmer.village_id)?.marathi_name }))
+        .filter(v => v.id && v.name)
+    )).map((v, i, arr) => arr.findIndex(x => x.id === v.id) === i ? v : null)
+      .filter(Boolean) as { id: string; name: string }[];
+
+    const uniqueGps = Array.from(new Set(
+      farmersData.farmers
+        .filter(farmer => {
+          const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+          return farmerRecord.length > 20 && farmerRecord[20]?.trim() === 'होय';
+        })
+        .map(farmer => {
+          const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+          return farmerRecord.length > 9 ? farmerRecord[9].trim() : '';
+        })
+        .filter(gp => gp && gp !== '')
+    ));
+
+    // Function to mask Aadhaar number
+    const maskAadhaar = (aadhaar: string): string => {
+      if (!aadhaar || aadhaar.trim() === '' || aadhaar === 'N/A') {
+        return 'N/A';
+      }
+      const cleaned = aadhaar.trim().replace(/\s+/g, '');
+      if (cleaned.length !== 12 || !/^\d+$/.test(cleaned)) {
+        return aadhaar;
+      }
+      return '*'.repeat(8) + cleaned.slice(-4);
+    };
+
+    // Export to Excel function
+    const exportToExcel = () => {
+      const excelData = filteredFarmers.map((farmer, index) => {
+        const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+        const taluka = farmersData.taluka.find(t => t.taluka_id.toString() === farmer.taluka_id);
+        const village = farmersData.villages.find(v => v.village_id.toString() === farmer.village_id);
+
+        return {
+          'Sr No': index + 1,
+          'नाव (Name)': (farmerRecord.length > 0 ? farmerRecord[0] : '').trim() || farmer.name || 'N/A',
+          'Farmer ID': farmer.farmer_id || 'N/A',
+          'Taluka': taluka?.name || 'N/A',
+          'Village': village?.marathi_name || 'N/A',
+          'Gram Panchayat': (farmerRecord.length > 9 ? farmerRecord[9] : '').trim() || 'N/A',
+          'Contact': (farmerRecord.length > 6 ? farmerRecord[6] : '').trim() || 'N/A',
+          'Death Date': (farmerRecord.length > 18 ? farmerRecord[18] : '').trim() || 'N/A',
+          'IFR Status': (farmerRecord.length > 20 ? farmerRecord[20] : '').trim() || 'N/A',
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+      // Set column widths for better readability
+      const columnWidths = [
+        { wch: 8 },   // Sr No
+        { wch: 30 },  // नाव (Name)
+        { wch: 12 },  // Farmer ID
+        { wch: 20 },  // Taluka
+        { wch: 20 },  // Village
+        { wch: 20 },  // Gram Panchayat
+        { wch: 15 },  // Contact
+        { wch: 15 },  // Death Date
+        { wch: 12 },  // IFR Status
+      ];
+      worksheet['!cols'] = columnWidths;
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Death_IFR_Holders');
+
+      // Generate filename with current date
+      const fileName = `Death_IFR_Holders_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    };
+
+    // Export to PDF function
+    const exportToPDF = async () => {
+      try {
+        // Create a temporary table element for html2canvas
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '-9999px';
+        tempDiv.style.fontFamily = 'Arial, sans-serif';
+        tempDiv.style.width = '1200px'; // Fixed width for consistent scaling
+        tempDiv.style.backgroundColor = 'white';
+
+        // Create table HTML with the data
+        const tableHTML = `
+          <div style="padding: 20px; font-family: Arial, sans-serif; background: white; width: 100%; box-sizing: border-box;">
+            <h2 style="color: #dc2626; margin-bottom: 20px; text-align: center; font-size: 18px;">Death IFR Holder Records</h2>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed;">
+              <thead>
+                <tr style="background-color: #dc2626; color: white;">
+                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 50px;">Sr No</th>
+                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 150px;">नाव (Name)</th>
+                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 80px;">Farmer ID</th>
+                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 100px;">Taluka</th>
+                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 100px;">Village</th>
+                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 120px;">Gram Panchayat</th>
+                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 100px;">Contact</th>
+                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 120px;">Death Date</th>
+                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 80px;">IFR Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredFarmers.map((farmer, index) => {
+                  const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+                  const taluka = farmersData.taluka.find(t => t.taluka_id.toString() === farmer.taluka_id);
+                  const village = farmersData.villages.find(v => v.village_id.toString() === farmer.village_id);
+
+                  return `
+                    <tr style="background-color: ${index % 2 === 0 ? '#f9f9f9' : 'white'};">
+                      <td style="border: 1px solid #ccc; padding: 4px; text-align: center; font-size: 10px;">${index + 1}</td>
+                      <td style="border: 1px solid #ccc; padding: 4px; font-size: 10px; word-wrap: break-word;">${(farmerRecord.length > 0 ? farmerRecord[0] : '').trim() || farmer.name || 'N/A'}</td>
+                      <td style="border: 1px solid #ccc; padding: 4px; text-align: center; font-size: 10px;">${farmer.farmer_id || 'N/A'}</td>
+                      <td style="border: 1px solid #ccc; padding: 4px; font-size: 10px; word-wrap: break-word;">${taluka?.name || 'N/A'}</td>
+                      <td style="border: 1px solid #ccc; padding: 4px; font-size: 10px; word-wrap: break-word;">${village?.marathi_name || 'N/A'}</td>
+                      <td style="border: 1px solid #ccc; padding: 4px; font-size: 10px; word-wrap: break-word;">${(farmerRecord.length > 9 ? farmerRecord[9] : '').trim() || 'N/A'}</td>
+                      <td style="border: 1px solid #ccc; padding: 4px; text-align: center; font-size: 10px;">${(farmerRecord.length > 6 ? farmerRecord[6] : '').trim() || 'N/A'}</td>
+                      <td style="border: 1px solid #ccc; padding: 4px; text-align: center; font-size: 10px;">${(farmerRecord.length > 18 ? farmerRecord[18] : '').trim() || 'N/A'}</td>
+                      <td style="border: 1px solid #ccc; padding: 4px; text-align: center; font-size: 10px; font-weight: bold;">${(farmerRecord.length > 20 ? farmerRecord[20] : '').trim() || 'N/A'}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+            <div style="margin-top: 15px; text-align: center; font-size: 9px; color: #666; border-top: 1px solid #ccc; padding-top: 10px;">
+              <strong>Total Records: ${filteredFarmers.length}</strong> |
+              Generated on: ${new Date().toLocaleDateString('en-IN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+          </div>
+        `;
+
+        tempDiv.innerHTML = tableHTML;
+        document.body.appendChild(tempDiv);
+
+        // Wait for fonts to load
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Use html2canvas to capture the table with optimized settings
+        const canvas = await html2canvas(tempDiv, {
+          scale: 1.5, // Balanced quality and size
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: 1200, // Fixed width
+          height: tempDiv.offsetHeight,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: 1200,
+          windowHeight: tempDiv.offsetHeight
+        });
+
+        // Remove temporary element
+        document.body.removeChild(tempDiv);
+
+        // Create PDF from canvas with proper scaling
+        const imgData = canvas.toDataURL('image/png', 1.0);
+        const pdf = new jsPDF('landscape', 'mm', 'a4');
+
+        // Calculate dimensions to fit A4 landscape properly
+        const pdfWidth = pdf.internal.pageSize.getWidth(); // 297mm
+        const pdfHeight = pdf.internal.pageSize.getHeight(); // 210mm
+
+        // Calculate scaling to fit the content properly
+        const imgAspectRatio = canvas.width / canvas.height;
+        const pdfAspectRatio = pdfWidth / pdfHeight;
+
+        let imgWidth, imgHeight, imgX, imgY;
+
+        if (imgAspectRatio > pdfAspectRatio) {
+          // Image is wider relative to PDF
+          imgWidth = pdfWidth - 20; // Leave 10mm margin on each side
+          imgHeight = imgWidth / imgAspectRatio;
+          imgX = 10;
+          imgY = (pdfHeight - imgHeight) / 2;
+        } else {
+          // Image is taller relative to PDF
+          imgHeight = pdfHeight - 20; // Leave 10mm margin on top/bottom
+          imgWidth = imgHeight * imgAspectRatio;
+          imgX = (pdfWidth - imgWidth) / 2;
+          imgY = 10;
+        }
+
+        // Ensure minimum size and add the image
+        const minWidth = Math.min(imgWidth, pdfWidth - 20);
+        const minHeight = Math.min(imgHeight, pdfHeight - 20);
+
+        pdf.addImage(imgData, 'PNG', imgX, imgY, minWidth, minHeight, '', 'FAST');
+
+        // Generate filename with current date
+        const fileName = `Death_IFR_Holders_${new Date().toISOString().split('T')[0]}.pdf`;
+        pdf.save(fileName);
+
+      } catch (error) {
+        console.error('PDF export failed:', error);
+        // Fallback to basic PDF if html2canvas fails
+        const doc = new jsPDF('landscape') as any;
+        doc.setFontSize(16);
+        doc.text('Death IFR Holder Records', 14, 18);
+        doc.setFontSize(12);
+        doc.text(`Export failed. Total Records: ${filteredFarmers.length}`, 14, 30);
+        doc.text('Please use Excel export for complete data.', 14, 40);
+
+        const fileName = `Death_IFR_Holders_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+      }
+    };
+
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+            Death IFR Holder Records
+          </h2>
+          <div className="flex items-center gap-4">
+            <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded-full">
+              Total Records: {filteredFarmers.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={exportToExcel}
+                disabled={filteredFarmers.length === 0}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Excel
+              </button>
+              <button
+                onClick={() => exportToPDF()}
+                disabled={filteredFarmers.length === 0}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                PDF
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-pink-50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Filters
+                <span className="ml-2 px-3 py-1 bg-red-600 text-white text-sm font-semibold rounded-full">
+                  {filteredFarmers.length}
+                </span>
+              </h3>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm font-medium"
+              >
+                <svg className={`w-5 h-5 transition-transform ${showFilters ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+              </button>
+            </div>
+
+            <div className={`transition-all duration-300 ease-in-out ${showFilters ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Search Filter */}
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search farmers..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+                    />
+                    <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Taluka Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Taluka</label>
+                  <select
+                    value={selectedTaluka}
+                    onChange={(e) => {
+                      setSelectedTaluka(e.target.value);
+                      setSelectedVillage('all');
+                      setSelectedGp('all');
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+                  >
+                    <option value="all">All Talukas</option>
+                    {uniqueTalukas.map((taluka) => (
+                      <option key={taluka.id} value={taluka.id}>
+                        {taluka.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Village Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Village</label>
+                  <select
+                    value={selectedVillage}
+                    onChange={(e) => {
+                      setSelectedVillage(e.target.value);
+                      setSelectedGp('all');
+                    }}
+                    disabled={selectedTaluka === 'all'}
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all ${
+                      selectedTaluka === 'all' ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <option value="all">All Villages</option>
+                    {uniqueVillages.map((village) => (
+                      <option key={village.id} value={village.id}>
+                        {village.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Gram Panchayat Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Gram Panchayat</label>
+                  <select
+                    value={selectedGp}
+                    onChange={(e) => setSelectedGp(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+                  >
+                    <option value="all">All Gram Panchayats</option>
+                    {uniqueGps.map((gp) => (
+                      <option key={gp} value={gp}>
+                        {gp}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Clear Filters Button */}
+              {(searchQuery || selectedTaluka !== 'all' || selectedVillage !== 'all' || selectedGp !== 'all') && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedTaluka('all');
+                      setSelectedVillage('all');
+                      setSelectedGp('all');
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium flex items-center gap-2 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Clear All Filters
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Table Container */}
+        <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto h-full">
+            {filteredFarmers.length === 0 ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
+                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 text-lg font-medium">No Death IFR holder records found</p>
+                  <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or check data</p>
+                </div>
+              </div>
+            ) : (
+              <table className="w-full text-sm text-left table-fixed">
+                <thead className="bg-red-50 dark:bg-gray-700 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 w-16">#</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 min-w-48">नाव (Name)</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 w-24">Farmer ID</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 min-w-32">Taluka</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 min-w-32">Village</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 min-w-32">Gram Panchayat</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 w-32">Contact</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 w-32">Death Date</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 w-32">IFR Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredFarmers.map((farmer, index) => {
+                    const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
+                    const taluka = farmersData.taluka.find(t => t.taluka_id.toString() === farmer.taluka_id);
+                    const village = farmersData.villages.find(v => v.village_id.toString() === farmer.village_id);
+
+                    return (
+                      <tr
+                        key={farmer.farmer_id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      >
+                        <td className="px-4 py-3 text-gray-900 dark:text-white font-medium text-center">{index + 1}</td>
+                        <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
+                          {(farmerRecord.length > 0 ? farmerRecord[0] : '').trim() || farmer.name || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-center">
+                          {farmer.farmer_id || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                          {taluka?.name || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                          {village?.marathi_name || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                          {(farmerRecord.length > 9 ? farmerRecord[9] : '').trim() || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                          {(farmerRecord.length > 6 ? farmerRecord[6] : '').trim() || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                          {(farmerRecord.length > 18 ? farmerRecord[18] : '').trim() || 'N/A'}
+                        </td>
+                          <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold text-center">
+                            {(farmerRecord.length > 20 ? farmerRecord[20] : '').trim() || 'N/A'}
+                          </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Proposal Management Dashboard Component for category_id = 24
   const ProposalManagementDashboard = () => {
@@ -877,6 +1420,15 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       id: "cfr-dashboard",
       label: "CFR Dashboard",
       content: <CFRDashboardContent />
+    },
+    {
+      id: "death-ifr-holder",
+      label: "Death IFR holder",
+      content: (
+        <div className="flex flex-col h-full">
+          <DeathIFRHolderDashboard farmersData={farmersData} />
+        </div>
+      )
     },
     {
       id: "notification",

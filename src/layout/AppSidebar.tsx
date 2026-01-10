@@ -269,8 +269,81 @@ const AppSidebar: React.FC = () => {
     });
   };
 
-  // Hide sidebar completely when category_id = 32 or 37 (PESA Coordinator)
-  if (storedValuecategory_name === "32" || storedValuecategory_name === "37") {
+  // For category_id = 37, show a custom sidebar with limited options
+  if (storedValuecategory_name === "37") {
+    const talukaUserNavItems: NavItem[] = [
+      {
+        icon: <RxDashboard />,
+        name: "Dashboard",
+        path: "/",
+      },
+      {
+        icon: <CiUser />,
+        name: "Taluka Users",
+        path: "/talukausers",
+      },
+    ];
+
+    return (
+      <div className="fixed left-0 top-0 z-50 flex h-full w-full flex-col bg-white dark:bg-gray-900 lg:w-[280px]">
+        <div className="flex items-center justify-between px-4 py-6">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/images/logo/logo.svg"
+              alt="Logo"
+              width={32}
+              height={32}
+              className="dark:hidden"
+            />
+            <Image
+              src="/images/logo/logo-dark.svg"
+              alt="Logo"
+              width={32}
+              height={32}
+              className="hidden dark:block"
+            />
+            <span className="text-xl font-bold text-gray-800 dark:text-white">
+              WeClocks
+            </span>
+          </Link>
+        </div>
+
+        <nav className="flex-1 px-4">
+          <ul className="flex flex-col gap-4">
+            {talukaUserNavItems.map((nav, index) => (
+              <li key={nav.name}>
+                <Link
+                  href={nav.path || ""}
+                  className={`menu-item group ${pathname === nav.path
+                    ? "menu-item-active"
+                    : "menu-item-inactive"
+                    } ${!isExpanded && !isHovered
+                      ? "lg:justify-center"
+                      : "lg:justify-start"
+                    }`}
+                >
+                  <span
+                    className={`${pathname === nav.path
+                      ? "menu-item-icon-active"
+                      : "menu-item-icon-inactive"
+                      }`}
+                  >
+                    {nav.icon}
+                  </span>
+                  {(isExpanded || isHovered || isMobileOpen) && (
+                    <span className="menu-item-text">{nav.name}</span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+    );
+  }
+
+  // Hide sidebar completely when category_id = 32 (PESA Coordinator)
+  if (storedValuecategory_name === "32") {
     return null;
   }
 
