@@ -310,7 +310,7 @@ const AppSidebar: React.FC = () => {
 
         <nav className="flex-1 px-4">
           <ul className="flex flex-col gap-4">
-            {talukaUserNavItems.map((nav, index) => (
+            {talukaUserNavItems.map((nav) => (
               <li key={nav.name}>
                 <Link
                   href={nav.path || ""}

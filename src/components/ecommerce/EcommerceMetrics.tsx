@@ -56,8 +56,6 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
     vanakshetra: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "4" || filters.categoryName === "32"
       ? metrics?.farmers.length ?? 0 : filteredFarmersvanaksetra.length
   };
-
-
   const metricsConfig = [
     {
       icon: <GroupIcon className="w-7 h-7 text-gray-600 dark:text-gray-200" />,

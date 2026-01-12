@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import TabView from "@/components/common/TabView";
 import { Suspense } from "react";
 import Loader from "@/common/Loader";
@@ -23,7 +23,6 @@ import { Modal } from "@/components/ui/modal";
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
 interface Metrics {
@@ -168,15 +167,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
     const [selectedTaluka, setSelectedTaluka] = useState<string>('all');
     const [selectedVillage, setSelectedVillage] = useState<string>('all');
-    const [selectedGp, setSelectedGp] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(true);
 
-    useEffect(() => {
-      applyFilters();
-    }, [farmersData, selectedTaluka, selectedVillage, selectedGp, searchQuery]);
-
-    const applyFilters = () => {
+    const applyFilters = useCallback(() => {
       let filtered = farmersData.farmers.filter(farmer => {
         // Check if farmer_record[20] exists and equals "होय"
         const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
@@ -207,17 +201,12 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         filtered = filtered.filter(farmer => farmer.village_id === selectedVillage);
       }
 
-      // Gram Panchayat filter
-      if (selectedGp !== 'all') {
-        filtered = filtered.filter(farmer => {
-          const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
-          const gpName = farmerRecord.length > 9 ? farmerRecord[9].trim() : '';
-          return gpName === selectedGp;
-        });
-      }
-
       setFilteredFarmers(filtered);
-    };
+    }, [farmersData.farmers, searchQuery, selectedTaluka, selectedVillage]);
+
+    useEffect(() => {
+      applyFilters();
+    }, [applyFilters]);
 
     // Get unique talukas, villages, and gram panchayats for filters
     const uniqueTalukas = Array.from(new Set(
@@ -235,37 +224,14 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       farmersData.farmers
         .filter(farmer => {
           const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
-          return farmerRecord.length > 20 && farmerRecord[20]?.trim() === 'होय' && (selectedTaluka === 'all' || farmer.taluka_id === selectedTaluka);
+          return farmerRecord.length > 20 && farmerRecord[20]?.trim() === 'होय' &&
+                 (selectedTaluka === 'all' || farmer.taluka_id === selectedTaluka);
         })
         .map(farmer => ({ id: farmer.village_id, name: farmersData.villages.find(v => v.village_id.toString() === farmer.village_id)?.marathi_name }))
         .filter(v => v.id && v.name)
     )).map((v, i, arr) => arr.findIndex(x => x.id === v.id) === i ? v : null)
       .filter(Boolean) as { id: string; name: string }[];
 
-    const uniqueGps = Array.from(new Set(
-      farmersData.farmers
-        .filter(farmer => {
-          const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
-          return farmerRecord.length > 20 && farmerRecord[20]?.trim() === 'होय';
-        })
-        .map(farmer => {
-          const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
-          return farmerRecord.length > 9 ? farmerRecord[9].trim() : '';
-        })
-        .filter(gp => gp && gp !== '')
-    ));
-
-    // Function to mask Aadhaar number
-    const maskAadhaar = (aadhaar: string): string => {
-      if (!aadhaar || aadhaar.trim() === '' || aadhaar === 'N/A') {
-        return 'N/A';
-      }
-      const cleaned = aadhaar.trim().replace(/\s+/g, '');
-      if (cleaned.length !== 12 || !/^\d+$/.test(cleaned)) {
-        return aadhaar;
-      }
-      return '*'.repeat(8) + cleaned.slice(-4);
-    };
 
     // Export to Excel function
     const exportToExcel = () => {
@@ -280,9 +246,8 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
           'Farmer ID': farmer.farmer_id || 'N/A',
           'Taluka': taluka?.name || 'N/A',
           'Village': village?.marathi_name || 'N/A',
-          'Gram Panchayat': (farmerRecord.length > 9 ? farmerRecord[9] : '').trim() || 'N/A',
           'Contact': (farmerRecord.length > 6 ? farmerRecord[6] : '').trim() || 'N/A',
-          'Death Date': (farmerRecord.length > 18 ? farmerRecord[18] : '').trim() || 'N/A',
+          // 'Death Date': (farmerRecord.length > 18 ? farmerRecord[18] : '').trim() || 'N/A',
           'IFR Status': (farmerRecord.length > 20 ? farmerRecord[20] : '').trim() || 'N/A',
         };
       });
@@ -296,11 +261,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         { wch: 12 },  // Farmer ID
         { wch: 20 },  // Taluka
         { wch: 20 },  // Village
-        { wch: 20 },  // Gram Panchayat
         { wch: 15 },  // Contact
-        { wch: 15 },  // Death Date
+        // { wch: 15 },  // Death Date
         { wch: 12 },  // IFR Status
-      ];
+      ];  
       worksheet['!cols'] = columnWidths;
 
       const workbook = XLSX.utils.book_new();
@@ -335,9 +299,8 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                   <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 80px;">Farmer ID</th>
                   <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 100px;">Taluka</th>
                   <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 100px;">Village</th>
-                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 120px;">Gram Panchayat</th>
                   <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 100px;">Contact</th>
-                  <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 120px;">Death Date</th>
+          
                   <th style="border: 1px solid #ccc; padding: 6px; text-align: center; font-weight: bold; width: 80px;">IFR Status</th>
                 </tr>
               </thead>
@@ -354,9 +317,8 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       <td style="border: 1px solid #ccc; padding: 4px; text-align: center; font-size: 10px;">${farmer.farmer_id || 'N/A'}</td>
                       <td style="border: 1px solid #ccc; padding: 4px; font-size: 10px; word-wrap: break-word;">${taluka?.name || 'N/A'}</td>
                       <td style="border: 1px solid #ccc; padding: 4px; font-size: 10px; word-wrap: break-word;">${village?.marathi_name || 'N/A'}</td>
-                      <td style="border: 1px solid #ccc; padding: 4px; font-size: 10px; word-wrap: break-word;">${(farmerRecord.length > 9 ? farmerRecord[9] : '').trim() || 'N/A'}</td>
                       <td style="border: 1px solid #ccc; padding: 4px; text-align: center; font-size: 10px;">${(farmerRecord.length > 6 ? farmerRecord[6] : '').trim() || 'N/A'}</td>
-                      <td style="border: 1px solid #ccc; padding: 4px; text-align: center; font-size: 10px;">${(farmerRecord.length > 18 ? farmerRecord[18] : '').trim() || 'N/A'}</td>
+                  
                       <td style="border: 1px solid #ccc; padding: 4px; text-align: center; font-size: 10px; font-weight: bold;">${(farmerRecord.length > 20 ? farmerRecord[20] : '').trim() || 'N/A'}</td>
                     </tr>
                   `;
@@ -440,7 +402,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       } catch (error) {
         console.error('PDF export failed:', error);
         // Fallback to basic PDF if html2canvas fails
-        const doc = new jsPDF('landscape') as any;
+        const doc = new jsPDF('landscape');
         doc.setFontSize(16);
         doc.text('Death IFR Holder Records', 14, 18);
         doc.setFontSize(12);
@@ -547,7 +509,6 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                     onChange={(e) => {
                       setSelectedTaluka(e.target.value);
                       setSelectedVillage('all');
-                      setSelectedGp('all');
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                   >
@@ -565,10 +526,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                   <label className="block text-sm font-medium text-gray-700 mb-2">Village</label>
                   <select
                     value={selectedVillage}
-                    onChange={(e) => {
-                      setSelectedVillage(e.target.value);
-                      setSelectedGp('all');
-                    }}
+                    onChange={(e) => setSelectedVillage(e.target.value)}
                     disabled={selectedTaluka === 'all'}
                     className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all ${
                       selectedTaluka === 'all' ? 'bg-gray-100 cursor-not-allowed' : ''
@@ -583,33 +541,16 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                   </select>
                 </div>
 
-                {/* Gram Panchayat Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Gram Panchayat</label>
-                  <select
-                    value={selectedGp}
-                    onChange={(e) => setSelectedGp(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                  >
-                    <option value="all">All Gram Panchayats</option>
-                    {uniqueGps.map((gp) => (
-                      <option key={gp} value={gp}>
-                        {gp}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
 
               {/* Clear Filters Button */}
-              {(searchQuery || selectedTaluka !== 'all' || selectedVillage !== 'all' || selectedGp !== 'all') && (
+              {(searchQuery || selectedTaluka !== 'all' || selectedVillage !== 'all') && (
                 <div className="mt-4 flex justify-end">
                   <button
                     onClick={() => {
                       setSearchQuery('');
                       setSelectedTaluka('all');
                       setSelectedVillage('all');
-                      setSelectedGp('all');
                     }}
                     className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium flex items-center gap-2 transition-colors"
                   >
@@ -648,9 +589,8 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                     <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 w-24">Farmer ID</th>
                     <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 min-w-32">Taluka</th>
                     <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 min-w-32">Village</th>
-                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 min-w-32">Gram Panchayat</th>
                     <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 w-32">Contact</th>
-                    <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 w-32">Death Date</th>
+        
                     <th className="px-4 py-3 font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 w-32">IFR Status</th>
                   </tr>
                 </thead>
@@ -679,14 +619,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                           {village?.marathi_name || 'N/A'}
                         </td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                          {(farmerRecord.length > 9 ? farmerRecord[9] : '').trim() || 'N/A'}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                           {(farmerRecord.length > 6 ? farmerRecord[6] : '').trim() || 'N/A'}
                         </td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                          {(farmerRecord.length > 18 ? farmerRecord[18] : '').trim() || 'N/A'}
-                        </td>
+                      
                           <td className="px-4 py-3 text-red-600 dark:text-red-400 font-semibold text-center">
                             {(farmerRecord.length > 20 ? farmerRecord[20] : '').trim() || 'N/A'}
                           </td>
@@ -1421,15 +1356,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       label: "CFR Dashboard",
       content: <CFRDashboardContent />
     },
-    {
-      id: "death-ifr-holder",
-      label: "Death IFR holder",
-      content: (
-        <div className="flex flex-col h-full">
-          <DeathIFRHolderDashboard farmersData={farmersData} />
-        </div>
-      )
-    },
+   
     {
       id: "notification",
       label: "Section 3(2)",
@@ -1438,6 +1365,15 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         {isSection32Only ? <ProposalManagementDashboard /> : isCategory32 ? <Category32Dashboard /> : <Section32Tabs />}
         </div>
       </div>
+    },
+    {
+      id: "death-ifr-holder",
+      label: "Death IFR holder",
+      content: (
+        <div className="flex flex-col h-full">
+          <DeathIFRHolderDashboard farmersData={farmersData} />
+        </div>
+      )
     }
   ];
 

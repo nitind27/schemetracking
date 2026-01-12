@@ -17,8 +17,12 @@ const TabView: React.FC<TabViewProps> = ({ tabs, defaultTab }) => {
   const colsClass =
     tabs.length === 4
       ? 'grid-cols-4'
+      : tabs.length === 3
+      ? 'grid-cols-3'
       : tabs.length === 2
       ? 'grid-cols-2'
+      : tabs.length === 1
+      ? 'grid-cols-1'
       : 'grid-cols-1';
 
   return (

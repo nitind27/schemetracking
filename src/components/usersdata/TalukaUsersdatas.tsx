@@ -14,7 +14,6 @@ import { useToggleContext } from '@/context/ToggleContext';
 import { UserCategory } from '../usercategory/userCategory';
 import { Taluka } from '../Taluka/Taluka';
 import { Village } from '../Village/village';
-import DefaultModal from '../example/ModalExample/DefaultModal';
 import { FaEdit } from 'react-icons/fa';
 
 interface Grampanchayat {
@@ -43,16 +42,13 @@ type FormErrors = {
 };
 const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) => {
 
-  const [data, setData] = useState<UserData[]>(users || []);
   const [filteredData, setFilteredData] = useState<UserData[]>([]);
   const [usercategory, setUsercategory] = useState(0);
   const [villages, setVillages] = useState<Village[]>([]);
   const [grampanchayats, setGrampanchayats] = useState<Grampanchayat[]>([]);
   const [villageGpMapping, setVillageGpMapping] = useState<Record<number, number>>({});
-  const [gpVillageMapping, setGpVillageMapping] = useState<Record<number, number[]>>({});
   const [talukaGpMapping, setTalukaGpMapping] = useState<Record<number, number[]>>({});
   const [talukaVillageMapping, setTalukaVillageMapping] = useState<Record<number, number[]>>({});
-  const [availableTalukaIds, setAvailableTalukaIds] = useState<number[]>([]);
 
   const [loggedInTalukaId, setLoggedInTalukaId] = useState<number>(0);
 
@@ -73,10 +69,17 @@ const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) =>
   // Get logged-in user's taluka_id from sessionStorage
   useEffect(() => {
     const talukaId = sessionStorage.getItem('taluka_id');
+    console.log('TalukaUsersdatas - sessionStorage taluka_id:', talukaId);
     if (talukaId) {
       const talukaIdNum = Number(talukaId);
+      console.log('TalukaUsersdatas - setting loggedInTalukaId to:', talukaIdNum);
       setLoggedInTalukaId(talukaIdNum);
       setTaluka(talukaIdNum); // Set the taluka to the logged-in user's taluka
+    } else {
+      console.log('TalukaUsersdatas - No taluka_id found in sessionStorage');
+      // Set default values if no taluka_id in sessionStorage
+      setLoggedInTalukaId(0);
+      setTaluka(0);
     }
   }, []);
 
@@ -179,10 +182,12 @@ const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) =>
           });
 
           setVillageGpMapping(mapping);
-          setGpVillageMapping(reverseMapping);
           setTalukaGpMapping(talukaGpMappingFinal);
           setTalukaVillageMapping(talukaVillageMappingFinal);
-          setAvailableTalukaIds(Array.from(talukaSet));
+
+          console.log('TalukaUsersdatas - talukaVillageMappingFinal:', talukaVillageMappingFinal);
+          console.log('TalukaUsersdatas - loggedInTalukaId for mapping check:', loggedInTalukaId);
+          console.log('TalukaUsersdatas - villages for taluka:', talukaVillageMappingFinal[loggedInTalukaId]);
 
           // setTalukaVillageMapping(talukaVillageMappingFinal);
         }
@@ -194,18 +199,6 @@ const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) =>
     fetchVillagesAndGrampanchayats();
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/users');
-      const result = await response.json();
-      setData(result);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false); // End loading
-    }
-  };
 
   useEffect(() => {
 
@@ -232,6 +225,13 @@ const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) =>
   }, [Taluka, isEditMode]);
 
   // For taluka users, don't reset village when grampanchayat changes since we show all villages anyway
+  // Reset village only when grampanchayat changes for non-PESA Mobilizer categories that need filtering
+  useEffect(() => {
+    if (Grampanchayat && !isEditMode && !isPESAMobilizer()) {
+      // Only reset village for categories that filter villages by grampanchayat
+      setVillage(0);
+    }
+  }, [Grampanchayat, isEditMode, usercategory, datausercategorycrud]);
 
   // Auto-set grampanchayat from village mapping when editing (for backward compatibility)
   useEffect(() => {
@@ -271,7 +271,7 @@ const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) =>
     setUsername("")
     setPassword("")
     setaddress("")
-    setTaluka(loggedInTalukaId); // Reset to logged-in user's taluka
+    setTaluka(loggedInTalukaId || 0); // Reset to logged-in user's taluka, fallback to 0
     setVillage(Number(""))
     setGrampanchayat(Number(""))
     setEditId(0);
@@ -282,7 +282,7 @@ const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) =>
     if (!isEditMode) {
       reset()
     }
-  }, [isEditMode]);
+  }, [isEditMode, loggedInTalukaId]); // Add loggedInTalukaId as dependency
 
   const validateInputs = () => {
     const newErrors: FormErrors = {};
@@ -380,7 +380,6 @@ const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) =>
 
       reset()
       setEditId(null);
-      fetchData();
     } catch (error) {
       console.error('Error saving Users:', error);
       toast.error(editId
@@ -487,11 +486,6 @@ const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) =>
             className="cursor-pointer text-blue-600 hover:text-blue-800 transition-colors duration-200"
           >
             <FaEdit className="inline-block align-middle text-lg" />
-          </span>
-
-
-          <span>
-            <DefaultModal id={data.user_id} fetchData={fetchData} endpoint={"users/insert"} bodyname='user_id' newstatus={data.status} />
           </span>
         </div>
       )
@@ -636,13 +630,20 @@ const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) =>
               <Label>Taluka</Label>
               <select name="" id="" className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800 ${error.Taluka ? "border-red-500" : ""
                 }`}
-                value={Taluka}
+                value={(Taluka || loggedInTalukaId) || ""}
                 onChange={(e) => setTaluka(Number(e.target.value))}
                 disabled={true} // Disable taluka selection for category 37 users - they can only see their own taluka
               >
-                <option value={loggedInTalukaId}>
-                  {datataluka.find(t => t.taluka_id === loggedInTalukaId)?.name || 'Your Taluka'}
-                </option>
+                {(() => {
+                  const currentTalukaId = Taluka || loggedInTalukaId;
+                  const talukaData = datataluka.find(t => t.taluka_id === currentTalukaId);
+
+                  return (
+                    <option value={currentTalukaId || ""}>
+                      {talukaData?.name || 'Loading taluka...'}
+                    </option>
+                  );
+                })()}
               </select>
               {error && (
                 <div className="text-red-500 text-sm mt-1 pl-1">
@@ -715,18 +716,26 @@ const TalukaUsersdatas = ({ users, datataluka, datausercategorycrud }: Props) =>
                   {!Taluka ? "Select Village" : "Select Village"}
                 </option>
                 {(() => {
+                  console.log('Village dropdown - Taluka:', Taluka);
+                  console.log('Village dropdown - talukaVillageMapping:', talukaVillageMapping);
+                  console.log('Village dropdown - villages:', villages);
+
                   if (!Taluka) {
+                    console.log('Village dropdown - No taluka selected');
                     return <option disabled>No taluka selected</option>;
                   }
 
                   // Taluka users can see all villages in their taluka using talukaVillageMapping
                   const villageIdsForTaluka = talukaVillageMapping[Taluka] || [];
+                  console.log('Village dropdown - villageIdsForTaluka:', villageIdsForTaluka);
 
-                  let filteredVillages = villages.filter((v) =>
+                  const filteredVillages = villages.filter((v) =>
                     villageIdsForTaluka.includes(Number(v.village_id))
                   );
+                  console.log('Village dropdown - filteredVillages:', filteredVillages);
 
                   if (filteredVillages.length === 0) {
+                    console.log('Village dropdown - No villages available');
                     return <option disabled>No villages available</option>;
                   }
 
