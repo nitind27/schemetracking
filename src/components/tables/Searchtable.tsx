@@ -193,12 +193,14 @@ export function Searchtable<T extends object>({
     }
 
     // Apply multiple dropdown filters
-    if (filterOptions.length > 0) {
+    if (filterOptions.length > 0 && Object.keys(filters).length > 0) {
       tempData = tempData.filter((row) => {
         const r = row as Record<string, unknown>;
         return Object.entries(filters).every(([key, value]) => {
-          if (!value) return true;
-          return String(r[key]) === String(value);
+          if (!value || value === "") return true;
+          const rowValue = r[key];
+          if (rowValue == null || rowValue === undefined) return false;
+          return String(rowValue).trim() === String(value).trim();
         });
       });
     }
@@ -311,24 +313,31 @@ export function Searchtable<T extends object>({
               </div>
             )}
 
-            {filterOptions.map((group, index) => (
-              <select
-                key={`${group.label}-${index}`}
-                className="border rounded px-3 py-2 min-w-[150px]"
-                value={filters[group.label] || ""}
-                onChange={(e) => {
-                  group.onChange?.(e.target.value);
-                  handleFilterChange(group.label, e.target.value);
-                }}
-              >
-                <option value="">All {group.label}</option>
-                {group.options.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            ))}
+            {filterOptions.map((group, index) => {
+              // Check if first option has empty value to use its label as placeholder
+              const firstOption = group.options[0];
+              const optionsToShow = firstOption && firstOption.value === ""
+                ? group.options
+                : [{ label: `All ${group.label}`, value: "" }, ...group.options];
+              
+              return (
+                <select
+                  key={`${group.label}-${index}`}
+                  className="border rounded px-3 py-2 min-w-[150px]"
+                  value={filters[group.label] || ""}
+                  onChange={(e) => {
+                    group.onChange?.(e.target.value);
+                    handleFilterChange(group.label, e.target.value);
+                  }}
+                >
+                  {optionsToShow.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              );
+            })}
 
             {/* Global search input */}
             <input

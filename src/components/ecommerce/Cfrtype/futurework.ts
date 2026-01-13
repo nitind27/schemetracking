@@ -42,6 +42,8 @@ export interface presentworktype {
     taluka_name?: string;
     village_name?: string;
     gp_name?: string;
+    latitude?: string | number; // Latitude coordinate
+    longitude?: string | number; // Longitude coordinate
 }
 export interface basicdetailsofvillagetype {
     village_detail_id   : number;

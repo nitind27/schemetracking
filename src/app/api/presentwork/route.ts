@@ -51,6 +51,8 @@ export async function POST(request: Request) {
         const work_year = formData.get('work_year') as string;
         const unit = formData.get('unit') as string;
         const type =  formData.get('type') as string;
+        const latitude = formData.get('latitude') as string;
+        const longitude = formData.get('longitude') as string;
 
 
         // File upload
@@ -72,11 +74,11 @@ export async function POST(request: Request) {
             `INSERT INTO works (
                 work_name, total_area, estimated_cost, department_name, implementing_method,
                 work_status, work_photo, start_date, end_date,
-                worker_number, user_id, status, taluka_id, village_id, gp_id, work_year, unit, type
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                worker_number, user_id, status, taluka_id, village_id, gp_id, work_year, unit, type, latitude, longitude
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 work_name, total_area, estimated_cost, department_name, implementing_method,
-                work_status, photoPath, start_date, end_date, worker_number, user_id, 'Active', taluka_id, village_id, gp_id, work_year, unit, type
+                work_status, photoPath, start_date, end_date, worker_number, user_id, 'Active', taluka_id, village_id, gp_id, work_year, unit, type, latitude, longitude
             ]
         );
         return NextResponse.json({ error: false, message: "Work inserted successfully", insertId: result.insertId });
@@ -107,6 +109,8 @@ export async function PUT(request: Request) {
         const taluka_id = formData.get('taluka_id');
         const village_id = formData.get('village_id');
         const gp_id = formData.get('gp_id');
+        const latitude = formData.get('latitude') as string;
+        const longitude = formData.get('longitude') as string;
 
         // File upload
         const file = formData.get('work_photo');
@@ -126,11 +130,11 @@ export async function PUT(request: Request) {
             `UPDATE works SET 
                 work_name = ?, total_area = ?, estimated_cost = ?, implementing_method = ?,
                 work_status = ?, work_photo = ?, start_date = ?, end_date = ?,
-                worker_number = ?, user_id = ?, department_name = ?, work_year = ?, unit = ?, type = ?, taluka_id = ?, village_id = ?, gp_id = ?
+                worker_number = ?, user_id = ?, department_name = ?, work_year = ?, unit = ?, type = ?, taluka_id = ?, village_id = ?, gp_id = ?, latitude = ?, longitude = ?
             WHERE work_id = ?`,
             [
                 work_name, total_area, estimated_cost, implementing_method,
-                work_status, photoPath, start_date, end_date, worker_number, user_id, department_name, work_year, unit, type, taluka_id, village_id, gp_id, work_id
+                work_status, photoPath, start_date, end_date, worker_number, user_id, department_name, work_year, unit, type, taluka_id, village_id, gp_id, latitude, longitude, work_id
             ]
         );
         return NextResponse.json({ error: false, message: "Work updated successfully", affectedRows: result.affectedRows });
