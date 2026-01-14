@@ -21,7 +21,7 @@ export async function GET(
       process.cwd(), // Use project root as base
       'tmp',
       'uploads',
-      'uploadsprofile',
+      'presentwork',
       safeFilename
     );
 
