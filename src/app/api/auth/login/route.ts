@@ -10,6 +10,7 @@ interface User {
   user_category_id: number;
   username: string;
   password: string;
+  old_password?: string; // Optional field for backward compatibility
   contact_no: string;
   address: string;
   category_name: string;
@@ -33,9 +34,9 @@ export async function POST(req: Request) {
 
     const connection = await pool.getConnection();
     const [users] = await connection.query(
-      `SELECT users.*, user_category.category_name 
-       FROM users 
-       INNER JOIN user_category ON users.user_category_id = user_category.user_category_id  
+      `SELECT users.*, user_category.category_name
+       FROM users
+       INNER JOIN user_category ON users.user_category_id = user_category.user_category_id
        WHERE users.username = ?`,
       [username]
     );
@@ -49,12 +50,20 @@ export async function POST(req: Request) {
     }
 
     const user = users[0] as User;
-   
+
     // Hash the incoming password with SHA256
     const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
-    
-    // Compare the hashed password with the stored hash
-    if (hashedPassword !== user.password) {
+
+    // Check if the hashed password matches the current password column
+    let isPasswordValid = hashedPassword === user.password;
+
+    // If password hash doesn't match and old_password exists, check old_password (plain text)
+    if (!isPasswordValid && user.old_password) {
+      isPasswordValid = password === user.old_password;
+    }
+
+    // If neither password nor old_password matches, return invalid credentials
+    if (!isPasswordValid) {
       return NextResponse.json(
         { message: 'Invalid credentials' },
         { status: 401 }
