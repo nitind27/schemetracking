@@ -7,6 +7,7 @@ import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from 'react-toastify';
+import ImageCaptcha from "./ImageCaptcha";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -16,6 +17,8 @@ export default function SignInForm() {
     username: "",
     password: ""
   });
+  const [isCaptchaValid, setIsCaptchaValid] = useState(false);
+  const [captchaText, setCaptchaText] = useState<string | null>(null);
   // const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // New loading state
 
@@ -26,7 +29,14 @@ export default function SignInForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // setIsSubmitting(true);
+    
+    // Validate captcha before submitting
+    if (!isCaptchaValid || !captchaText) {
+      toast.error('Please complete the captcha correctly');
+      return;
+    }
+
+    setIsLoading(true); // Set loading immediately for better UX
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -34,7 +44,10 @@ export default function SignInForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          captchaText
+        })
       });
 
       const data = await response.json();
@@ -59,16 +72,14 @@ export default function SignInForm() {
         localStorage.removeItem('rememberedpassword');
       }
 
-
-      setIsLoading(true); // Set loading to true before redirect
-    
-        router.push('/');
+      // Use replace instead of push for faster navigation (no history entry)
+      // Redirect immediately - dashboard will show loading state while fetching data
+      router.replace('/');
        
     } catch (error) {
       console.error('Login error:', error);
+      setIsLoading(false); // Reset loading on error
       toast.error('Invalid credentials');
-    } finally {
-      // setIsSubmitting(false);
     }
   };
 
@@ -82,9 +93,14 @@ export default function SignInForm() {
     }
   }, []);
 
+  // Show success toast after redirect starts (non-blocking)
   useEffect(() => {
     if (isLoading) {
-      toast.success('Login successful!');
+      // Small delay to ensure redirect happens first
+      const timer = setTimeout(() => {
+        toast.success('Login successful!');
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isLoading])
   return (
@@ -161,11 +177,18 @@ export default function SignInForm() {
                   </Link>
                 </div>
 
+                <ImageCaptcha 
+                  onVerify={(isValid, text) => {
+                    setIsCaptchaValid(isValid);
+                    setCaptchaText(text);
+                  }} 
+                />
+
                 <div>
                   <Button
                     className="w-full"
                     size="sm"
-                    disabled={isLoading}
+                    disabled={isLoading || !isCaptchaValid}
                   >
                     {isLoading ? 'Signing in...' : 'Sign in'}
                   </Button>

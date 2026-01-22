@@ -9,6 +9,7 @@ import { ToggleProvider } from '@/context/ToggleContext';
 import GlobleLoader from '@/components/common/GlobleLoader';
 import { Metadata } from 'next';
 import GoogleMapProvider from '@/components/farmersdata/GoogleMapProvider';
+import AuthCleanup from '@/components/auth/AuthCleanup';
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -34,19 +35,24 @@ export default function RootLayout({
 
           <ToggleProvider>
             <GoogleMapProvider>
-              <SidebarProvider><GlobleLoader />{children}<ToastContainer
-                position="top-right"
+              <SidebarProvider>
+                <AuthCleanup />
+                <GlobleLoader />
+                {children}
+                <ToastContainer
+                  position="top-right"
 
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop={true}
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                style={{ zIndex: 99999, position: 'fixed' }}
-              /></SidebarProvider>
+                  autoClose={3000}
+                  hideProgressBar={false}
+                  newestOnTop={true}
+                  closeOnClick
+                  rtl={false}
+                  pauseOnFocusLoss
+                  draggable
+                  pauseOnHover
+                  style={{ zIndex: 99999, position: 'fixed' }}
+                />
+              </SidebarProvider>
             </GoogleMapProvider>
           </ToggleProvider>
         </ThemeProvider>
@@ -54,3 +60,4 @@ export default function RootLayout({
     </html>
   );
 }
+

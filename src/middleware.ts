@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export function middleware(req: NextRequest) {
   const authToken = req.cookies.get('auth_token');
   const isLoginPage = req.nextUrl.pathname === '/signin';
+  const isRootPage = req.nextUrl.pathname === '/';
   const isPrivacyPolicyPage = req.nextUrl.pathname === '/privacy_policy';
   const isForgotPasswordPage = req.nextUrl.pathname === '/forgot-password';
   const isResetPasswordPage = req.nextUrl.pathname === '/reset-password';
@@ -12,10 +13,18 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // If accessing root page without auth token, redirect to login
+  // This ensures login page is shown first when opening the project in browser
+  if (isRootPage && !authToken) {
+    return NextResponse.redirect(new URL('/signin', req.url));
+  }
+
+  // If no auth token and not on login page, redirect to login
   if (!authToken && !isLoginPage) {
     return NextResponse.redirect(new URL('/signin', req.url));
   }
 
+  // If has auth token and on login page, redirect to dashboard
   if (authToken && isLoginPage) {
     return NextResponse.redirect(new URL('/', req.url));
   }

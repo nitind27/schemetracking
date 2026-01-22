@@ -23,11 +23,27 @@ interface User {
 
 export async function POST(req: Request) {
   try {
-    const { username, password } = await req.json();
+    const { username, password, captchaText } = await req.json();
 
     if (!username || !password) {
       return NextResponse.json(
         { message: 'Username and password are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate captcha (must be 5 characters, uppercase letters and numbers only)
+    if (!captchaText || typeof captchaText !== 'string' || captchaText.length !== 5) {
+      return NextResponse.json(
+        { message: 'Please complete the captcha correctly' },
+        { status: 400 }
+      );
+    }
+
+    // Validate captcha format (only uppercase letters and numbers)
+    if (!/^[A-Z0-9]{5}$/.test(captchaText)) {
+      return NextResponse.json(
+        { message: 'Invalid captcha format' },
         { status: 400 }
       );
     }
@@ -70,11 +86,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Set a cookie with user info (e.g., user id)
+    // Set a session cookie with user info (e.g., user id)
+    // Session cookie expires when browser is closed (no maxAge)
     const cookie = serialize('auth_token', String(user.user_id), {
       httpOnly: true,
       path: '/',
-      maxAge: 60 * 60 * 24, // 1 day
+      // No maxAge - makes it a session cookie that expires when browser closes
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
     });

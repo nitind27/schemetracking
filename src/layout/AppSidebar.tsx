@@ -251,7 +251,12 @@ const AppSidebar: React.FC = () => {
   }, [openSubmenu]);
 
   // Function to handle click and store path in localStorage
-  const handleItemClick = (path: string) => {
+  const handleItemClick = (path: string, e: React.MouseEvent) => {
+    // Prevent navigation and reload if already on the same route
+    if (pathname === path) {
+      e.preventDefault();
+      return;
+    }
     setIsglobleloading(true);
     localStorage.setItem("currentPath", path);
   };
@@ -342,7 +347,7 @@ const AppSidebar: React.FC = () => {
                           ? "menu-item-active"
                           : "menu-item-inactive"
                           }`}
-                        onClick={() => handleItemClick(nav.path || "")}
+                        onClick={(e) => handleItemClick(nav.path || "", e)}
                       >
                         <span
                           className={`${isActive(nav.path || "")
@@ -420,8 +425,7 @@ const AppSidebar: React.FC = () => {
                   href={nav.path}
                   className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
                     }`}
-
-                  onClick={() => handleItemClick(`${nav.path}`)}
+                  onClick={(e) => handleItemClick(nav.path!, e)}
                 >
                   <span
                     className={`${isActive(nav.path)
