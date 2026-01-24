@@ -39,22 +39,43 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
   const filteredFarmersvanaksetra = metrics?.farmers.filter(f =>
     f.vanksetra != ""
   ) || [];
+  
+  // Filter farmers for category 4 - only show talukas 1, 2, 3
+  const allowedTalukaIdsCategory4 = ['1', '2', '3'];
+  const filteredFarmersCategory4 = filters.categoryName === "4"
+    ? metrics?.farmers.filter(f => allowedTalukaIdsCategory4.includes(String(f.taluka_id))) || []
+    : [];
+  
+  // Filter farmers for category 8 - only show talukas 4, 5, 7
+  const allowedTalukaIdsCategory8 = ['4', '5', '7'];
+  const filteredFarmersCategory8 = filters.categoryName === "8"
+    ? metrics?.farmers.filter(f => allowedTalukaIdsCategory8.includes(String(f.taluka_id))) || []
+    : [];
+  
   const counts = {
 
-    farmers: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "4" || filters.categoryName === "32"
+    farmers: filters.categoryName === "1" || filters.categoryName === "32"
       ? metrics?.farmers.length ?? 0
-      :
-      filters.categoryName === "33" ?
-        filteredFarmersbdo.length
-        :
-        filters.categoryName === "37" ?
-          filteredFarmersbdo.length // PESA Coordinator sees only their taluka data
-          :
-          filteredFarmers.length,
+      : filters.categoryName === "4"
+        ? filteredFarmersCategory4.length
+        : filters.categoryName === "8"
+          ? filteredFarmersCategory8.length
+          : filters.categoryName === "33" ?
+            filteredFarmersbdo.length
+            :
+            filters.categoryName === "37" ?
+              filteredFarmersbdo.length // PESA Coordinator sees only their taluka data
+              :
+              filteredFarmers.length,
     schemes: metrics?.schemes.length ?? 0,
     users: metrics?.users.length ?? 0,
-    vanakshetra: filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "4" || filters.categoryName === "32"
-      ? metrics?.farmers.length ?? 0 : filteredFarmersvanaksetra.length
+    vanakshetra: filters.categoryName === "1" || filters.categoryName === "32"
+      ? metrics?.farmers.length ?? 0 
+      : filters.categoryName === "4"
+        ? filteredFarmersCategory4.length
+        : filters.categoryName === "8"
+          ? filteredFarmersCategory8.length
+          : filteredFarmersvanaksetra.length
   };
   const metricsConfig = [
     {
