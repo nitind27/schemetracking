@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+// import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import PathHandler from "@/components/common/PathHandler";
@@ -26,8 +26,8 @@ interface KPICardData {
 
 const EnhancedKPICards: React.FC<EnhancedKPICardsProps> = ({
   farmers,
-  schemesCount,
-  usersCount,
+  // schemesCount,
+  // usersCount,
 }) => {
   // Calculate statistics
   const totalIFR = farmers.length;

@@ -30,7 +30,7 @@ interface AdvancedAnalyticsProps {
 const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
   farmers,
   talukas,
-  schemes,
+  // schemes,
 }) => {
   // Taluka-wise comparison data
   const talukaComparisonData = useMemo(() => {
@@ -57,7 +57,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
     
     farmers.forEach((farmer) => {
       if (farmer.schemes && Array.isArray(farmer.schemes)) {
-        farmer.schemes.forEach((scheme: any) => {
+        farmer.schemes.forEach((scheme) => {
           const schemeName = scheme.scheme_name || "Unknown";
           schemeMap.set(schemeName, (schemeMap.get(schemeName) || 0) + 1);
         });
@@ -73,7 +73,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
   // Monthly survey progress (mock data - in real app, calculate from actual dates)
   const monthlyProgressData = useMemo(() => {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-    return months.map((month, index) => ({
+    return months.map((month) => ({
       month,
       surveys: Math.floor(Math.random() * 200) + 50, // Mock data
     }));

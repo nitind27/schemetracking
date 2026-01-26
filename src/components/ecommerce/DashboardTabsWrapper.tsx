@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import TabView from "@/components/common/TabView";
 import { Suspense } from "react";
 import Loader from "@/common/Loader";
-import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
+// import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import DashboardTalukatabview from "@/components/ecommerce/DashboardTalukatabview";
 import { CFREcommer } from "@/components/ecommerce/CFREcommer";
 import Section32Tabs from "@/components/common/Section32Tabs";
