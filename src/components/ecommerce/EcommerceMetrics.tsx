@@ -7,6 +7,7 @@ import PathHandler from "../common/PathHandler";
 import { FarmdersType } from "../farmersdata/farmers";
 import { Schemesdatas } from "../schemesdata/schemes";
 import { UserData } from "../usersdata/Userdata";
+import EnhancedKPICards from "./EnhancedKPICards";
 
 interface Metrics {
   farmers: FarmdersType[];
@@ -112,6 +113,19 @@ export const EcommerceMetrics = ({ metrics }: { metrics: Metrics }) => {
     }
 
   ];
+
+  // Use EnhancedKPICards for admin users, fallback to original for others
+  const shouldUseEnhanced = filters.categoryName === "1" || filters.categoryName === "32" || filters.categoryName === "8" || filters.categoryName === "4";
+  
+  if (shouldUseEnhanced && filters.categoryName !== "32") {
+    return (
+      <EnhancedKPICards
+        farmers={metrics.farmers}
+        schemesCount={metrics.schemes.length}
+        usersCount={metrics.users.length}
+      />
+    );
+  }
 
   return (
     <div className={`grid  grid-cols-1 gap-3 sm:gap-4 ${filters.categoryName === "1" || filters.categoryName === "8" || filters.categoryName === "32" || filters.categoryName === "4" ? "sm:grid-cols-4" : "sm:grid-cols-2"

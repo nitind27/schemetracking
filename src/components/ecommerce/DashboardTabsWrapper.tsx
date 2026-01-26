@@ -24,6 +24,14 @@ import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { motion } from 'framer-motion';
+import DistrictSummaryRibbon from './DistrictSummaryRibbon';
+import EnhancedKPICards from './EnhancedKPICards';
+import AdvancedAnalytics from './AdvancedAnalytics';
+import AlertsSection from './AlertsSection';
+import PendingApprovalsSection from './PendingApprovalsSection';
+import RecentlyUpdatedRecords from './RecentlyUpdatedRecords';
+import PerformanceScorecard from './PerformanceScorecard';
 
 interface Metrics {
   farmers: FarmdersType[];
@@ -1365,14 +1373,62 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
   // Main Dashboard Content Component
   const MainDashboardContent = () => (
-    <div className="grid grid-cols-6 gap-4 md:gap-6">
-      <div className="col-span-12 space-y-2 xl:col-span-7">
-        <Suspense fallback={<Loader />}>
-          <EcommerceMetrics metrics={metrics} />
-          <DashboardTalukatabview farmersData={farmersData} />
-        </Suspense>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="w-full space-y-6"
+    >
+      {/* District Summary Ribbon */}
+      <DistrictSummaryRibbon
+        farmers={farmersData.farmers}
+        talukas={farmersData.taluka}
+        villages={farmersData.villages}
+      />
+
+      {/* Enhanced KPI Cards */}
+      <EnhancedKPICards
+        farmers={farmersData.farmers}
+        schemesCount={metrics.schemes.length}
+        usersCount={metrics.users.length}
+      />
+
+      {/* Alerts and Pending Approvals Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AlertsSection />
+        <PendingApprovalsSection />
       </div>
-    </div>
+
+      {/* Recently Updated Records */}
+      <RecentlyUpdatedRecords farmers={farmersData.farmers} />
+
+      {/* Advanced Analytics */}
+      <AdvancedAnalytics
+        farmers={farmersData.farmers}
+        talukas={farmersData.taluka}
+        schemes={farmersData.schemes}
+      />
+
+      {/* Performance Scorecard */}
+      <PerformanceScorecard
+        talukas={farmersData.taluka}
+        farmers={farmersData.farmers}
+      />
+
+      {/* Original Dashboard Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.5 }}
+        className="grid grid-cols-6 gap-4 md:gap-6"
+      >
+        <div className="col-span-12 space-y-2 xl:col-span-7">
+          <Suspense fallback={<Loader />}>
+            <DashboardTalukatabview farmersData={farmersData} />
+          </Suspense>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 
   // CFR Dashboard Content Component
