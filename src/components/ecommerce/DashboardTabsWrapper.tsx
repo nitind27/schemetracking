@@ -114,6 +114,18 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         return farmer.taluka_id === userTalukaId;
       }
 
+      // If user_category_id = 4, only show surveys from talukas 1, 2, 3
+      if (userCategoryId === '4') {
+        const allowedTalukaIds = ['1', '2', '3'];
+        return allowedTalukaIds.includes(String(farmer.taluka_id));
+      }
+
+      // If user_category_id = 8, only show surveys from talukas 4, 5, 7
+      if (userCategoryId === '8') {
+        const allowedTalukaIds = ['4', '5', '7'];
+        return allowedTalukaIds.includes(String(farmer.taluka_id));
+      }
+
       // For all other users, show all surveys
       return true;
     });
@@ -131,10 +143,20 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     const userTalukaId = sessionStorage.getItem('taluka_id');
 
     // If user is PESA Coordinator (category_id = 37), only show their assigned taluka
+    // If user_category_id = 4, only show talukas 1, 2, 3
+    // If user_category_id = 8, only show talukas 4, 5, 7
     // Otherwise, show all talukas
-    const talukasToShow = userCategoryId === '37' && userTalukaId
-      ? farmersData.taluka.filter(taluka => taluka.taluka_id.toString() === userTalukaId)
-      : farmersData.taluka;
+    const allowedTalukaIdsCategory4 = ['1', '2', '3'];
+    const allowedTalukaIdsCategory8 = ['4', '5', '7'];
+    let talukasToShow = farmersData.taluka;
+    
+    if (userCategoryId === '37' && userTalukaId) {
+      talukasToShow = farmersData.taluka.filter(taluka => taluka.taluka_id.toString() === userTalukaId);
+    } else if (userCategoryId === '4') {
+      talukasToShow = farmersData.taluka.filter(taluka => allowedTalukaIdsCategory4.includes(taluka.taluka_id.toString()));
+    } else if (userCategoryId === '8') {
+      talukasToShow = farmersData.taluka.filter(taluka => allowedTalukaIdsCategory8.includes(taluka.taluka_id.toString()));
+    }
 
     // Initialize talukas with count 0
     talukasToShow.forEach(taluka => {
@@ -170,12 +192,29 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(true);
 
+    // Get user category for filtering
+    const userCategoryId = sessionStorage.getItem('category_id');
+    const allowedTalukaIdsCategory4 = ['1', '2', '3'];
+    const allowedTalukaIdsCategory8 = ['4', '5', '7'];
+
     const applyFilters = useCallback(() => {
       let filtered = farmersData.farmers.filter(farmer => {
         // Check if farmer_record[20] exists and equals "होय"
         const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
         const deathIFRHolder = farmerRecord.length > 20 ? farmerRecord[20]?.trim() : '';
-        return deathIFRHolder === 'होय';
+        if (deathIFRHolder !== 'होय') return false;
+
+        // If user_category_id = 4, only show farmers from talukas 1, 2, 3
+        if (userCategoryId === '4') {
+          return allowedTalukaIdsCategory4.includes(String(farmer.taluka_id));
+        }
+
+        // If user_category_id = 8, only show farmers from talukas 4, 5, 7
+        if (userCategoryId === '8') {
+          return allowedTalukaIdsCategory8.includes(String(farmer.taluka_id));
+        }
+
+        return true;
       });
 
       // Search filter
@@ -202,7 +241,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       }
 
       setFilteredFarmers(filtered);
-    }, [farmersData.farmers, searchQuery, selectedTaluka, selectedVillage]);
+    }, [farmersData.farmers, searchQuery, selectedTaluka, selectedVillage, userCategoryId]);
 
     useEffect(() => {
       applyFilters();
@@ -213,7 +252,16 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       farmersData.farmers
         .filter(farmer => {
           const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
-          return farmerRecord.length > 20 && farmerRecord[20]?.trim() === 'होय';
+          const isDeathIFRHolder = farmerRecord.length > 20 && farmerRecord[20]?.trim() === 'होय';
+          // If user_category_id = 4, only include talukas 1, 2, 3
+          if (userCategoryId === '4') {
+            return isDeathIFRHolder && allowedTalukaIdsCategory4.includes(String(farmer.taluka_id));
+          }
+          // If user_category_id = 8, only include talukas 4, 5, 7
+          if (userCategoryId === '8') {
+            return isDeathIFRHolder && allowedTalukaIdsCategory8.includes(String(farmer.taluka_id));
+          }
+          return isDeathIFRHolder;
         })
         .map(farmer => ({ id: farmer.taluka_id, name: farmersData.taluka.find(t => t.taluka_id.toString() === farmer.taluka_id)?.name }))
         .filter(t => t.id && t.name)
@@ -1344,6 +1392,12 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   
   // For user_category_id = 32, show Category32Dashboard in Section 3(2)
   const isCategory32 = categoryId === "32";
+  
+  // For user_category_id = 4, show Category32Dashboard in Section 3(2) (similar to category 32)
+  const isCategory4 = categoryId === "4";
+  
+  // For user_category_id = 8, show Category32Dashboard in Section 3(2) (similar to category 32)
+  const isCategory8 = categoryId === "8";
 
   const allTabs = [
     {
@@ -1362,7 +1416,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       label: "Section 3(2)",
       content: <div className="grid grid-cols-6 gap-4 md:gap-6">
         <div className="col-span-12 space-y-6 xl:col-span-7">
-        {isSection32Only ? <ProposalManagementDashboard /> : isCategory32 ? <Category32Dashboard /> : <Section32Tabs />}
+        {isSection32Only ? <ProposalManagementDashboard /> : (isCategory32 || isCategory4 || isCategory8) ? <Category32Dashboard /> : <Section32Tabs />}
         </div>
       </div>
     },

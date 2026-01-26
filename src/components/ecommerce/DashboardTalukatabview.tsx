@@ -51,6 +51,14 @@ const DashboardTalukatabview: React.FC<DashboardTalukatabviewProps> = ({ farmers
     // Filter data for PESA Coordinator (category_id = 37) - show only user's taluka
     const isPESACoordinator = categoryId === "37";
     
+    // Filter data for user_category_id = 4 - show only talukas 1, 2, 3
+    const isCategory4 = categoryId === "4";
+    const allowedTalukaIdsCategory4 = ["1", "2", "3"];
+    
+    // Filter data for user_category_id = 8 - show only talukas 4, 5, 7
+    const isCategory8 = categoryId === "8";
+    const allowedTalukaIdsCategory8 = ["4", "5", "7"];
+    
     const filteredFarmersData = useMemo(() => {
         if (isPESACoordinator && userTalukaId) {
             return {
@@ -66,8 +74,36 @@ const DashboardTalukatabview: React.FC<DashboardTalukatabviewProps> = ({ farmers
                 )
             };
         }
+        if (isCategory4) {
+            return {
+                ...farmersData,
+                farmers: farmersData.farmers.filter(
+                    f => allowedTalukaIdsCategory4.includes(String(f.taluka_id))
+                ),
+                taluka: farmersData.taluka.filter(
+                    t => allowedTalukaIdsCategory4.includes(String(t.taluka_id))
+                ),
+                villages: farmersData.villages.filter(
+                    v => allowedTalukaIdsCategory4.includes(String(v.taluka_id))
+                )
+            };
+        }
+        if (isCategory8) {
+            return {
+                ...farmersData,
+                farmers: farmersData.farmers.filter(
+                    f => allowedTalukaIdsCategory8.includes(String(f.taluka_id))
+                ),
+                taluka: farmersData.taluka.filter(
+                    t => allowedTalukaIdsCategory8.includes(String(t.taluka_id))
+                ),
+                villages: farmersData.villages.filter(
+                    v => allowedTalukaIdsCategory8.includes(String(v.taluka_id))
+                )
+            };
+        }
         return farmersData;
-    }, [farmersData, isPESACoordinator, userTalukaId]);
+    }, [farmersData, isPESACoordinator, userTalukaId, isCategory4, isCategory8]);
 
     const tabs = [
         {
