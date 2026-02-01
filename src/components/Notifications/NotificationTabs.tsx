@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 // import TabView from "@/components/common/TabView";
-import { Modal } from "@/components/ui/modal";
+// import { Modal } from "@/components/ui/modal";
 import Notificationtab from "../common/Notificationtab";
+import { FaFilePdf } from "react-icons/fa6";
 
 type PdfItem = {
   id: string | number;
@@ -24,17 +25,19 @@ function formatDate(d?: string | Date) {
   return date.toLocaleDateString();
 }
 
-function PdfRow({
-  item,
-  onView,
-}: {
-  item: PdfItem;
-  onView: (item: PdfItem) => void;
-}) {
+function PdfRow({ item }: { item: PdfItem }) {
+  const handleView = () => {
+    // Open PDF in new tab
+    window.open(item.url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <li className="flex items-center justify-between gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/40">
-      <div className="flex items-start gap-3 min-w-0">
-        <div className="mt-1 h-9 w-9 flex items-center justify-center rounded bg-red-50 text-red-600 ring-1 ring-red-100">
+      <div 
+        className="flex items-start gap-3 min-w-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors flex-1" 
+        onClick={handleView}
+      >
+        <div className="mt-1 h-9 w-9 flex items-center justify-center rounded bg-red-50 text-red-600 ring-1 ring-red-100 flex-shrink-0">
           <svg width="18" height="18" viewBox="0 0 24 24" className="fill-current">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 2v4h4" />
             <path d="M8 13h8v2H8zm0 4h8v2H8z" />
@@ -48,44 +51,33 @@ function PdfRow({
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <button
-          className="px-3 py-1.5 text-sm rounded border border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
-          onClick={() => onView(item)}
-        >
-          View
-        </button>
         <a
           href={item.url}
           target="_blank"
           rel="noreferrer"
-          className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
           download
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors hover:opacity-70"
+          title="Download PDF"
         >
-          Download
+          <FaFilePdf size={20} color="#EB5757"/>
         </a>
       </div>
     </li>
   );
 }
 
-function PdfList({
-  items,
-  onView,
-}: {
-  items: PdfItem[];
-  onView: (item: PdfItem) => void;
-}) {
+function PdfList({ items }: { items: PdfItem[] }) {
   if (!items.length) {
     return (
-      <div className="w-full rounded-lg border border-gray-200 dark:border-gray-800 p-6 text-sm text-gray-500 dark:text-gray-400">
-        No documents.
+      <div className="w-full rounded-lg border border-gray-200 dark:border-gray-800 p-6 text-sm text-gray-500 dark:text-gray-400 text-center">
+        No documents available.
       </div>
     );
   }
   return (
     <ul className="w-full divide-y divide-gray-100 dark:divide-gray-800 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
       {items.map((it) => (
-        <PdfRow key={it.id} item={it} onView={onView} />
+        <PdfRow key={it.id} item={it} />
       ))}
     </ul>
   );
@@ -110,49 +102,23 @@ export default function NotificationTabs({
   const newsDocs = useMemo(() => news ?? mockNews, [news]);
   const rtiDocs = useMemo(() => rti ?? mockRti, [rti]);
 
-  const [openPdf, setOpenPdf] = useState<PdfItem | null>(null);
-
   const tabs = [
     {
       id: "news",
       label: `News Notification (${newsDocs.length})`,
-      content: <PdfList items={newsDocs} onView={setOpenPdf} />,
+      content: <PdfList items={newsDocs} />,
     },
     {
       id: "rti",
       label: `RTI Information (${rtiDocs.length})`,
-      content: <PdfList items={rtiDocs} onView={setOpenPdf} />,
+      content: <PdfList items={rtiDocs} />,
     },
   ];
 
   return (
     <div className="w-full bg-white p-5">
       <Notificationtab tabs={tabs} defaultTab={defaultTab} />
-
-      <Modal
-        isOpen={!!openPdf}
-        onClose={() => setOpenPdf(null)}
-        isFullscreen={true}
-        className="bg-white"
-      >
-        <div className="flex flex-col h-screen w-screen">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-            <div className="font-semibold text-gray-800 dark:text-gray-100 truncate pr-4">
-              {openPdf?.title}
-            </div>
-        
-          </div>
-          <div className="flex-1 bg-gray-50">
-            {openPdf?.url && (
-              <iframe
-                src={`${openPdf.url}#toolbar=1&navpanes=1&scrollbar=1`}
-                className="w-full h-full"
-                title={openPdf.title}
-              />
-            )}
-          </div>
-        </div>
-      </Modal>
+      {/* Modal removed as PDFs now open in new tabs */}
     </div>
   );
 }

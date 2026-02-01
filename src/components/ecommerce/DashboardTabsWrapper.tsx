@@ -20,7 +20,7 @@ import { Taluka } from "@/components/Taluka/Taluka";
 import { Village } from "@/components/Village/village";
 import { Schemesubcategorytype } from "@/components/Schemesubcategory/Schemesubcategory";
 import { Modal } from "@/components/ui/modal";
-import { format } from 'date-fns';
+// import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -32,6 +32,8 @@ import AlertsSection from './AlertsSection';
 import PendingApprovalsSection from './PendingApprovalsSection';
 import RecentlyUpdatedRecords from './RecentlyUpdatedRecords';
 import PerformanceScorecard from './PerformanceScorecard';
+import { toast } from 'react-hot-toast';
+// import { useRouter } from 'next/navigation';
 
 interface Metrics {
   farmers: FarmdersType[];
@@ -61,6 +63,7 @@ interface TalukaSurveyData {
 interface Proposal {
   proposal_id?: number;
   proposal_category_id?: number;
+  proposal_category_name?: string;
   land_details?: string;
   taluka_id?: number;
   taluka_name?: string;
@@ -87,110 +90,273 @@ interface DashboardTabsWrapperProps {
 
 const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, farmersData }) => {
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [showTalukaList, setShowTalukaList] = useState(false);
-  const [selectedTalukaData, setSelectedTalukaData] = useState<TalukaSurveyData | null>(null);
+  // const [, setShowTalukaList] = useState(false);
+  const [selectedTalukaData] = useState<TalukaSurveyData | null>(null);
   const [isTalukaDetailModalOpen, setIsTalukaDetailModalOpen] = useState(false);
+  
+  // Proposal modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+  
+  // Action states for accept/reject/send back
+  const [rejectReason, setRejectReason] = useState('');
+  const [sendBackReason, setSendBackReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showSendBackModal, setShowSendBackModal] = useState(false);
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [reviewCheckboxes, setReviewCheckboxes] = useState({
+    siteInspection: false,
+    boundaryVerified: false,
+    fraCompliance: false,
+    treeCount: false
+  });
 
   useEffect(() => {
     const category_id = sessionStorage.getItem('category_id');
     setCategoryId(category_id);
   }, []);
 
-  // Filter today's surveys
-  const getTodaySurveys = () => {
-    const today = new Date();
-    const dateStr = format(today, 'yyyy-MM-dd');
-
-    // Get user information from sessionStorage for filtering
-    const userCategoryId = sessionStorage.getItem('category_id');
-    const userTalukaId = sessionStorage.getItem('taluka_id');
-
-    return metrics.farmers.filter(farmer => {
-      if (!farmer.update_record) return false;
-
-      // Split the update_record by pipe and check each segment
-      const hasTodaySurvey = farmer.update_record.split('|').some(segment => {
-        // Extract the date part from each segment
-        const datePart = segment.split('/')[1];
-        return datePart === dateStr;
-      });
-
-      if (!hasTodaySurvey) return false;
-
-      // If user is PESA Coordinator (category_id = 37), only show surveys from their assigned taluka
-      if (userCategoryId === '37' && userTalukaId) {
-        return farmer.taluka_id === userTalukaId;
-      }
-
-      // If user_category_id = 4, only show surveys from talukas 1, 2, 3
-      if (userCategoryId === '4') {
-        const allowedTalukaIds = ['1', '2', '3'];
-        return allowedTalukaIds.includes(String(farmer.taluka_id));
-      }
-
-      // If user_category_id = 8, only show surveys from talukas 4, 5, 7
-      if (userCategoryId === '8') {
-        const allowedTalukaIds = ['4', '5', '7'];
-        return allowedTalukaIds.includes(String(farmer.taluka_id));
-      }
-
-      // For all other users, show all surveys
-      return true;
+  // Proposal action handlers
+  const handleOpenModal = (proposal: Proposal) => {
+    setSelectedProposal(proposal);
+    setIsModalOpen(true);
+    // Reset states
+    setRejectReason('');
+    setSendBackReason('');
+    setReviewCheckboxes({
+      siteInspection: false,
+      boundaryVerified: false,
+      fraCompliance: false,
+      treeCount: false
     });
   };
 
-  const todaySurveys = getTodaySurveys();
-  const todaySurveyCount = todaySurveys.length;
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProposal(null);
+    setRejectReason('');
+    setSendBackReason('');
+    setShowRejectModal(false);
+    setShowSendBackModal(false);
+    setShowAcceptModal(false);
+  };
 
-  // Group today's surveys by taluka
-  const getTalukaWiseSurveys = (): TalukaSurveyData[] => {
-    const talukaMap = new Map();
+  const handleAccept = () => {
+    // Check if at least one checkbox is checked
+    const hasAnyChecked = Object.values(reviewCheckboxes).some(v => v);
+    if (!hasAnyChecked) {
+      toast.error('Please complete at least one review criteria');
+      return;
+    }
+    setShowAcceptModal(true);
+  };
 
-    // Get user information from sessionStorage
-    const userCategoryId = sessionStorage.getItem('category_id');
-    const userTalukaId = sessionStorage.getItem('taluka_id');
+  const handleConfirmAccept = async () => {
+    if (!selectedProposal) return;
 
-    // If user is PESA Coordinator (category_id = 37), only show their assigned taluka
-    // If user_category_id = 4, only show talukas 1, 2, 3
-    // If user_category_id = 8, only show talukas 4, 5, 7
-    // Otherwise, show all talukas
-    const allowedTalukaIdsCategory4 = ['1', '2', '3'];
-    const allowedTalukaIdsCategory8 = ['4', '5', '7'];
-    let talukasToShow = farmersData.taluka;
-    
-    if (userCategoryId === '37' && userTalukaId) {
-      talukasToShow = farmersData.taluka.filter(taluka => taluka.taluka_id.toString() === userTalukaId);
-    } else if (userCategoryId === '4') {
-      talukasToShow = farmersData.taluka.filter(taluka => allowedTalukaIdsCategory4.includes(taluka.taluka_id.toString()));
-    } else if (userCategoryId === '8') {
-      talukasToShow = farmersData.taluka.filter(taluka => allowedTalukaIdsCategory8.includes(taluka.taluka_id.toString()));
+    try {
+      const response = await fetch('/api/proposals/updatestatus', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          proposal_id: selectedProposal.proposal_id,
+          work_status: 'Accepted',
+          review_checkboxes: reviewCheckboxes
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Proposal accepted successfully');
+        setShowAcceptModal(false);
+        handleCloseModal();
+        // Refresh page or refetch data
+        window.location.reload();
+      } else {
+        toast.error('Failed to accept proposal');
+      }
+    } catch (error) {
+      console.error('Error accepting proposal:', error);
+      toast.error('Failed to accept proposal');
+    }
+  };
+
+  const handleReject = () => {
+    setShowRejectModal(true);
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectReason.trim()) {
+      toast.error('Please provide a reason for rejection');
+      return;
     }
 
-    // Initialize talukas with count 0
-    talukasToShow.forEach(taluka => {
-      talukaMap.set(taluka.taluka_id.toString(), {
-        taluka_id: taluka.taluka_id,
-        taluka_name: taluka.name,
-        count: 0,
-        surveys: []
+    if (!selectedProposal) return;
+
+    try {
+      const response = await fetch('/api/proposals/updatestatus', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          proposal_id: selectedProposal.proposal_id,
+          work_status: 'Rejected',
+          reason: rejectReason
+        })
       });
-    });
 
-    // Count surveys for each taluka
-    todaySurveys.forEach(farmer => {
-      const talukaId = farmer.taluka_id?.toString() || '';
-      if (talukaMap.has(talukaId)) {
-        const talukaData = talukaMap.get(talukaId);
-        talukaData.count += 1;
-        talukaData.surveys.push(farmer);
+      if (response.ok) {
+        toast.success('Proposal rejected successfully');
+        setShowRejectModal(false);
+        handleCloseModal();
+        // Refresh page or refetch data
+        window.location.reload();
+      } else {
+        toast.error('Failed to reject proposal');
       }
-    });
-
-    // Convert to array and sort by count (descending)
-    return Array.from(talukaMap.values()).sort((a, b) => b.count - a.count);
+    } catch (error) {
+      console.error('Error rejecting proposal:', error);
+      toast.error('Failed to reject proposal');
+    }
   };
 
-  const talukaWiseSurveys: TalukaSurveyData[] = getTalukaWiseSurveys();
+  const handleSendBack = () => {
+    setShowSendBackModal(true);
+  };
+
+  const handleConfirmSendBack = async () => {
+    if (!sendBackReason.trim()) {
+      toast.error('Please provide a reason for sending back');
+      return;
+    }
+
+    if (!selectedProposal) return;
+
+    try {
+      const response = await fetch('/api/proposals/updatestatus', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          proposal_id: selectedProposal.proposal_id,
+          work_status: 'Correction needed',
+          reason: sendBackReason
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Proposal sent back for correction');
+        setShowSendBackModal(false);
+        handleCloseModal();
+        // Refresh page or refetch data
+        window.location.reload();
+      } else {
+        toast.error('Failed to send back proposal');
+      }
+    } catch (error) {
+      console.error('Error sending back proposal:', error);
+      toast.error('Failed to send back proposal');
+    }
+  };
+
+  // Filter today's surveys
+  // const getTodaySurveys = () => {
+  //   const today = new Date();
+  //   const dateStr = format(today, 'yyyy-MM-dd');
+
+  //   // Get user information from sessionStorage for filtering
+  //   const userCategoryId = sessionStorage.getItem('category_id');
+  //   const userTalukaId = sessionStorage.getItem('taluka_id');
+
+  //   return metrics.farmers.filter(farmer => {
+  //     if (!farmer.update_record) return false;
+
+  //     // Split the update_record by pipe and check each segment
+  //     const hasTodaySurvey = farmer.update_record.split('|').some(segment => {
+  //       // Extract the date part from each segment
+  //       const datePart = segment.split('/')[1];
+  //       return datePart === dateStr;
+  //     });
+
+  //     if (!hasTodaySurvey) return false;
+
+  //     // If user is PESA Coordinator (category_id = 37), only show surveys from their assigned taluka
+  //     if (userCategoryId === '37' && userTalukaId) {
+  //       return farmer.taluka_id === userTalukaId;
+  //     }
+
+  //     // If user_category_id = 4, only show surveys from talukas 1, 2, 3
+  //     if (userCategoryId === '4') {
+  //       const allowedTalukaIds = ['1', '2', '3'];
+  //       return allowedTalukaIds.includes(String(farmer.taluka_id));
+  //     }
+
+  //     // If user_category_id = 8, only show surveys from talukas 4, 5, 7
+  //     if (userCategoryId === '8') {
+  //       const allowedTalukaIds = ['4', '5', '7'];
+  //       return allowedTalukaIds.includes(String(farmer.taluka_id));
+  //     }
+
+  //     // For all other users, show all surveys
+  //     return true;
+  //   });
+  // };
+
+  // const todaySurveys = getTodaySurveys();
+  // const todaySurveyCount = todaySurveys.length; // Unused variable
+
+  // Group today's surveys by taluka
+  // const getTalukaWiseSurveys = (): TalukaSurveyData[] => {
+  //   const talukaMap = new Map();
+
+  //   // Get user information from sessionStorage
+  //   const userCategoryId = sessionStorage.getItem('category_id');
+  //   const userTalukaId = sessionStorage.getItem('taluka_id');
+
+  //   // If user is PESA Coordinator (category_id = 37), only show their assigned taluka
+  //   // If user_category_id = 4, only show talukas 1, 2, 3
+  //   // If user_category_id = 8, only show talukas 4, 5, 7
+  //   // Otherwise, show all talukas
+  //   const allowedTalukaIdsCategory4 = ['1', '2', '3'];
+  //   const allowedTalukaIdsCategory8 = ['4', '5', '7'];
+  //   let talukasToShow = farmersData.taluka;
+    
+  //   if (userCategoryId === '37' && userTalukaId) {
+  //     talukasToShow = farmersData.taluka.filter(taluka => taluka.taluka_id.toString() === userTalukaId);
+  //   } else if (userCategoryId === '4') {
+  //     talukasToShow = farmersData.taluka.filter(taluka => allowedTalukaIdsCategory4.includes(taluka.taluka_id.toString()));
+  //   } else if (userCategoryId === '8') {
+  //     talukasToShow = farmersData.taluka.filter(taluka => allowedTalukaIdsCategory8.includes(taluka.taluka_id.toString()));
+  //   }
+
+  //   // Initialize talukas with count 0
+  //   talukasToShow.forEach(taluka => {
+  //     talukaMap.set(taluka.taluka_id.toString(), {
+  //       taluka_id: taluka.taluka_id,
+  //       taluka_name: taluka.name,
+  //       count: 0,
+  //       surveys: []
+  //     });
+  //   });
+
+  //   // Count surveys for each taluka
+  //   todaySurveys.forEach(farmer => {
+  //     const talukaId = farmer.taluka_id?.toString() || '';
+  //     if (talukaMap.has(talukaId)) {
+  //       const talukaData = talukaMap.get(talukaId);
+  //       talukaData.count += 1;
+  //       talukaData.surveys.push(farmer);
+  //     }
+  //   });
+
+  //   // Convert to array and sort by count (descending)
+  //   return Array.from(talukaMap.values()).sort((a, b) => b.count - a.count);
+  // };
+
+  // const talukaWiseSurveys: TalukaSurveyData[] = getTalukaWiseSurveys();
 
   // Death IFR Holder Dashboard Component
   const DeathIFRHolderDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
@@ -703,8 +869,6 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     const [selectedVillage, setSelectedVillage] = useState<string>('all');
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [showFilters, setShowFilters] = useState(true);
-    const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
       fetchProposals();
@@ -777,16 +941,6 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       .map((v, i, arr) => arr.findIndex(x => x.id === v.id) === i ? v : null)
       .filter(Boolean) as { id: number; name: string }[];
 
-    const handleOpenModal = (proposal: Proposal) => {
-      setSelectedProposal(proposal);
-      setIsModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-      setIsModalOpen(false);
-      setSelectedProposal(null);
-    };
-
     const getStatusBadge = (proposal: Proposal) => {
       const status = proposal.work_status;
       let bgColor = 'bg-gray-100 text-gray-800';
@@ -820,6 +974,23 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       rejected: proposals.filter(p => p.work_status === 'Rejected').length,
       pendingAtDLC: proposals.filter(p => p.work_status === 'pending at DLC').length,
       correctionNeeded: proposals.filter(p => p.work_status === 'Correction needed').length
+    };
+
+    const getCategoryName = (proposal: Proposal) => {
+      if (proposal.proposal_category_name) {
+        return proposal.proposal_category_name;
+      }
+
+      switch (proposal.proposal_category_id) {
+        case 1:
+          return 'Jamin (Class 2)';
+        case 2:
+          return 'Kulkayda (Tribal)';
+        case 3:
+          return 'Gavthan';
+        default:
+          return 'Other';
+      }
     };
 
     if (loading) {
@@ -1071,108 +1242,85 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                 <p className="text-gray-400 text-sm mt-2">Try adjusting your filters</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200">
-                {filteredProposals.map((proposal, index) => (
-                  <div
-                    key={proposal.proposal_id}
-                    className="p-6 hover:bg-gray-50 transition-all duration-300 ease-out transform hover:scale-[1.01] hover:shadow-sm"
-                    style={{
-                      animation: `fadeInUp 0.5s ease-out ${index * 0.05}s both`
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Proposal ID & Status */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-500">Proposal ID</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg font-bold text-gray-900">#{proposal.proposal_id}</span>
-                            {getStatusBadge(proposal)}
-                          </div>
-                        </div>
-
-                        {/* Location Info */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            Location
-                          </div>
-                          <div className="text-sm text-gray-700">
-                            {proposal.taluka_name && (
-                              <p className="font-medium">{proposal.taluka_name}</p>
-                            )}
-                            {proposal.village_name && (
-                              <p className="text-gray-600">{proposal.village_name}</p>
-                            )}
-                            {!proposal.taluka_name && !proposal.village_name && (
-                              <p className="text-gray-400">N/A</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Details */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Details
-                          </div>
-                          <div className="text-sm text-gray-700 space-y-1">
-                            {proposal.number_of_tree && (
-                              <p><span className="font-medium">Trees:</span> {proposal.number_of_tree}</p>
-                            )}
-                            {proposal.beneficiaries && (
-                              <p><span className="font-medium">Beneficiaries:</span> {proposal.beneficiaries}</p>
-                            )}
-                            {proposal.user_name && (
-                              <p><span className="font-medium">Created by:</span> {proposal.user_name}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Land Details */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
-                            Land Details
-                          </div>
-                          <p className="text-sm text-gray-700 line-clamp-2">
-                            {proposal.land_details || 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex flex-col gap-2 items-end">
-                        {(!proposal.work_status || proposal.work_status === 'Not started Yet' || proposal.work_status === '') && (
-                          <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all transform hover:scale-105 active:scale-95 shadow-sm">
-                            Start Review
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sr No
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Proposal ID
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Taluka
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Village
+                    </th>
+                    
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                   
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredProposals.map((proposal, index) => (
+                    <tr
+                      key={proposal.proposal_id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {index + 1}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                        #{proposal.proposal_id}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {proposal.taluka_name || 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {getCategoryName(proposal)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {proposal.village_name || 'N/A'}
+                      </td>
+                     
+                      <td className="px-4 py-3 text-sm">
+                        {getStatusBadge(proposal)}
+                      </td>
+                      
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex gap-2 items-start md:items-end">
+                          {(!proposal.work_status || proposal.work_status === 'Not started Yet' || proposal.work_status === '') && (
+                            <button className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-all shadow-sm">
+                              Start Review
+                            </button>
+                          )}
+                        
+                          <button
+                            onClick={() => handleOpenModal(proposal)}
+                            className="px-3 py-1 text-blue-600 text-xs font-medium rounded-lg hover:bg-blue-50 transition-all"
+                          >
+                            View Details
                           </button>
-                        )}
-                        {(proposal.work_status === 'Under Review' || proposal.work_status === 'Correction needed') && (
-                          <button className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-sm">
-                            Review
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => handleOpenModal(proposal)}
-                          className="px-4 py-2 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-50 transition-all"
-                        >
-                          View Details
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                          {(proposal.work_status === 'Under Review' || proposal.work_status === 'Correction needed') && (
+                            <button className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-all shadow-sm">
+                              Review
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </div>
@@ -1197,9 +1345,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         <Modal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          className="max-w-4xl"
+          className="max-w-6xl"
         >
-          <div className="p-6 h-[550px] overflow-y-auto">
+          <div className="p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
                 Proposal Details
@@ -1215,158 +1363,525 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             </div>
 
             {selectedProposal && (
-              <div className="space-y-6">
-                {/* Proposal Information */}
-                <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                    Proposal Information
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Proposal ID</p>
-                      <p className="text-base text-gray-900 dark:text-white font-semibold">
-                        #{selectedProposal.proposal_id}
-                      </p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Side - Proposal Information (2 columns) */}
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg space-y-4">
+                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                      {selectedProposal.proposal_category_name || 'Proposal Work Category'}
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Proposal ID</p>
+                        <p className="text-base text-gray-900 dark:text-white font-semibold">
+                          #{selectedProposal.proposal_id}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</p>
+                        <div className="mt-1">
+                          {getStatusBadge(selectedProposal)}
+                        </div>
+                      </div>
+
+                      {selectedProposal.land_details && (
+                        <div className="md:col-span-2">
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Land Details</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {selectedProposal.land_details}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.taluka_name && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Taluka</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {selectedProposal.taluka_name}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.village_name && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Village</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {selectedProposal.village_name}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.gp_name && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Gram Panchayat</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {selectedProposal.gp_name}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.number_of_tree && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Number of Trees</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {selectedProposal.number_of_tree}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.beneficiaries && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Beneficiaries</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {selectedProposal.beneficiaries}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.user_name && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Created By</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {selectedProposal.user_name}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.work_status && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Work Status</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {selectedProposal.work_status}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.forward_to && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Forward To</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {selectedProposal.forward_to}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.created_at && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {new Date(selectedProposal.created_at).toLocaleDateString('en-IN', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.updated_at && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {new Date(selectedProposal.updated_at).toLocaleDateString('en-IN', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedProposal.remarks && (
+                        <div className="md:col-span-2">
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Remarks</p>
+                          <p className="text-base text-gray-900 dark:text-white">
+                            {selectedProposal.remarks}
+                          </p>
+                        </div>
+                      )}
                     </div>
+                  </div>
 
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</p>
-                      <div className="mt-1">
-                        {getStatusBadge(selectedProposal)}
-                      </div>
-                    </div>
-
-                    {selectedProposal.land_details && (
-                      <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Land Details</p>
-                        <p className="text-base text-gray-900 dark:text-white">
-                          {selectedProposal.land_details}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedProposal.taluka_name && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Taluka</p>
-                        <p className="text-base text-gray-900 dark:text-white">
-                          {selectedProposal.taluka_name}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedProposal.village_name && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Village</p>
-                        <p className="text-base text-gray-900 dark:text-white">
-                          {selectedProposal.village_name}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedProposal.gp_name && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Gram Panchayat</p>
-                        <p className="text-base text-gray-900 dark:text-white">
-                          {selectedProposal.gp_name}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedProposal.number_of_tree && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Number of Trees</p>
-                        <p className="text-base text-gray-900 dark:text-white">
-                          {selectedProposal.number_of_tree}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedProposal.beneficiaries && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Beneficiaries</p>
-                        <p className="text-base text-gray-900 dark:text-white">
-                          {selectedProposal.beneficiaries}
-                        </p>
+                  {/* Documents Section */}
+                  <div className="space-y-4">
+                    {/* PDF Document */}
+                    {selectedProposal.pdf && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                        <button
+                          onClick={() => {
+                            if (selectedProposal.pdf) {
+                              let pdfUrl = selectedProposal.pdf;
+                              
+                              // Handle different PDF path formats
+                              if (pdfUrl.startsWith('http')) {
+                                // Already a full URL, use as is
+                              } else if (pdfUrl.startsWith('/')) {
+                                // Already starts with /, use as is
+                              } else if (pdfUrl.startsWith('pdf/')) {
+                                // Starts with pdf/, add leading slash
+                                pdfUrl = `/${pdfUrl}`;
+                              } else {
+                                // Just filename, assume it's in public/pdf/
+                                pdfUrl = `/pdf/${pdfUrl}`;
+                              }
+                              
+                              console.log('Opening PDF URL:', pdfUrl); // Debug log
+                              
+                              // Open in new tab with proper handling
+                              const newWindow = window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+                              
+                              // Fallback if popup blocked
+                              if (!newWindow) {
+                                // Create a temporary link and click it
+                                const link = document.createElement('a');
+                                link.href = pdfUrl;
+                                link.target = '_blank';
+                                link.rel = 'noopener noreferrer';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }
+                            } else {
+                              alert('PDF document not available');
+                            }
+                          }}
+                          className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors w-full"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          View PDF Document
+                          <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </button>
                       </div>
                     )}
 
-                    {selectedProposal.user_name && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Created By</p>
-                        <p className="text-base text-gray-900 dark:text-white">
-                          {selectedProposal.user_name}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedProposal.created_at && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</p>
-                        <p className="text-base text-gray-900 dark:text-white">
-                          {new Date(selectedProposal.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedProposal.remarks && (
-                      <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Remarks</p>
-                        <p className="text-base text-gray-900 dark:text-white">
-                          {selectedProposal.remarks}
-                        </p>
+                    {/* Supporting Map Document */}
+                    {selectedProposal.supporting_map_doc && (
+                      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                        <button
+                          onClick={() => {
+                            if (selectedProposal.supporting_map_doc) {
+                              let mapUrl = selectedProposal.supporting_map_doc;
+                              
+                              // Handle different map document path formats
+                              if (mapUrl.startsWith('http')) {
+                                // Already a full URL, use as is
+                              } else if (mapUrl.startsWith('/')) {
+                                // Already starts with /, use as is
+                              } else if (mapUrl.startsWith('pdf/')) {
+                                // Starts with pdf/, add leading slash
+                                mapUrl = `/${mapUrl}`;
+                              } else {
+                                // Just filename, assume it's in public/pdf/
+                                mapUrl = `/pdf/${mapUrl}`;
+                              }
+                              
+                              console.log('Opening Map Document URL:', mapUrl); // Debug log
+                              
+                              // Open in new tab with proper handling
+                              const newWindow = window.open(mapUrl, '_blank', 'noopener,noreferrer');
+                              
+                              // Fallback if popup blocked
+                              if (!newWindow) {
+                                // Create a temporary link and click it
+                                const link = document.createElement('a');
+                                link.href = mapUrl;
+                                link.target = '_blank';
+                                link.rel = 'noopener noreferrer';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }
+                            } else {
+                              alert('Supporting map document not available');
+                            }
+                          }}
+                          className="flex items-center gap-2 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-medium transition-colors w-full"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                          </svg>
+                          View Supporting Map Document
+                          <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </button>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* PDF Document */}
-                {selectedProposal.pdf && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                    <a
-                      href={selectedProposal.pdf}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                {/* Right Side - Review & Actions (1 column) */}
+                <div className="lg:col-span-1 space-y-6">
+                  {/* Review Section */}
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      View PDF Document
-                    </a>
+                      Review Checklist
+                    </h3>
+                    <div className="space-y-4">
+                      <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={reviewCheckboxes.siteInspection}
+                          onChange={(e) =>
+                            setReviewCheckboxes({
+                              ...reviewCheckboxes,
+                              siteInspection: e.target.checked
+                            })
+                          }
+                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Site inspection completed
+                        </span>
+                      </label>
+                      <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={reviewCheckboxes.boundaryVerified}
+                          onChange={(e) =>
+                            setReviewCheckboxes({
+                              ...reviewCheckboxes,
+                              boundaryVerified: e.target.checked
+                            })
+                          }
+                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Boundary verification done
+                        </span>
+                      </label>
+                      <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={reviewCheckboxes.fraCompliance}
+                          onChange={(e) =>
+                            setReviewCheckboxes({
+                              ...reviewCheckboxes,
+                              fraCompliance: e.target.checked
+                            })
+                          }
+                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          FRA compliance verified
+                        </span>
+                      </label>
+                      <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={reviewCheckboxes.treeCount}
+                          onChange={(e) =>
+                            setReviewCheckboxes({
+                              ...reviewCheckboxes,
+                              treeCount: e.target.checked
+                            })
+                          }
+                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Tree count verified
+                        </span>
+                      </label>
+                    </div>
                   </div>
-                )}
 
-                {/* Supporting Map Document */}
-                {selectedProposal.supporting_map_doc && (
-                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                    <a
-                      href={selectedProposal.supporting_map_doc}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-medium transition-colors"
+                  {/* Action Buttons */}
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Actions</h4>
+                    <div className="space-y-3">
+                      <button
+                        onClick={handleAccept}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Accept Proposal
+                      </button>
+                      <button
+                        onClick={handleReject}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Reject Proposal
+                      </button>
+                      <button
+                        onClick={handleSendBack}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        Send Back for Correction
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Close Button */}
+                  <div className="pt-4">
+                    <button
+                      onClick={handleCloseModal}
+                      className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                      </svg>
-                      View Supporting Map Document
-                    </a>
+                      Close
+                    </button>
                   </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={handleCloseModal}
-                    className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                  >
-                    Close
-                  </button>
                 </div>
               </div>
             )}
           </div>
         </Modal>
+
+        {/* Enhanced Proposal Action Modal */}
+        {selectedProposal && (
+          <>
+            {/* Accept Confirmation Modal */}
+            <Modal
+              isOpen={showAcceptModal}
+              onClose={() => setShowAcceptModal(false)}
+              className="max-w-md"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 text-center">
+                  Accept Proposal
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center">
+                  Are you sure you want to accept this proposal? This action cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowAcceptModal(false)}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmAccept}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Confirm Accept
+                  </button>
+                </div>
+              </div>
+            </Modal>
+
+            {/* Reject Reason Modal */}
+            <Modal
+              isOpen={showRejectModal}
+              onClose={() => {
+                setShowRejectModal(false);
+                setRejectReason('');
+              }}
+              className="max-w-md"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
+                  <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 text-center">
+                  Reject Proposal
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Please provide a reason for rejection:
+                </p>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Enter reason for rejection..."
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-800 dark:text-white mb-4"
+                  rows={4}
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowRejectModal(false);
+                      setRejectReason('');
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmReject}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Confirm Reject
+                  </button>
+                </div>
+              </div>
+            </Modal>
+
+            {/* Send Back Reason Modal */}
+            <Modal
+              isOpen={showSendBackModal}
+              onClose={() => {
+                setShowSendBackModal(false);
+                setSendBackReason('');
+              }}
+              className="max-w-md"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-orange-100 rounded-full">
+                  <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 text-center">
+                  Send Back for Correction
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Please provide a reason for sending back:
+                </p>
+                <textarea
+                  value={sendBackReason}
+                  onChange={(e) => setSendBackReason(e.target.value)}
+                  placeholder="Enter reason for sending back..."
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-800 dark:text-white mb-4"
+                  rows={4}
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowSendBackModal(false);
+                      setSendBackReason('');
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmSendBack}
+                    className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                  >
+                    Confirm Send Back
+                  </button>
+                </div>
+              </div>
+            </Modal>
+          </>
+        )}
       </div>
     );
   };
@@ -1494,110 +2009,22 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       ? allTabs.filter(tab => tab.id === "notification")
       : allTabs;
 
+  // Decide which tab should be selected by default.
+  // Prefer "Section 3(2)" tab when available, otherwise fall back to the first tab.
+  const defaultTabId =
+    tabs.find(tab => tab.id === "notification")?.id ?? tabs[0]?.id ?? "main-dashboard";
+
+  // When user is category_id = 24, we only show Section 3(2) dashboard content.
+  // In that case, hide the TabView completely and render the content directly.
+  const section32Tab = allTabs.find(tab => tab.id === "notification");
+
   return (
     <div className="w-full">
-      {/* Today's Survey Count Button */}
-      <div className="w-full mb-4">
-        <button
-          onClick={() => setShowTalukaList(!showTalukaList)}
-          className="w-full bg-white hover:bg-gray-50 text-black font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl border-2 border-gray-200 hover:border-blue-300 transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <svg 
-                className="w-6 h-6 text-blue-600 transition-all duration-300 transform hover:scale-110 hover:rotate-12" 
-                fill="currentColor" 
-                viewBox="0 0 20 20"
-              >
-                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-              </svg>
-              <span className="text-lg font-bold">
-                आजचे सर्वेक्षण: 
-                <span className="ml-2 inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-extrabold animate-pulse">
-                  {todaySurveyCount}
-                </span>
-              </span>
-            </div>
-            <svg 
-              className={`w-5 h-5 text-gray-600 transition-all duration-300 ease-in-out transform ${showTalukaList ? 'rotate-180' : 'rotate-0'} hover:scale-125`}
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </button>
-
-        {/* Taluka List - Expandable */}
-        <div 
-          className={`mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden transition-all duration-500 ease-in-out ${
-            showTalukaList 
-              ? 'max-h-[1000px] opacity-100 transform translate-y-0' 
-              : 'max-h-0 opacity-0 transform -translate-y-4 pointer-events-none'
-          }`}
-        >
-          <div className="p-4">
-            <h3 className="text-lg font-semibold mb-3 text-gray-800">
-              तालुका नुसार सर्वेक्षण (Taluka-wise Surveys)
-            </h3>
-            <div className="max-h-96 overflow-y-auto">
-              {talukaWiseSurveys.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <p className="text-lg">कोणतेही तालुका सापडले नाहीत</p>
-                  <p className="text-sm mt-2">No talukas found</p>
-                </div>
-              ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {talukaWiseSurveys.map((talukaData, index) => (
-                  <button
-                    key={talukaData.taluka_id}
-                    onClick={() => {
-                      if (talukaData.count > 0) {
-                        setSelectedTalukaData(talukaData);
-                        setIsTalukaDetailModalOpen(true);
-                        setShowTalukaList(false);
-                      }
-                    }}
-                    disabled={talukaData.count === 0}
-                    style={{
-                      transitionDelay: showTalukaList ? `${index * 50}ms` : '0ms',
-                      opacity: showTalukaList ? 1 : 0,
-                      transform: showTalukaList ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)'
-                    }}
-                    className={`p-4 rounded-lg border-2 transition-all duration-300 text-left transform hover:scale-105 active:scale-95 ${
-                      talukaData.count > 0
-                        ? 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 hover:shadow-lg cursor-pointer'
-                        : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-gray-900 text-base flex-1 text-left">
-                        {talukaData.taluka_name || 'N/A'}
-                      </h4>
-                      <div className={`ml-3 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap ${
-                        talukaData.count > 0
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-300 text-gray-600'
-                      }`}>
-                        {talukaData.count || 0}
-                      </div>
-                    </div>
-                    {talukaData.count > 0 && (
-                      <p className="text-xs text-gray-600 mt-2 text-left">
-                        क्लिक करा तपशील पहाण्यासाठी (Click to view details)
-                      </p>
-                    )}
-                  </button>
-                ))}
-              </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <TabView tabs={tabs} defaultTab={categoryId === "24" ? "notification" : "main-dashboard"} />
+      {isSection32Only && section32Tab ? (
+        <>{section32Tab.content}</>
+      ) : (
+        <TabView tabs={tabs} defaultTab={defaultTabId} />
+      )}
 
       {/* Individual Taluka Detail Modal */}
       <Modal
@@ -1637,7 +2064,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedTalukaData.surveys.map((farmer, index) => {
+                    {selectedTalukaData.surveys.map((farmer: FarmdersType, index: number) => {
                       // Parse farmer_record string
                       const farmerRecord = farmer.farmer_record ? farmer.farmer_record.split('|') : [];
                       

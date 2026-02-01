@@ -17,11 +17,10 @@ import {
 } from "../icons/index";
 
 import { useToggleContext } from "@/context/ToggleContext";
-import { FarmdersType } from "@/components/farmersdata/farmers";
-import { Schemesdatas } from "@/components/schemesdata/schemes";
-import { UserData } from "@/components/usersdata/Userdata";
 
 
+// Unused function - commented out
+/*
 async function getData(): Promise<{
   farmers: FarmdersType[];
   schemes: Schemesdatas[];
@@ -46,10 +45,12 @@ async function getData(): Promise<{
   ]);
   return { farmers, schemes, users };
 }
-const { farmers, schemes, users } = await getData();
-const filtervanaksetra = farmers.filter((data) => data.farmer_record?.split('|')[3] != "")
-const filterclaimid = farmers.filter((data) => data.farmer_record?.split('|')[15] != "")
-const schemesfilter = schemes.filter((data) => data.status == 'Active')
+*/
+// Remove top-level await - this will be handled inside component
+// const { farmers, schemes, users } = await getData();
+// const filtervanaksetra = farmers.filter((data) => data.farmer_record?.split('|')[3] != "")
+// const filterclaimid = farmers.filter((data) => data.farmer_record?.split('|')[15] != "")
+// const schemesfilter = schemes.filter((data) => data.status == 'Active')
 
 type NavItem = {
   name: string;
@@ -126,35 +127,29 @@ const dopodashboard: NavItem[] = [
   },
   {
     icon: <GiFarmer />,
-    name: `IFR holders (${farmers.length})`,
+    name: "IFR holders",
     path: "/farmerspage",
   },
   {
     icon: <FaEdit />,
-    name: `Schemes (${schemesfilter.length})`,
+    name: "Schemes",
     path: "/schemespage",
   },
   {
     icon: <CiUser />,
-    name: `Users (${users.length})`,
+    name: "Users",
     path: "/users",
   },
   {
     icon: <RxDashboard />,
-    name: `Vanksetra (${filtervanaksetra.length}/${farmers.length})`,
+    name: "Vanksetra",
     path: "/farmerspage",
   },
   {
     icon: <RxDashboard />,
-    name: `Vanksetra (${filterclaimid.length}/${farmers.length})`,
-    path: "/farmerspage",
-  },
-  {
-    icon: <RxDashboard />,
-    name: `Survey`,
+    name: "Survey",
     path: "/servepage",
   },
-
 ];
 
 
@@ -372,8 +367,17 @@ const AppSidebar: React.FC = () => {
     );
   }
 
-  // Hide sidebar completely when category_id = 32 (PESA Coordinator)
-  if (storedValuecategory_name === "32") {
+  // Hide sidebar completely when category_id = 32 (PESA Coordinator) or category_id = 24.
+  // Also read directly from sessionStorage to avoid any flicker before state is set.
+  const sessionCategoryId =
+    typeof window !== "undefined" ? sessionStorage.getItem("category_id") : null;
+
+  if (
+    storedValuecategory_name === "32" ||
+    storedValuecategory_name === "24" ||
+    sessionCategoryId === "32" ||
+    sessionCategoryId === "24"
+  ) {
     return null;
   }
 

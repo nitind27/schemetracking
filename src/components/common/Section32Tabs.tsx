@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 interface Proposal {
   proposal_id?: number;
   proposal_category_id?: number;
+  proposal_category_name?: string;
   pdf?: string;
   land_details?: string;
   number_of_tree?: number;

@@ -12,12 +12,14 @@ export async function GET() {
         grampanchyat.gpname AS gp_name,
         village.marathi_name AS village_name,
         users.name AS user_name,
-        users.user_category_id AS user_category_id
+        users.user_category_id AS user_category_id,
+        proposal_category.name AS proposal_category_name
       FROM proposal
       LEFT JOIN taluka ON proposal.taluka_id = taluka.taluka_id
       LEFT JOIN grampanchyat ON proposal.gp_id = grampanchyat.gp_id
       LEFT JOIN village ON proposal.village_id = village.village_id
       LEFT JOIN users ON proposal.user_id = users.user_id
+      LEFT JOIN proposal_category ON proposal.proposal_category_id = proposal_category.proposal_category_id
       WHERE proposal.status = 'Active'
       ORDER BY proposal.created_at DESC`
     );

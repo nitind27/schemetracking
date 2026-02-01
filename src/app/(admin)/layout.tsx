@@ -19,8 +19,8 @@ export default function AdminLayout({
     setCategoryId(category_id);
   }, []);
 
-  // Hide sidebar completely when category_id = 32 (PESA Coordinator sidebar is handled differently)
-  const shouldHideSidebar = categoryId === "32";
+  // Hide sidebar completely when category_id = 32 (PESA Coordinator) or category_id = 24
+  const shouldHideSidebar = categoryId === "32" || categoryId === "24";
 
   // Dynamic class for main content margin based on sidebar state
   const mainContentMargin = shouldHideSidebar
@@ -33,7 +33,7 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen xl:flex">
-      {/* Sidebar and Backdrop - only show if not category_id = 32 */}
+      {/* Sidebar and Backdrop - only show if not category_id = 32 or 24 */}
       {!shouldHideSidebar && <AppSidebar />}
       {!shouldHideSidebar && <Backdrop />}
       
