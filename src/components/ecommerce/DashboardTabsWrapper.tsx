@@ -83,6 +83,12 @@ interface Proposal {
   updated_at?: string;
 }
 
+interface User {
+  user_id: string | number;
+  name: string;
+  category_name?: string;
+}
+
 interface DashboardTabsWrapperProps {
   metrics: Metrics;
   farmersData: AllFarmersData;
@@ -110,19 +116,56 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     fraCompliance: false,
     treeCount: false
   });
+  
+  // New states for enhanced functionality
+  const [proposalAccepted, setProposalAccepted] = useState(false);
+  const [proposalRejected, setProposalRejected] = useState(false);
+  const [proposalSentBack, setProposalSentBack] = useState(false);
+  // const [showForwardDropdown, setShowForwardDropdown] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [selectedForwardUser, setSelectedForwardUser] = useState<string>('');
+  const [anyCheckboxChecked, setAnyCheckboxChecked] = useState(false);
 
   useEffect(() => {
     const category_id = sessionStorage.getItem('category_id');
     setCategoryId(category_id);
   }, []);
 
+  // Check if any checkbox is checked
+  useEffect(() => {
+    const anyChecked = Object.values(reviewCheckboxes).some(checked => checked);
+    setAnyCheckboxChecked(anyChecked);
+  }, [reviewCheckboxes]);
+
+  // Fetch available users for forwarding
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users');
+        if (response.ok) {
+          const users = await response.json();
+          setAvailableUsers(users);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    fetchUsers();
+  }, []);
+
   // Proposal action handlers
   const handleOpenModal = (proposal: Proposal) => {
     setSelectedProposal(proposal);
     setIsModalOpen(true);
-    // Reset states
+    // Reset all states when opening a new proposal
     setRejectReason('');
     setSendBackReason('');
+    setProposalAccepted(false);
+    setProposalRejected(false);
+    setProposalSentBack(false);
+    // setShowForwardDropdown(false);
+    setSelectedForwardUser('');
+    setAnyCheckboxChecked(false);
     setReviewCheckboxes({
       siteInspection: false,
       boundaryVerified: false,
@@ -139,16 +182,55 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     setShowRejectModal(false);
     setShowSendBackModal(false);
     setShowAcceptModal(false);
+    // Reset new states
+    setProposalAccepted(false);
+    setProposalRejected(false);
+    setProposalSentBack(false);
+    // setShowForwardDropdown(false);
+    setSelectedForwardUser('');
+    setAnyCheckboxChecked(false);
   };
 
   const handleAccept = () => {
-    // Check if at least one checkbox is checked
-    const hasAnyChecked = Object.values(reviewCheckboxes).some(v => v);
-    if (!hasAnyChecked) {
-      toast.error('Please complete at least one review criteria');
+    // Simply accept the proposal and show the review checklist
+    setProposalAccepted(true);
+    toast.success('Proposal accepted! Please complete the review checklist to proceed.');
+  };
+
+  const handleForwardProposal = async () => {
+    if (!selectedForwardUser) {
+      toast.error('Please select a user to forward the proposal to.');
       return;
     }
-    setShowAcceptModal(true);
+
+    if (!selectedProposal) return;
+
+    try {
+      const response = await fetch('/api/proposals/updatestatus', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          proposal_id: selectedProposal.proposal_id,
+          work_status: 'Accepted',
+          forward_to: selectedForwardUser,
+          review_checkboxes: reviewCheckboxes
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Proposal accepted and forwarded successfully');
+        // setShowForwardDropdown(false);
+        handleCloseModal();
+        window.location.reload();
+      } else {
+        toast.error('Failed to forward proposal');
+      }
+    } catch (error) {
+      console.error('Error forwarding proposal:', error);
+      toast.error('Failed to forward proposal');
+    }
   };
 
   const handleConfirmAccept = async () => {
@@ -209,6 +291,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
       if (response.ok) {
         toast.success('Proposal rejected successfully');
+        setProposalRejected(true);
         setShowRejectModal(false);
         handleCloseModal();
         // Refresh page or refetch data
@@ -249,6 +332,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
       if (response.ok) {
         toast.success('Proposal sent back for correction');
+        setProposalSentBack(true);
         setShowSendBackModal(false);
         handleCloseModal();
         // Refresh page or refetch data
@@ -1367,22 +1451,55 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                 {/* Left Side - Proposal Information (2 columns) */}
                 <div className="lg:col-span-2 space-y-6">
                   <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg space-y-4">
+                    {/* Header with Proposal ID and Status */}
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Proposal ID</p>
+                          <p className="text-xl text-gray-900 dark:text-white font-bold">
+                            #{selectedProposal.proposal_id}
+                          </p>
+                        </div>
+                        <div className="h-12 w-px bg-gray-300 dark:bg-gray-600"></div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</p>
+                          <div className="mt-1">
+                            {getStatusBadge(selectedProposal)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
                       {selectedProposal.proposal_category_name || 'Proposal Work Category'}
                     </h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Proposal ID</p>
-                        <p className="text-base text-gray-900 dark:text-white font-semibold">
-                          #{selectedProposal.proposal_id}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</p>
-                        <div className="mt-1">
-                          {getStatusBadge(selectedProposal)}
+                      {/* Location Information - Inline */}
+                      <div className="md:col-span-2">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Location</p>
+                        <div className="flex flex-wrap items-center gap-2 text-base text-gray-900 dark:text-white">
+                          {selectedProposal.taluka_name && (
+                            <>
+                              <span className="bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full text-sm font-medium">
+                                Taluka: {selectedProposal.taluka_name}
+                              </span>
+                            </>
+                          )}
+                          {selectedProposal.village_name && (
+                            <>
+                              <span className="bg-green-100 dark:bg-green-900 px-3 py-1 rounded-full text-sm font-medium">
+                                Village: {selectedProposal.village_name}
+                              </span>
+                            </>
+                          )}
+                          {selectedProposal.gp_name && (
+                            <>
+                              <span className="bg-purple-100 dark:bg-purple-900 px-3 py-1 rounded-full text-sm font-medium">
+                                GP: {selectedProposal.gp_name}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -1391,33 +1508,6 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Land Details</p>
                           <p className="text-base text-gray-900 dark:text-white">
                             {selectedProposal.land_details}
-                          </p>
-                        </div>
-                      )}
-
-                      {selectedProposal.taluka_name && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Taluka</p>
-                          <p className="text-base text-gray-900 dark:text-white">
-                            {selectedProposal.taluka_name}
-                          </p>
-                        </div>
-                      )}
-
-                      {selectedProposal.village_name && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Village</p>
-                          <p className="text-base text-gray-900 dark:text-white">
-                            {selectedProposal.village_name}
-                          </p>
-                        </div>
-                      )}
-
-                      {selectedProposal.gp_name && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Gram Panchayat</p>
-                          <p className="text-base text-gray-900 dark:text-white">
-                            {selectedProposal.gp_name}
                           </p>
                         </div>
                       )}
@@ -1449,27 +1539,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                         </div>
                       )}
 
-                      {selectedProposal.work_status && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Work Status</p>
-                          <p className="text-base text-gray-900 dark:text-white">
-                            {selectedProposal.work_status}
-                          </p>
-                        </div>
-                      )}
-
-                      {selectedProposal.forward_to && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Forward To</p>
-                          <p className="text-base text-gray-900 dark:text-white">
-                            {selectedProposal.forward_to}
-                          </p>
-                        </div>
-                      )}
-
                       {selectedProposal.created_at && (
                         <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</p>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Proposal Created At</p>
                           <p className="text-base text-gray-900 dark:text-white">
                             {new Date(selectedProposal.created_at).toLocaleDateString('en-IN', {
                               year: 'numeric',
@@ -1484,7 +1556,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
                       {selectedProposal.updated_at && (
                         <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</p>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Proposal Last Updated</p>
                           <p className="text-base text-gray-900 dark:text-white">
                             {new Date(selectedProposal.updated_at).toLocaleDateString('en-IN', {
                               year: 'numeric',
@@ -1622,81 +1694,122 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
                 {/* Right Side - Review & Actions (1 column) */}
                 <div className="lg:col-span-1 space-y-6">
-                  {/* Review Section */}
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Review Checklist
-                    </h3>
-                    <div className="space-y-4">
-                      <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={reviewCheckboxes.siteInspection}
-                          onChange={(e) =>
-                            setReviewCheckboxes({
-                              ...reviewCheckboxes,
-                              siteInspection: e.target.checked
-                            })
-                          }
-                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          Site inspection completed
-                        </span>
-                      </label>
-                      <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={reviewCheckboxes.boundaryVerified}
-                          onChange={(e) =>
-                            setReviewCheckboxes({
-                              ...reviewCheckboxes,
-                              boundaryVerified: e.target.checked
-                            })
-                          }
-                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          Boundary verification done
-                        </span>
-                      </label>
-                      <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={reviewCheckboxes.fraCompliance}
-                          onChange={(e) =>
-                            setReviewCheckboxes({
-                              ...reviewCheckboxes,
-                              fraCompliance: e.target.checked
-                            })
-                          }
-                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          FRA compliance verified
-                        </span>
-                      </label>
-                      <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={reviewCheckboxes.treeCount}
-                          onChange={(e) =>
-                            setReviewCheckboxes({
-                              ...reviewCheckboxes,
-                              treeCount: e.target.checked
-                            })
-                          }
-                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          Tree count verified
-                        </span>
-                      </label>
+                  {/* Review Section - Only show AFTER accepting proposal */}
+                  {proposalAccepted && (
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Review Checklist
+                      </h3>
+                      <div className="space-y-4">
+                        <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={reviewCheckboxes.siteInspection}
+                            onChange={(e) =>
+                              setReviewCheckboxes({
+                                ...reviewCheckboxes,
+                                siteInspection: e.target.checked
+                              })
+                            }
+                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            disabled={proposalRejected || proposalSentBack}
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            Site inspection completed
+                          </span>
+                        </label>
+                        <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={reviewCheckboxes.boundaryVerified}
+                            onChange={(e) =>
+                              setReviewCheckboxes({
+                                ...reviewCheckboxes,
+                                boundaryVerified: e.target.checked
+                              })
+                            }
+                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            disabled={proposalRejected || proposalSentBack}
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            Boundary verification done
+                          </span>
+                        </label>
+                        <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={reviewCheckboxes.fraCompliance}
+                            onChange={(e) =>
+                              setReviewCheckboxes({
+                                ...reviewCheckboxes,
+                                fraCompliance: e.target.checked
+                              })
+                            }
+                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            disabled={proposalRejected || proposalSentBack}
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            FRA compliance verified
+                          </span>
+                        </label>
+                        <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={reviewCheckboxes.treeCount}
+                            onChange={(e) =>
+                              setReviewCheckboxes({
+                                ...reviewCheckboxes,
+                                treeCount: e.target.checked
+                              })
+                            }
+                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            disabled={proposalRejected || proposalSentBack}
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            Tree count verified
+                          </span>
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Forward Dropdown - Show ONLY when proposal is accepted AND any checkbox is checked */}
+                  {proposalAccepted && anyCheckboxChecked && (
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-lg border border-green-200 dark:border-green-800">
+                      <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Forward Proposal
+                      </h4>
+                      <div className="space-y-4">
+                        <select
+                          value={selectedForwardUser}
+                          onChange={(e) => setSelectedForwardUser(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        >
+                          <option value="">Select user to forward to...</option>
+                          {availableUsers.map((user) => (
+                            <option key={user.user_id} value={user.user_id}>
+                              {user.name} - {user.category_name || 'No Category'}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={handleForwardProposal}
+                          className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                          Forward Proposal
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -1704,30 +1817,45 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                     <div className="space-y-3">
                       <button
                         onClick={handleAccept}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                        disabled={proposalAccepted || proposalRejected || proposalSentBack}
+                        className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
+                          proposalAccepted || proposalRejected || proposalSentBack
+                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800'
+                        }`}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        Accept Proposal
+                        {proposalAccepted ? 'Proposal Accepted' : 'Accept Proposal'}
                       </button>
                       <button
                         onClick={handleReject}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                        disabled={proposalAccepted || proposalRejected || proposalSentBack}
+                        className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
+                          proposalAccepted || proposalRejected || proposalSentBack
+                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800'
+                        }`}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                        Reject Proposal
+                        {proposalRejected ? 'Proposal Rejected' : 'Reject Proposal'}
                       </button>
                       <button
                         onClick={handleSendBack}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                        disabled={proposalAccepted || proposalRejected || proposalSentBack}
+                        className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
+                          proposalAccepted || proposalRejected || proposalSentBack
+                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-orange-600 to-orange-700 text-white hover:from-orange-700 hover:to-orange-800'
+                        }`}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                         </svg>
-                        Send Back for Correction
+                        {proposalSentBack ? 'Sent Back for Correction' : 'Send Back for Correction'}
                       </button>
                     </div>
                   </div>

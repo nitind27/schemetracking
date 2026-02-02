@@ -142,19 +142,30 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
     };
 
     // Get farmers for a specific village
-    const getFarmersForVillage = (village_id: string | number) => {
-        return farmers.filter((f) => String(f.village_id) === String(village_id));
-    };
+const getFarmersForVillage = (
+  talukaId: string | number,
+  villageId: string | number
+) => {
+  const tId = String(talukaId);
+  const vId = String(villageId);
+
+  return farmers.filter(
+    (f) =>
+      String(f.taluka_id) === tId &&
+      String(f.village_id) === vId
+  );
+};
+
 
     // Filter farmers based on survey status
-    const getSurveyedFarmers = (village_id: string | number) => {
-        return getFarmersForVillage(village_id).filter(
+    const getSurveyedFarmers = (taluka_id: string | number, village_id: string | number) => {
+        return getFarmersForVillage(taluka_id, village_id).filter(
             (f) => f.update_record && f.update_record.trim() !== ''
         );
     };
 
-    const getYetToBeSurveyedFarmers = (village_id: string | number) => {
-        return getFarmersForVillage(village_id).filter(
+    const getYetToBeSurveyedFarmers = (taluka_id: string | number, village_id: string | number) => {
+        return getFarmersForVillage(taluka_id, village_id).filter(
             (f) => !f.update_record || f.update_record.trim() === ''
         );
     };
@@ -256,7 +267,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
 
         // Map to progress info and filter out villages with 0 total (matching UI behavior)
         let villageProgressArr = villages.map((village) => {
-            const { total, filledCount, percent, color } = getVillageProgress(village.village_id);
+            const { total, filledCount, percent, color } = getVillageProgress(village.village_id,village.taluka_id);
             return {
                 ...village,
                 total,
@@ -365,7 +376,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
 
         // Map to progress info and filter out villages with 0 total
         let villageProgressArr = villages.map((village) => {
-            const { total, filledCount } = getVillageProgress(village.village_id);
+            const { total, filledCount } = getVillageProgress(village.village_id ,village.taluka_id);
             
             // Count farmers updated on previous date (yesterday)
             const previousCount = countFarmersByDate(village.village_id, previousDateStrDB);
@@ -453,20 +464,30 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
     };
 
     // Compute village progress
-    const getVillageProgress = (village_id: string | number) => {
-        const villageFarmers = farmers.filter(
-            (f) => String(f.village_id) === String(village_id)
-        );
-        const total = villageFarmers.length;
-        const filledCount = villageFarmers.filter(
-            (f) => f.update_record && f.update_record.trim() !== ''
-        ).length;
-        const percent = total > 0 ? Math.round((filledCount / total) * 100) : 0;
-        let color: 'red' | 'orange' | 'green' = 'red';
-        if (percent >= 80) color = 'green';
-        else if (percent >= 50) color = 'orange';
-        return { total, filledCount, percent, color };
-    };
+  const getVillageProgress = (
+  village_id: string | number,
+  taluka_id: string | number
+) => {
+  const villageFarmers = farmers.filter(
+    (f) =>
+      String(f.village_id) === String(village_id) &&
+      String(f.taluka_id) === String(taluka_id)
+  );
+
+  const total = villageFarmers.length;
+
+  const filledCount = villageFarmers.filter(
+    (f) => f.update_record && f.update_record.trim() !== ''
+  ).length;
+
+  const percent = total > 0 ? Math.round((filledCount / total) * 100) : 0;
+
+  let color: 'red' | 'orange' | 'green' = 'red';
+  if (percent >= 80) color = 'green';
+  else if (percent >= 50) color = 'orange';
+
+  return { total, filledCount, percent, color };
+};
 
     // Handle village click
     const handleVillageClick = (village: Village) => {
@@ -611,7 +632,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
     return (
         <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full mt-6 md:mt-10 overflow-x-auto">
             <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-6">
-                Taluka Wise Survey
+                Taluka Wise Survey 
             </h2>
             <div className="space-y-6">
                 {/* --- CHANGED: Use sortedTalukaEntries --- */}
@@ -769,7 +790,7 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                         }
                                         // Map to progress info
                                         let villageProgressArr = villages.map((village) => {
-                                            const { total, filledCount, percent, color } = getVillageProgress(village.village_id);
+                                            const { total, filledCount, percent, color } = getVillageProgress(village.village_id,village.taluka_id);
                                             return {
                                                 ...village,
                                                 total,
@@ -857,8 +878,8 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
                                 {/* Tab Content */}
                                 <div className="space-y-4">
                                     {(() => {
-                                        const surveyedFarmers = getSurveyedFarmers(selectedVillage.village_id);
-                                        const yetToBeSurveyedFarmers = getYetToBeSurveyedFarmers(selectedVillage.village_id);
+                                        const surveyedFarmers = getSurveyedFarmers(selectedVillage.taluka_id, selectedVillage.village_id);
+                                        const yetToBeSurveyedFarmers = getYetToBeSurveyedFarmers(selectedVillage.taluka_id, selectedVillage.village_id);
 
                                         const currentData = activeTab === 'surveyed' ? surveyedFarmers : yetToBeSurveyedFarmers;
                                         // --- NEW: Filter currentData by farmerSearch ---
