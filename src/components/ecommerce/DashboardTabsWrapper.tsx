@@ -9,6 +9,8 @@ import DashboardTalukatabview from "@/components/ecommerce/DashboardTalukatabvie
 import { CFREcommer } from "@/components/ecommerce/CFREcommer";
 import Section32Tabs from "@/components/common/Section32Tabs";
 import Category32Dashboard from "@/components/common/Category32Dashboard";
+import DCDashboard from "@/components/common/DCDashboard";
+import DLCDashboard from "@/components/common/DLCDashboard";
 import { FarmdersType } from "@/components/farmersdata/farmers";
 import { Schemesdatas } from "@/components/schemesdata/schemes";
 import { UserData } from "@/components/usersdata/Userdata";
@@ -20,6 +22,7 @@ import { Taluka } from "@/components/Taluka/Taluka";
 import { Village } from "@/components/Village/village";
 import { Schemesubcategorytype } from "@/components/Schemesubcategory/Schemesubcategory";
 import { Modal } from "@/components/ui/modal";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 // import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -87,6 +90,8 @@ interface User {
   user_id: string | number;
   name: string;
   category_name?: string;
+  user_category_name?: string;
+  user_category_id?: number;
 }
 
 interface DashboardTabsWrapperProps {
@@ -109,7 +114,6 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   const [sendBackReason, setSendBackReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showSendBackModal, setShowSendBackModal] = useState(false);
-  const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [reviewCheckboxes, setReviewCheckboxes] = useState({
     siteInspection: false,
     boundaryVerified: false,
@@ -118,32 +122,31 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   });
   
   // New states for enhanced functionality
-  const [proposalAccepted, setProposalAccepted] = useState(false);
+  const [showReviewChecklist, setShowReviewChecklist] = useState(false);
+  const [showForwardSelect, setShowForwardSelect] = useState(false);
   const [proposalRejected, setProposalRejected] = useState(false);
   const [proposalSentBack, setProposalSentBack] = useState(false);
   // const [showForwardDropdown, setShowForwardDropdown] = useState(false);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]); // Store all users for agency checks
   const [selectedForwardUser, setSelectedForwardUser] = useState<string>('');
-  const [anyCheckboxChecked, setAnyCheckboxChecked] = useState(false);
+  const anyChecklistChecked = Object.values(reviewCheckboxes).some(Boolean);
 
   useEffect(() => {
     const category_id = sessionStorage.getItem('category_id');
     setCategoryId(category_id);
   }, []);
 
-  // Check if any checkbox is checked
-  useEffect(() => {
-    const anyChecked = Object.values(reviewCheckboxes).some(checked => checked);
-    setAnyCheckboxChecked(anyChecked);
-  }, [reviewCheckboxes]);
 
   // Fetch available users for forwarding
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('/api/users');
+        const response = await fetch(`/api/users/forward-list?category_id=${categoryId || ''}`);
         if (response.ok) {
           const users = await response.json();
+          // Store all users for agency checks
+          setAllUsers(users);
           setAvailableUsers(users);
         }
       } catch (error) {
@@ -151,7 +154,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       }
     };
     fetchUsers();
-  }, []);
+  }, [categoryId]);
 
   // Proposal action handlers
   const handleOpenModal = (proposal: Proposal) => {
@@ -160,12 +163,12 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     // Reset all states when opening a new proposal
     setRejectReason('');
     setSendBackReason('');
-    setProposalAccepted(false);
+    setShowReviewChecklist(false);
+    setShowForwardSelect(false);
     setProposalRejected(false);
     setProposalSentBack(false);
     // setShowForwardDropdown(false);
     setSelectedForwardUser('');
-    setAnyCheckboxChecked(false);
     setReviewCheckboxes({
       siteInspection: false,
       boundaryVerified: false,
@@ -181,23 +184,364 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     setSendBackReason('');
     setShowRejectModal(false);
     setShowSendBackModal(false);
-    setShowAcceptModal(false);
     // Reset new states
-    setProposalAccepted(false);
+    setShowReviewChecklist(false);
+    setShowForwardSelect(false);
     setProposalRejected(false);
     setProposalSentBack(false);
     // setShowForwardDropdown(false);
     setSelectedForwardUser('');
-    setAnyCheckboxChecked(false);
+  };
+
+  // Helper function to determine available actions based on proposal status
+  const getAvailableActions = (proposal: Proposal | null) => {
+    if (!proposal) return { 
+      canAccept: false, 
+      canReject: false, 
+      canSendBack: false, 
+      canStartReview: false,
+      canForwardToDLC: false,
+      statusMessage: 'No proposal selected'
+    };
+    
+    const status = proposal.work_status?.toLowerCase()?.trim() || '';
+    const isCategory24 = categoryId === "24";
+    
+    // For category_id = 24, check if proposal was sent back from DLC or agency
+    if (isCategory24 && proposal.forward_to) {
+      const forwardToUser = allUsers.find((u: User & { user_category_id?: number }) => 
+        u.user_id.toString() === proposal.forward_to?.toString()
+      );
+      
+      // Check if forwarded to agency (category_id = 36)
+      if (forwardToUser && forwardToUser.user_category_id === 36) {
+        // If status is "Correction needed" and has remarks, it means agency sent it back
+        if (status === 'correction needed' && proposal.remarks) {
+          // Re-enable actions when remarks come back from agency
+          return {
+            canAccept: true,
+            canReject: true,
+            canSendBack: true,
+            canStartReview: false,
+            canForwardToDLC: false,
+            statusMessage: 'Proposal returned from agency - Review remarks and take action'
+          };
+        } else {
+          // Disable actions when sent to agency (waiting for response)
+          return {
+            canAccept: false,
+            canReject: false,
+            canSendBack: false,
+            canStartReview: false,
+            canForwardToDLC: false,
+            statusMessage: 'Proposal sent to agency - Waiting for response'
+          };
+        }
+      }
+      
+      // Check if this proposal was sent back from DLC (category_id = 35) to category_id = 24
+      // If forward_to points to current user (category_id = 24) and status is "Correction needed" with remarks
+      const currentUserId = sessionStorage.getItem('user_id');
+      if (forwardToUser && forwardToUser.user_category_id === 24 && 
+          currentUserId && proposal.forward_to?.toString() === currentUserId &&
+          status === 'correction needed' && proposal.remarks) {
+        // Check if remarks contain "DLC Send Back" to confirm it's from DLC
+        if (proposal.remarks.includes('DLC Send Back') || proposal.remarks.includes('DLC')) {
+          return {
+            canAccept: true,
+            canReject: true,
+            canSendBack: true,
+            canStartReview: false,
+            canForwardToDLC: false,
+            statusMessage: 'Proposal returned from DLC - Review remarks and take action (Accept/Reject/Forward)'
+          };
+        }
+      }
+    }
+    
+    // Also check if proposal was sent back from DLC (even if forward_to doesn't match current user)
+    // This handles the case where DLC sends back and forward_to is set to any category_id = 24 user
+    if (isCategory24 && status === 'correction needed' && proposal.remarks) {
+      if (proposal.remarks.includes('DLC Send Back') || proposal.remarks.includes('DLC')) {
+        // Check if forward_to points to a category_id = 24 user
+        if (proposal.forward_to) {
+          const forwardToUser = allUsers.find((u: User & { user_category_id?: number }) => 
+            u.user_id.toString() === proposal.forward_to?.toString()
+          );
+          if (forwardToUser && forwardToUser.user_category_id === 24) {
+            return {
+              canAccept: true,
+              canReject: true,
+              canSendBack: true,
+              canStartReview: false,
+              canForwardToDLC: false,
+              statusMessage: 'Proposal returned from DLC - Review remarks and take action (Accept/Reject/Forward)'
+            };
+          }
+        }
+      }
+    }
+    
+    // Define status-based actions for the 6 specific status conditions
+    switch (status) {
+      case 'pending':
+        return { 
+          canAccept: false, 
+          canReject: true, 
+          canSendBack: true, 
+          canStartReview: true,
+          canForwardToDLC: false,
+          statusMessage: 'Proposal pending - Click "Start Review" to begin'
+        };
+        
+      case 'under review':
+        return { 
+          canAccept: true, 
+          canReject: true, 
+          canSendBack: true, 
+          canStartReview: false,
+          canForwardToDLC: false,
+          statusMessage: 'Proposal under review - All actions available (Accept/Reject/Send Back)'
+        };
+        
+      case 'correction needed':
+        // For category_id = 24, if sent back from DLC or agency, show remarks and enable actions
+        if (isCategory24 && proposal.remarks) {
+          // Check if it's from DLC
+          const isFromDLC = proposal.remarks.includes('DLC Send Back') || proposal.remarks.includes('DLC');
+          // Check if it's from agency
+          const isFromAgency = proposal.forward_to && allUsers.find((u: User & { user_category_id?: number }) => 
+            u.user_id.toString() === proposal.forward_to?.toString() && u.user_category_id === 36
+          );
+          
+          if (isFromDLC || isFromAgency) {
+            return {
+              canAccept: true,
+              canReject: true,
+              canSendBack: true,
+              canStartReview: false,
+              canForwardToDLC: false,
+              statusMessage: isFromDLC 
+                ? 'Proposal returned from DLC - Review remarks and take action (Accept/Reject/Forward)'
+                : 'Proposal returned from agency - Review remarks and take action'
+            };
+          }
+          
+          // General send back case
+          return {
+            canAccept: true,
+            canReject: true,
+            canSendBack: true,
+            canStartReview: false,
+            canForwardToDLC: false,
+            statusMessage: 'Proposal sent back - Review remarks and take action'
+          };
+        }
+        
+        // For any "Correction needed" status, enable accept/reject/send back actions
+        return { 
+          canAccept: true, 
+          canReject: true, 
+          canSendBack: true, 
+          canStartReview: false,
+          canForwardToDLC: false,
+          statusMessage: 'Correction needed - Review and take appropriate action (Accept/Reject/Forward)'
+        };
+        
+      case 'pending at dlc':
+        return { 
+          canAccept: false, 
+          canReject: false, 
+          canSendBack: false, 
+          canStartReview: false,
+          canForwardToDLC: false,
+          statusMessage: 'Proposal forwarded to DLC - Waiting for DLC decision'
+        };
+        
+      case 'rejected':
+        return { 
+          canAccept: false, 
+          canReject: false, 
+          canSendBack: false, 
+          canStartReview: false,
+          canForwardToDLC: false,
+          statusMessage: 'Proposal rejected - No further actions available'
+        };
+        
+      case 'forwarded':
+        {
+          const currentUserId = sessionStorage.getItem('user_id');
+          const isForwardedToMe = !!(currentUserId && proposal.forward_to?.toString() === currentUserId);
+          return { 
+            canAccept: false, 
+            canReject: false, 
+            canSendBack: false, 
+            canStartReview: isForwardedToMe,
+            canForwardToDLC: false,
+            statusMessage: isForwardedToMe
+              ? 'Proposal forwarded to you - Click "Start Review" to begin'
+              : 'Proposal forwarded - Waiting for response from forwarded user'
+          };
+        }
+        
+      // Legacy status handling for backward compatibility
+      case '':
+      case 'not started yet':
+      case 'not started':
+        return { 
+          canAccept: false, 
+          canReject: false, 
+          canSendBack: false, 
+          canStartReview: true,
+          canForwardToDLC: false,
+          statusMessage: 'Proposal not started - Click "Start Review" to begin'
+        };
+        
+      case 'submitted':
+        return { 
+          canAccept: true, 
+          canReject: true, 
+          canSendBack: true, 
+          canStartReview: false,
+          canForwardToDLC: false,
+          statusMessage: 'Proposal submitted - All actions available'
+        };
+        
+      case 'accepted':
+        return { 
+          canAccept: false, 
+          canReject: false, 
+          canSendBack: false, 
+          canStartReview: false,
+          canForwardToDLC: isCategory24 ? false : true, // For category 24, forward is handled differently
+          statusMessage: isCategory24 ? 'Proposal accepted - Complete checklist and forward' : 'Proposal accepted - Can forward to DLC'
+        };
+        
+      case 'sent back':
+        return { 
+          canAccept: true, 
+          canReject: true, 
+          canSendBack: true, 
+          canStartReview: false,
+          canForwardToDLC: false,
+          statusMessage: 'Proposal sent back - Review and take appropriate action'
+        };
+        
+      case 'approved':
+      case 'completed':
+      case 'complete':
+      case 'sanctioned':
+        return { 
+          canAccept: false, 
+          canReject: false, 
+          canSendBack: false, 
+          canStartReview: false,
+          canForwardToDLC: false,
+          statusMessage: 'Proposal completed - No further actions required'
+        };
+        
+      default:
+        // For unknown statuses, allow review actions
+        return { 
+          canAccept: true, 
+          canReject: true, 
+          canSendBack: true, 
+          canStartReview: false,
+          canForwardToDLC: false,
+          statusMessage: `Unknown status: ${proposal.work_status} - Review actions available`
+        };
+    }
+  };
+
+  const availableActions = getAvailableActions(selectedProposal);
+
+  const handleStartReview = async () => {
+    if (!selectedProposal) return;
+
+    try {
+      const response = await fetch('/api/proposals/updatestatus', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          proposal_id: selectedProposal.proposal_id,
+          work_status: 'under review',
+          action: 'start_review'
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Review started successfully');
+        // Update the selected proposal status locally
+        setSelectedProposal({
+          ...selectedProposal,
+          work_status: 'under review'
+        });
+        // Refresh page or refetch data
+        window.location.reload();
+      } else {
+        toast.error('Failed to start review');
+      }
+    } catch (error) {
+      console.error('Error starting review:', error);
+      toast.error('Failed to start review');
+    }
+  };
+
+  const handleForwardToDLC = async () => {
+    if (!selectedProposal) return;
+
+    try {
+      const response = await fetch('/api/proposals/updatestatus', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          proposal_id: selectedProposal.proposal_id,
+          work_status: 'pending at dlc',
+          action: 'forward_to_dlc',
+          review_checkboxes: reviewCheckboxes
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success('Proposal forwarded to DLC successfully');
+        handleCloseModal();
+        window.location.reload();
+      } else {
+        console.error('API Error:', result);
+        toast.error(result.error || 'Failed to forward to DLC');
+      }
+    } catch (error) {
+      console.error('Error forwarding to DLC:', error);
+      toast.error('Failed to forward to DLC');
+    }
   };
 
   const handleAccept = () => {
-    // Simply accept the proposal and show the review checklist
-    setProposalAccepted(true);
-    toast.success('Proposal accepted! Please complete the review checklist to proceed.');
+    setShowReviewChecklist(true);
+    setShowForwardSelect(false);
+    toast.success('Review checklist opened. Complete all items, then Forward.');
+  };
+
+  const handleShowForwardSelect = () => {
+    if (!anyChecklistChecked) {
+      toast.error('Please select at least one checklist item before forwarding.');
+      return;
+    }
+    setShowForwardSelect(true);
   };
 
   const handleForwardProposal = async () => {
+    if (!anyChecklistChecked) {
+      toast.error('Please select at least one checklist item before forwarding.');
+      return;
+    }
+
     if (!selectedForwardUser) {
       toast.error('Please select a user to forward the proposal to.');
       return;
@@ -206,6 +550,12 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     if (!selectedProposal) return;
 
     try {
+      const targetUser = allUsers.find(u => u.user_id.toString() === selectedForwardUser);
+      const isDLC = targetUser?.user_category_id === 35;
+
+      const action = isDLC ? 'forward_to_dlc' : 'forward_to_user';
+      const status = isDLC ? 'pending at dlc' : 'forwarded';
+
       const response = await fetch('/api/proposals/updatestatus', {
         method: 'PUT',
         headers: {
@@ -213,54 +563,27 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         },
         body: JSON.stringify({
           proposal_id: selectedProposal.proposal_id,
-          work_status: 'Accepted',
+          work_status: status,
           forward_to: selectedForwardUser,
-          review_checkboxes: reviewCheckboxes
+          action: action,
+          review_checkboxes: reviewCheckboxes,
+          reason: `Forwarded to ${targetUser?.name || selectedForwardUser}`
         })
       });
 
+      const result = await response.json();
+
       if (response.ok) {
-        toast.success('Proposal accepted and forwarded successfully');
-        // setShowForwardDropdown(false);
+        toast.success(isDLC ? 'Proposal forwarded to DLC successfully' : 'Proposal forwarded successfully');
         handleCloseModal();
         window.location.reload();
       } else {
-        toast.error('Failed to forward proposal');
+        console.error('API Error:', result);
+        toast.error(result.error || 'Failed to forward proposal');
       }
     } catch (error) {
       console.error('Error forwarding proposal:', error);
       toast.error('Failed to forward proposal');
-    }
-  };
-
-  const handleConfirmAccept = async () => {
-    if (!selectedProposal) return;
-
-    try {
-      const response = await fetch('/api/proposals/updatestatus', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          proposal_id: selectedProposal.proposal_id,
-          work_status: 'Accepted',
-          review_checkboxes: reviewCheckboxes
-        })
-      });
-
-      if (response.ok) {
-        toast.success('Proposal accepted successfully');
-        setShowAcceptModal(false);
-        handleCloseModal();
-        // Refresh page or refetch data
-        window.location.reload();
-      } else {
-        toast.error('Failed to accept proposal');
-      }
-    } catch (error) {
-      console.error('Error accepting proposal:', error);
-      toast.error('Failed to accept proposal');
     }
   };
 
@@ -277,6 +600,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     if (!selectedProposal) return;
 
     try {
+      // For category_id = 24, reject should close the proposal but show status as Rejected
       const response = await fetch('/api/proposals/updatestatus', {
         method: 'PUT',
         headers: {
@@ -284,8 +608,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         },
         body: JSON.stringify({
           proposal_id: selectedProposal.proposal_id,
-          work_status: 'Rejected',
-          reason: rejectReason
+          work_status: 'rejected',
+          reason: rejectReason,
+          action: 'reject'
         })
       });
 
@@ -318,6 +643,19 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     if (!selectedProposal) return;
 
     try {
+      // For category_id = 24, send back to agency (category_id = 36)
+      let forwardTo = null;
+      if (categoryId === "24") {
+        // Find users with category_id = 36 (agency) from allUsers
+        const agencyUsers = allUsers.filter((user: User & { user_category_id?: number }) => 
+          user.user_category_id === 36
+        );
+        if (agencyUsers.length > 0) {
+          // Forward to first agency user (or you can let user select)
+          forwardTo = agencyUsers[0].user_id.toString();
+        }
+      }
+
       const response = await fetch('/api/proposals/updatestatus', {
         method: 'PUT',
         headers: {
@@ -325,8 +663,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         },
         body: JSON.stringify({
           proposal_id: selectedProposal.proposal_id,
-          work_status: 'Correction needed',
-          reason: sendBackReason
+          work_status: 'correction needed',
+          reason: sendBackReason,
+          forward_to: forwardTo,
+          action: categoryId === "24" ? 'send_back_to_agency' : 'send_back'
         })
       });
 
@@ -1004,7 +1344,15 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     const fetchProposals = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/proposals');
+        const userId = sessionStorage.getItem('user_id');
+        const categoryId = sessionStorage.getItem('category_id');
+        
+        let url = '/api/proposals';
+        if (userId && categoryId) {
+          url += `?user_id=${userId}&category_id=${categoryId}`;
+        }
+        
+        const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
           setProposals(data);
@@ -1026,22 +1374,31 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       .filter(Boolean) as { id: number; name: string }[];
 
     const getStatusBadge = (proposal: Proposal) => {
-      const status = proposal.work_status;
+      const status = proposal.work_status?.toLowerCase()?.trim() || '';
       let bgColor = 'bg-gray-100 text-gray-800';
       let text = 'Not Started';
 
-      if (status === 'Under Review') {
+      if (!status || status === 'not started yet' || status === 'not started') {
+        bgColor = 'bg-gray-100 text-gray-800';
+        text = 'Pending';
+      } else if (status === 'pending') {
+        bgColor = 'bg-gray-100 text-gray-800';
+        text = 'Pending';
+      } else if (status === 'under review') {
         bgColor = 'bg-yellow-100 text-yellow-800';
         text = 'Under Review';
-      } else if (status === 'Rejected') {
+      } else if (status === 'rejected') {
         bgColor = 'bg-red-100 text-red-800';
         text = 'Rejected';
-      } else if (status === 'Correction needed') {
+      } else if (status === 'correction needed') {
         bgColor = 'bg-orange-100 text-orange-800';
         text = 'Correction Needed';
-      } else if (status === 'pending at DLC') {
+      } else if (status === 'pending at dlc') {
         bgColor = 'bg-purple-100 text-purple-800';
         text = 'Pending at DLC';
+      } else if (status === 'forwarded') {
+        bgColor = 'bg-blue-100 text-blue-800';
+        text = 'Forwarded';
       }
 
       return (
@@ -1053,11 +1410,18 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
     const stats = {
       total: proposals.length,
-      pending: proposals.filter(p => !p.work_status || p.work_status === 'Not started Yet' || p.work_status === '').length,
-      underReview: proposals.filter(p => p.work_status === 'Under Review').length,
-      rejected: proposals.filter(p => p.work_status === 'Rejected').length,
-      pendingAtDLC: proposals.filter(p => p.work_status === 'pending at DLC').length,
-      correctionNeeded: proposals.filter(p => p.work_status === 'Correction needed').length
+      pending: proposals.filter(p => {
+        const s = p.work_status?.toLowerCase()?.trim() || '';
+        return !s || s === 'not started yet' || s === 'not started' || s === 'submitted' || s === 'pending';
+      }).length,
+      underReview: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'under review').length,
+      rejected: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'rejected').length,
+      pendingAtDLC: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'pending at dlc').length,
+      correctionNeeded: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'correction needed').length,
+      forwarded: (() => {
+        const currentUserId = sessionStorage.getItem('user_id');
+        return proposals.filter(p => p.forward_to && p.forward_to.toString() === currentUserId).length;
+      })()
     };
 
     const getCategoryName = (proposal: Proposal) => {
@@ -1184,6 +1548,22 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
               </div>
             </div>
           </div>
+
+          {stats.forwarded > 0 && (
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Forwarded to Me</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.forwarded}</p>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Filters and Proposals List */}
@@ -1287,6 +1667,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                     <option value="Correction needed">Correction Needed</option>
                     <option value="pending at DLC">Pending at DLC</option>
                     <option value="Rejected">Rejected</option>
+                    <option value="forwarded">Forwarded to Me</option>
                   </select>
                 </div>
               </div>
@@ -1364,7 +1745,21 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                         {index + 1}
                       </td>
                       <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                        #{proposal.proposal_id}
+                        <div className="flex items-center gap-2">
+                          #{proposal.proposal_id}
+                          {(() => {
+                            const currentUserId = sessionStorage.getItem('user_id');
+                            const isForwarded = proposal.forward_to && proposal.forward_to.toString() === currentUserId;
+                            return isForwarded ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                                Forwarded
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-700">
                         {proposal.taluka_name || 'N/A'}
@@ -1382,23 +1777,55 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       
                       <td className="px-4 py-3 text-sm">
                         <div className="flex gap-2 items-start md:items-end">
-                          {(!proposal.work_status || proposal.work_status === 'Not started Yet' || proposal.work_status === '') && (
-                            <button className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-all shadow-sm">
-                              Start Review
-                            </button>
-                          )}
-                        
-                          <button
-                            onClick={() => handleOpenModal(proposal)}
-                            className="px-3 py-1 text-blue-600 text-xs font-medium rounded-lg hover:bg-blue-50 transition-all"
-                          >
-                            View Details
-                          </button>
-                          {(proposal.work_status === 'Under Review' || proposal.work_status === 'Correction needed') && (
-                            <button className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-all shadow-sm">
-                              Review
-                            </button>
-                          )}
+                          {(() => {
+                            const actions = getAvailableActions(proposal);
+                            return (
+                              <>
+                                {actions.canStartReview && (
+                                  <button 
+                                    onClick={() => {
+                                      // Handle start review directly in table
+                                      handleOpenModal(proposal);
+                                    }}
+                                    className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-all shadow-sm"
+                                  >
+                                    Start Review
+                                  </button>
+                                )}
+                                
+                                {(actions.canAccept || actions.canReject || actions.canSendBack) && (
+                                  <button 
+                                    onClick={() => handleOpenModal(proposal)}
+                                    className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-all shadow-sm"
+                                  >
+                                    Review
+                                  </button>
+                                )}
+                                
+                                {actions.canForwardToDLC && (
+                                  <button 
+                                    onClick={() => handleOpenModal(proposal)}
+                                    className="px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700 transition-all shadow-sm"
+                                  >
+                                    Forward to DLC
+                                  </button>
+                                )}
+                                
+                                <button
+                                  onClick={() => handleOpenModal(proposal)}
+                                  className="px-3 py-1 text-blue-600 text-xs font-medium rounded-lg hover:bg-blue-50 transition-all"
+                                >
+                                  View Details
+                                </button>
+                                
+                                {!actions.canStartReview && !actions.canAccept && !actions.canReject && !actions.canSendBack && !actions.canForwardToDLC && (
+                                  <span className="px-3 py-1 text-gray-500 text-xs font-medium">
+                                    No Actions
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </td>
                     </tr>
@@ -1572,9 +1999,32 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       {selectedProposal.remarks && (
                         <div className="md:col-span-2">
                           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Remarks</p>
-                          <p className="text-base text-gray-900 dark:text-white">
-                            {selectedProposal.remarks}
-                          </p>
+                          <div className={`p-4 rounded-lg ${
+                            selectedProposal.work_status === 'correction needed' 
+                              ? 'bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-300 dark:border-orange-700' 
+                              : 'bg-gray-50 dark:bg-gray-800'
+                          }`}>
+                            <p className={`text-base ${
+                              selectedProposal.work_status === 'correction needed' 
+                                ? 'text-orange-900 dark:text-orange-200 font-semibold' 
+                                : 'text-gray-900 dark:text-white'
+                            }`}>
+                              {selectedProposal.remarks}
+                            </p>
+                            {selectedProposal.work_status === 'correction needed' && (
+                              <div className="mt-3 p-3 bg-orange-100 dark:bg-orange-800/30 rounded-lg border border-orange-200 dark:border-orange-600">
+                                <p className="text-sm text-orange-800 dark:text-orange-200 font-medium flex items-center gap-2">
+                                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                  </svg>
+                                  Action Required: Please review the remarks above and take appropriate action
+                                </p>
+                                <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                  You can Accept the proposal (with checklist), Reject it, or Send it back for further correction.
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1694,8 +2144,8 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
                 {/* Right Side - Review & Actions (1 column) */}
                 <div className="lg:col-span-1 space-y-6">
-                  {/* Review Section - Only show AFTER accepting proposal */}
-                  {proposalAccepted && (
+                  {/* Review Section - Show ONLY after clicking "Accept Proposal (Review Completed)" */}
+                  {showReviewChecklist && (
                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
                       <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                         <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1718,7 +2168,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             disabled={proposalRejected || proposalSentBack}
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">
-                            Site inspection completed
+                            Site inspection Completed.
                           </span>
                         </label>
                         <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
@@ -1735,7 +2185,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             disabled={proposalRejected || proposalSentBack}
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">
-                            Boundary verification done
+                            Boundary verified
                           </span>
                         </label>
                         <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
@@ -1752,7 +2202,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             disabled={proposalRejected || proposalSentBack}
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">
-                            FRA compliance verified
+                            Compliance with FRA Section 3(2) norms
                           </span>
                         </label>
                         <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
@@ -1769,15 +2219,15 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             disabled={proposalRejected || proposalSentBack}
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">
-                            Tree count verified
+                            Tree count and ecological impact noted.
                           </span>
                         </label>
                       </div>
                     </div>
                   )}
 
-                  {/* Forward Dropdown - Show ONLY when proposal is accepted AND any checkbox is checked */}
-                  {proposalAccepted && anyCheckboxChecked && (
+                  {/* Forward Proposal Section - Show in the SAME Proposal Details modal */}
+                  {showReviewChecklist && (
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-lg border border-green-200 dark:border-green-800">
                       <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                         <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1786,77 +2236,215 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                         Forward Proposal
                       </h4>
                       <div className="space-y-4">
-                        <select
-                          value={selectedForwardUser}
-                          onChange={(e) => setSelectedForwardUser(e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        >
-                          <option value="">Select user to forward to...</option>
-                          {availableUsers.map((user) => (
-                            <option key={user.user_id} value={user.user_id}>
-                              {user.name} - {user.category_name || 'No Category'}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={handleForwardProposal}
-                          className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                          </svg>
-                          Forward Proposal
-                        </button>
+                        {!showForwardSelect ? (
+                          <>
+                            <button
+                              onClick={handleShowForwardSelect}
+                              disabled={!anyChecklistChecked || proposalRejected || proposalSentBack}
+                              className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
+                                !anyChecklistChecked || proposalRejected || proposalSentBack
+                                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                                  : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800'
+                              }`}
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              </svg>
+                              Forward
+                            </button>
+                            {!anyChecklistChecked && (
+                              <p className="text-xs text-gray-600 dark:text-gray-300">
+                                Select at least 1 checklist item to enable forwarding.
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <SearchableSelect
+                              options={availableUsers.map(user => ({
+                                value: user.user_id.toString(),
+                                label: user.name,
+                                subtitle: user.category_name || user.user_category_name || 'No Category'
+                              }))}
+                              value={selectedForwardUser}
+                              onChange={(value) => setSelectedForwardUser(value.toString())}
+                              searchPlaceholder="Search and select user to forward to..."
+                              className="w-full"
+                              clearable={true}
+                            />
+                            {/* Quick list of users to forward */}
+                            <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 p-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
+                              {availableUsers.length === 0 ? (
+                                <p className="text-center text-gray-500 dark:text-gray-400">No users available</p>
+                              ) : (
+                                availableUsers.map(user => (
+                                  <div
+                                    key={user.user_id}
+                                    className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 last:border-b-0 pb-2 last:pb-0"
+                                  >
+                                    <div>
+                                      <p className="font-medium">{user.name}</p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {user.category_name || user.user_category_name || 'No Category'} · ID: {user.user_id}
+                                      </p>
+                                    </div>
+                                    <button
+                                      className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                      onClick={() => setSelectedForwardUser(user.user_id.toString())}
+                                    >
+                                      Select
+                                    </button>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                            <button
+                              onClick={handleForwardProposal}
+                              className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              </svg>
+                              Confirm Forward
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
 
-                  {/* Action Buttons */}
+                  {/* Action Buttons - Status Based */}
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                     <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Actions</h4>
+                    
+                    {/* Status Information */}
+                    <div className={`mb-4 p-3 rounded-lg ${
+                      selectedProposal?.work_status === 'correction needed' 
+                        ? 'bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-300 dark:border-orange-700' 
+                        : 'bg-blue-50 dark:bg-blue-900/20'
+                    }`}>
+                      <p className={`text-sm font-medium ${
+                        selectedProposal?.work_status === 'correction needed' 
+                          ? 'text-orange-800 dark:text-orange-200' 
+                          : 'text-blue-800 dark:text-blue-200'
+                      }`}>
+                        <span className="font-semibold">Current Status:</span> {selectedProposal?.work_status || 'Not Started'}
+                      </p>
+                      <p className={`text-xs mt-1 ${
+                        selectedProposal?.work_status?.toLowerCase()?.trim() === 'correction needed' 
+                          ? 'text-orange-600 dark:text-orange-300' 
+                          : 'text-blue-600 dark:text-blue-300'
+                      }`}>
+                        {availableActions.statusMessage}
+                      </p>
+                      {selectedProposal?.work_status?.toLowerCase()?.trim() === 'correction needed' && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-orange-700 dark:text-orange-300 font-medium">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Review remarks and choose: Accept, Reject, or Send Back
+                        </div>
+                      )}
+                    </div>
+
                     <div className="space-y-3">
-                      <button
-                        onClick={handleAccept}
-                        disabled={proposalAccepted || proposalRejected || proposalSentBack}
-                        className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
-                          proposalAccepted || proposalRejected || proposalSentBack
-                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800'
-                        }`}
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      {/* Start Review Button */}
+                      {availableActions.canStartReview && (
+                        <button
+                          onClick={handleStartReview}
+                          className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Start Review
+                        </button>
+                      )}
+                      {/* Accept Button */}
+                      {availableActions.canAccept && (
+                        <button
+                          onClick={handleAccept}
+                          disabled={showReviewChecklist || proposalRejected || proposalSentBack}
+                          className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
+                            showReviewChecklist || proposalRejected || proposalSentBack
+                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                              : selectedProposal?.work_status?.toLowerCase()?.trim() === 'correction needed'
+                                ? 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 ring-2 ring-green-300 ring-opacity-50'
+                                : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800'
+                          }`}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Accept Proposal (Review Completed)
+                        </button>
+                      )}
+
+                      {/* Reject Button */}
+                      {availableActions.canReject && (
+                        <button
+                          onClick={handleReject}
+                          disabled={proposalRejected || proposalSentBack}
+                          className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
+                            proposalRejected || proposalSentBack
+                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800'
+                          }`}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          {proposalRejected ? 'Proposal Rejected' : 'Reject Proposal'}
+                        </button>
+                      )}
+
+                      {/* Send Back Button */}
+                      {availableActions.canSendBack && (
+                        <button
+                          onClick={handleSendBack}
+                          disabled={proposalRejected || proposalSentBack}
+                          className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
+                            proposalRejected || proposalSentBack
+                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-orange-600 to-orange-700 text-white hover:from-orange-700 hover:to-orange-800'
+                          }`}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                         </svg>
-                        {proposalAccepted ? 'Proposal Accepted' : 'Accept Proposal'}
-                      </button>
-                      <button
-                        onClick={handleReject}
-                        disabled={proposalAccepted || proposalRejected || proposalSentBack}
-                        className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
-                          proposalAccepted || proposalRejected || proposalSentBack
-                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800'
-                        }`}
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        {proposalRejected ? 'Proposal Rejected' : 'Reject Proposal'}
-                      </button>
-                      <button
-                        onClick={handleSendBack}
-                        disabled={proposalAccepted || proposalRejected || proposalSentBack}
-                        className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
-                          proposalAccepted || proposalRejected || proposalSentBack
-                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-orange-600 to-orange-700 text-white hover:from-orange-700 hover:to-orange-800'
-                        }`}
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                        </svg>
-                        {proposalSentBack ? 'Sent Back for Correction' : 'Send Back for Correction'}
-                      </button>
+                          {proposalSentBack ? 'Sent Back for Correction' : 'Send Back for Correction'}
+                        </button>
+                      )}
+
+                      {/* Forward to DLC Button */}
+                      {availableActions.canForwardToDLC && (
+                        <button
+                          onClick={handleForwardToDLC}
+                          className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                          Forward to DLC
+                        </button>
+                      )}
+
+                      {/* No Actions Available Message */}
+                      {!availableActions.canAccept && !availableActions.canReject && !availableActions.canSendBack && !availableActions.canStartReview && !availableActions.canForwardToDLC && (
+                        <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-center">
+                          <div className="flex items-center justify-center mb-2">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                            No actions available
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                            Status: <span className="font-medium">{selectedProposal?.work_status || 'Unknown'}</span>
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1878,41 +2466,6 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         {/* Enhanced Proposal Action Modal */}
         {selectedProposal && (
           <>
-            {/* Accept Confirmation Modal */}
-            <Modal
-              isOpen={showAcceptModal}
-              onClose={() => setShowAcceptModal(false)}
-              className="max-w-md"
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 text-center">
-                  Accept Proposal
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center">
-                  Are you sure you want to accept this proposal? This action cannot be undone.
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowAcceptModal(false)}
-                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleConfirmAccept}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    Confirm Accept
-                  </button>
-                </div>
-              </div>
-            </Modal>
-
             {/* Reject Reason Modal */}
             <Modal
               isOpen={showRejectModal}
@@ -2098,6 +2651,12 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   // For user_category_id = 8, show Category32Dashboard in Section 3(2) (similar to category 32)
   const isCategory8 = categoryId === "8";
 
+  // For District Collector (category_id = 32) - show DC Dashboard
+  const isDistrictCollector = categoryId === "32";
+  
+  // For DLC (category_id = 35) - show DLC Dashboard
+  const isDLC = categoryId === "35";
+
   const allTabs = [
     {
       id: "main-dashboard",
@@ -2109,7 +2668,18 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       label: "CFR Dashboard",
       content: <CFRDashboardContent />
     },
-   
+    // DC Dashboard tab - only show for District Collector (category_id = 32)
+    ...(isDistrictCollector ? [{
+      id: "dc-dashboard",
+      label: "DC Dashboard",
+      content: <DCDashboard />
+    }] : []),
+    // DLC Dashboard tab - only show for DLC (category_id = 35)
+    ...(isDLC ? [{
+      id: "dlc-dashboard",
+      label: "DLC Dashboard",
+      content: <DLCDashboard />
+    }] : []),
     {
       id: "notification",
       label: "Section 3(2)",
@@ -2138,8 +2708,11 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       : allTabs;
 
   // Decide which tab should be selected by default.
-  // Prefer "Section 3(2)" tab when available, otherwise fall back to the first tab.
-  const defaultTabId =
+  // Prefer DC Dashboard for District Collector, DLC Dashboard for DLC, 
+  // "Section 3(2)" tab when available, otherwise fall back to the first tab.
+  const defaultTabId = 
+    isDistrictCollector ? "dc-dashboard" :
+    isDLC ? "dlc-dashboard" :
     tabs.find(tab => tab.id === "notification")?.id ?? tabs[0]?.id ?? "main-dashboard";
 
   // When user is category_id = 24, we only show Section 3(2) dashboard content.

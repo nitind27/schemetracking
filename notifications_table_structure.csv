@@ -1,0 +1,9 @@
+Field Name,Data Type,Length,Null,Default,Description
+id,int,11,NO,AUTO_INCREMENT,Primary key
+title,varchar,255,NO,,Notification title
+description,text,,YES,,Notification description
+link,varchar,500,YES,NULL,Optional link URL
+pdf_file,varchar,255,YES,NULL,Optional PDF file path
+status,enum,,NO,Active,"Status: Active or Inactive"
+created_at,timestamp,,NO,CURRENT_TIMESTAMP,Creation timestamp
+updated_at,timestamp,,NO,CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,Last update timestamp

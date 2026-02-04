@@ -17,10 +17,11 @@ import {
 } from "../icons/index";
 
 import { useToggleContext } from "@/context/ToggleContext";
+import { FarmdersType } from "@/components/farmersdata/farmers";
+import { Schemesdatas } from "@/components/schemesdata/schemes";
+import { UserData } from "@/components/usersdata/Userdata";
 
 
-// Unused function - commented out
-/*
 async function getData(): Promise<{
   farmers: FarmdersType[];
   schemes: Schemesdatas[];
@@ -45,12 +46,10 @@ async function getData(): Promise<{
   ]);
   return { farmers, schemes, users };
 }
-*/
-// Remove top-level await - this will be handled inside component
-// const { farmers, schemes, users } = await getData();
-// const filtervanaksetra = farmers.filter((data) => data.farmer_record?.split('|')[3] != "")
-// const filterclaimid = farmers.filter((data) => data.farmer_record?.split('|')[15] != "")
-// const schemesfilter = schemes.filter((data) => data.status == 'Active')
+const { farmers, schemes, users } = await getData();
+const filtervanaksetra = farmers.filter((data) => data.farmer_record?.split('|')[3] != "")
+const filterclaimid = farmers.filter((data) => data.farmer_record?.split('|')[15] != "")
+const schemesfilter = schemes.filter((data) => data.status == 'Active')
 
 type NavItem = {
   name: string;
@@ -127,29 +126,35 @@ const dopodashboard: NavItem[] = [
   },
   {
     icon: <GiFarmer />,
-    name: "IFR holders",
+    name: `IFR holders (${farmers.length})`,
     path: "/farmerspage",
   },
   {
     icon: <FaEdit />,
-    name: "Schemes",
+    name: `Schemes (${schemesfilter.length})`,
     path: "/schemespage",
   },
   {
     icon: <CiUser />,
-    name: "Users",
+    name: `Users (${users.length})`,
     path: "/users",
   },
   {
     icon: <RxDashboard />,
-    name: "Vanksetra",
+    name: `Vanksetra (${filtervanaksetra.length}/${farmers.length})`,
     path: "/farmerspage",
   },
   {
     icon: <RxDashboard />,
-    name: "Survey",
+    name: `Vanksetra (${filterclaimid.length}/${farmers.length})`,
+    path: "/farmerspage",
+  },
+  {
+    icon: <RxDashboard />,
+    name: `Survey`,
     path: "/servepage",
   },
+
 ];
 
 
