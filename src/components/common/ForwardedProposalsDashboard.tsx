@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FaFileAlt, FaClock, FaUser, FaMapMarkerAlt } from "react-icons/fa";
 import Loader from "@/common/Loader";
@@ -60,11 +60,7 @@ export const ForwardedProposalsDashboard: React.FC<ForwardedProposalsDashboardPr
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchForwardedProposals();
-  }, [userId, categoryId]);
-
-  const fetchForwardedProposals = async () => {
+  const fetchForwardedProposals = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/proposals/user-dashboard?user_id=${userId}&category_id=${categoryId}`);
@@ -77,7 +73,11 @@ export const ForwardedProposalsDashboard: React.FC<ForwardedProposalsDashboardPr
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, categoryId]);
+
+  useEffect(() => {
+    fetchForwardedProposals();
+  }, [fetchForwardedProposals]);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -118,7 +118,7 @@ export const ForwardedProposalsDashboard: React.FC<ForwardedProposalsDashboardPr
           Forwarded Proposals
         </h2>
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          {proposals.length} proposal{proposals.length !== 1 ? 's' : ''} forwarded to you
+          {proposals.length} proposal{proposals.length !== 1 ? "s" : ""} forwarded to you
         </div>
       </div>
 
@@ -129,7 +129,7 @@ export const ForwardedProposalsDashboard: React.FC<ForwardedProposalsDashboardPr
             No forwarded proposals
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            You don't have any proposals forwarded to you at the moment.
+            You don&apos;t have any proposals forwarded to you at the moment.
           </p>
         </div>
       ) : (

@@ -185,7 +185,7 @@ export default function DLCDashboard() {
       p.days_pending || 0
     ]);
     
-    (doc as any).autoTable({
+    (doc as unknown as typeof jsPDF & { autoTable: (options: Record<string, unknown>) => void }).autoTable({
       head: [headers],
       body: rows,
       startY: 50,
@@ -248,7 +248,7 @@ export default function DLCDashboard() {
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-500">
-          <h3 className="text-lg font-semibold text-gray-900">Overdue (>30 days)</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Overdue ({'>'}30 days)</h3>
           <p className="text-3xl font-bold text-red-600">
             {proposals.filter(p => (p.days_pending || 0) > 30).length}
           </p>

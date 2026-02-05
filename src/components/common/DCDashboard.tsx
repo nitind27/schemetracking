@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Loader from "@/common/Loader";
-import { Modal } from "@/components/ui/modal";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
 import jsPDF from 'jspdf';
@@ -32,7 +31,7 @@ interface Proposal {
 
 interface DCStats {
   totalProposals: number;
-  pendingAtRFODFO: number;
+  // pendingAtRFODFO: number;
   rejectedByRFODFO: number;
   pendingAtRFODFO: number;
   pendingAtDLC: number;
@@ -68,7 +67,7 @@ export default function DCDashboard() {
     totalProposals: 0,
     pendingAtRFODFO: 0,
     rejectedByRFODFO: 0,
-    pendingAtRFODFO: 0,
+    // pendingAtRFODFO: 0,
     pendingAtDLC: 0,
     dlcCompleted: 0,
   });
@@ -96,7 +95,7 @@ export default function DCDashboard() {
     }
   };
 
-  const exportToPDF = (reportType: string, data: any[]) => {
+  const exportToPDF = (reportType: string, data: Proposal[]) => {
     const doc = new jsPDF();
     const currentDate = new Date().toLocaleDateString();
     
@@ -109,7 +108,7 @@ export default function DCDashboard() {
     
     // Table headers based on report type
     let headers: string[] = [];
-    let rows: any[][] = [];
+    let rows: (string | number)[][] = [];
     
     switch (reportType) {
       case 'Total Proposals':
@@ -143,7 +142,7 @@ export default function DCDashboard() {
     }
     
     // Add table
-    (doc as any).autoTable({
+    (doc as unknown as typeof jsPDF & { autoTable: (options: Record<string, unknown>) => void }).autoTable({
       head: [headers],
       body: rows,
       startY: 50,

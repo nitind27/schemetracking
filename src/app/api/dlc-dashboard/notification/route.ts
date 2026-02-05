@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+
+interface InsertResult extends ResultSetHeader {
+  insertId: number;
+}
 
 // POST - Upload notification
 export async function POST(req: Request) {
@@ -30,7 +35,7 @@ export async function POST(req: Request) {
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'notifications');
       try {
         await mkdir(uploadsDir, { recursive: true });
-      } catch (error) {
+      } catch {
         // Directory might already exist
       }
 
@@ -59,11 +64,11 @@ export async function POST(req: Request) {
           status ENUM('Active', 'Inactive') DEFAULT 'Active'
         )
       `);
-    } catch (createError) {
+    } catch {
       console.log('Table creation skipped - may already exist');
     }
 
-    const [result] = await pool.query(
+    const [result] = await pool.query<InsertResult>(
       `INSERT INTO notifications (title, description, link, pdf_file, created_at)
        VALUES (?, ?, ?, ?, NOW())`,
       [title, description, link, pdfPath]
@@ -71,7 +76,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       message: 'Notification uploaded successfully',
-      notification_id: (result as any).insertId,
+      notification_id: result.insertId,
       pdf_path: pdfPath
     });
   } catch (error) {
@@ -86,7 +91,7 @@ export async function POST(req: Request) {
 // GET - Fetch all notifications
 export async function GET() {
   try {
-    const [rows] = await pool.query(
+    const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT * FROM notifications 
        WHERE status = 'Active' 
        ORDER BY created_at DESC`

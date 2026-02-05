@@ -55,7 +55,7 @@ export async function PUT(request: Request) {
 
     // Update work_status/forward_to in database
     let updateQuery = `UPDATE proposal SET work_status = ?, updated_at = NOW()`;
-    const updateParams: any[] = [nextStatus];
+    const updateParams: (string | number)[] = [nextStatus];
 
     if (forward_to) {
       updateQuery += `, forward_to = ?`;
@@ -75,7 +75,7 @@ export async function PUT(request: Request) {
         [proposal_id]
       );
       
-      let recordData: any = {};
+      let recordData: Record<string, unknown> = {};
       const existingValue = existingRecord[0]?.[0]?.work_status_record;
       
       if (existingValue) {
@@ -86,7 +86,7 @@ export async function PUT(request: Request) {
           if (typeof recordData !== 'object' || recordData === null) {
             recordData = {};
           }
-        } catch (parseError) {
+        } catch {
           // If parsing fails, it's likely a plain string (from reason field)
           // Create new object and preserve the old value if needed
           recordData = {};

@@ -18,7 +18,7 @@ export async function POST() {
         // Try to parse as JSON
         JSON.parse(proposal.work_status_record);
         // If successful, it's already valid JSON, skip
-      } catch (parseError) {
+      } catch {
         // If parsing fails, it's plain text, convert to JSON format
         try {
           const jsonData = {

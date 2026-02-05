@@ -2,15 +2,24 @@
 
 import React, { useState, useEffect } from "react";
 
+interface ProposalSummary {
+  proposal_id: number;
+  work_status: string | null;
+  forward_to: string | null;
+  updated_at: string;
+  forward_to_user_name?: string;
+  forward_to_category?: string | number;
+}
+
 interface DebugData {
   debug_info: {
     total_active_proposals: number;
     proposals_pending_at_dlc: number;
     proposals_forwarded_to_dlc_users: number;
   };
-  all_proposals: any[];
-  dlc_proposals: any[];
-  forwarded_to_dlc: any[];
+  all_proposals: ProposalSummary[];
+  dlc_proposals: ProposalSummary[];
+  forwarded_to_dlc: ProposalSummary[];
 }
 
 export const ProposalDebugger: React.FC = () => {
@@ -77,7 +86,7 @@ export const ProposalDebugger: React.FC = () => {
           <h3 className="font-semibold mb-2">DLC Proposals</h3>
           <div className="max-h-60 overflow-y-auto">
             {debugData.dlc_proposals.length === 0 ? (
-              <p className="text-red-500">No proposals found with status "pending at DLC"</p>
+              <p className="text-red-500">No proposals found with status &quot;pending at DLC&quot;</p>
             ) : (
               debugData.dlc_proposals.map((proposal) => (
                 <div key={proposal.proposal_id} className="border-b py-2 text-sm">

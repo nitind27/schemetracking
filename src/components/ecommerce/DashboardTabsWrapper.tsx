@@ -2701,11 +2701,17 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   ];
 
   // Filter tabs based on user category
+  // - PESA Coordinator (37): only IFR Dashboard
+  // - Section 3(2) only (24): only Section 3(2)
+  // - DLC (35): only DLC Dashboard tab
+  // - Others: all tabs
   const tabs = isPESACoordinator
     ? allTabs.filter(tab => tab.id === "main-dashboard")
     : isSection32Only
       ? allTabs.filter(tab => tab.id === "notification")
-      : allTabs;
+      : isDLC
+        ? allTabs.filter(tab => tab.id === "dlc-dashboard")
+        : allTabs;
 
   // Decide which tab should be selected by default.
   // Prefer DC Dashboard for District Collector, DLC Dashboard for DLC, 

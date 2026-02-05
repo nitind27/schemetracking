@@ -23,7 +23,7 @@ export default function SearchableSelect({
   options,
   value,
   onChange,
-  placeholder = "Select an option...",
+  // placeholder = "Select an option...",
   searchPlaceholder = "Search options...",
   className = "",
   disabled = false,
@@ -136,7 +136,7 @@ export default function SearchableSelect({
             className="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed"
           >
             <svg 
-              className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+              className={`w-5 h-5 transition-transform ${isOpen ? "rotate-180" : ""}`} 
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"

@@ -23,7 +23,7 @@ export async function PUT(req: Request) {
       newRemarks = `DLC Sanctioned: ${reason}`;
       
       // Update the proposal (for sanction action)
-      const [result] = await pool.query(
+      await pool.query(
         `UPDATE proposal 
          SET work_status = ?, 
              remarks = CONCAT(IFNULL(remarks, ''), '\n', ?),
@@ -39,7 +39,7 @@ export async function PUT(req: Request) {
            VALUES (?, ?, ?, ?, NOW())`,
           [proposal_id, user_id, action, reason]
         );
-      } catch (auditError) {
+      } catch {
         // If audit table doesn't exist, continue without logging
         console.log('Audit logging skipped - table may not exist');
       }
@@ -62,7 +62,7 @@ export async function PUT(req: Request) {
         const forwardToUserId = category24Users[0].user_id;
         
         // Update the proposal with forward_to
-        const [result] = await pool.query(
+        await pool.query(
           `UPDATE proposal 
            SET work_status = ?, 
                remarks = CONCAT(IFNULL(remarks, ''), '\n', ?),
@@ -73,7 +73,7 @@ export async function PUT(req: Request) {
         );
       } else {
         // If no category_id = 24 user found, just update status and remarks
-        const [result] = await pool.query(
+        await pool.query(
           `UPDATE proposal 
            SET work_status = ?, 
                remarks = CONCAT(IFNULL(remarks, ''), '\n', ?),
@@ -90,7 +90,7 @@ export async function PUT(req: Request) {
            VALUES (?, ?, ?, ?, NOW())`,
           [proposal_id, user_id, action, reason]
         );
-      } catch (auditError) {
+      } catch {
         // If audit table doesn't exist, continue without logging
         console.log('Audit logging skipped - table may not exist');
       }
