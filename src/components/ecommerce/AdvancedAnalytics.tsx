@@ -7,9 +7,7 @@ import {
   Bar,
   LineChart,
   Line,
-  PieChart,
-  Pie,
-  Cell,
+
   XAxis,
   YAxis,
   CartesianGrid,
@@ -51,49 +49,69 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
     });
   }, [farmers, talukas]);
 
-  // Scheme-wise beneficiary distribution
-  const schemeDistributionData = useMemo(() => {
-    const schemeMap = new Map<string, number>();
-    
-    farmers.forEach((farmer) => {
-      if (farmer.schemes && Array.isArray(farmer.schemes)) {
-        farmer.schemes.forEach((scheme) => {
-          const schemeName = scheme.scheme_name || "Unknown";
-          schemeMap.set(schemeName, (schemeMap.get(schemeName) || 0) + 1);
-        });
-      }
-    });
 
-    return Array.from(schemeMap.entries())
-      .map(([name, count]) => ({ name, value: count }))
-      .slice(0, 6) // Top 6 schemes
-      .sort((a, b) => b.value - a.value);
-  }, [farmers]);
-
-  // Monthly survey progress (mock data - in real app, calculate from actual dates)
+  // Monthly survey progress - LAST 6 MONTHS
   const monthlyProgressData = useMemo(() => {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-    return months.map((month) => ({
-      month,
-      surveys: Math.floor(Math.random() * 200) + 50, // Mock data
-    }));
-  }, []);
-
-  // Document availability donut chart data
-  const documentAvailabilityData = useMemo(() => {
-    const withDocs = farmers.filter((f) => {
-      const record = f.farmer_record?.split("|") || [];
-      return record.length > 10 && record[10]?.trim() !== "";
-    }).length;
-    const withoutDocs = farmers.length - withDocs;
+    // Get current date
+    const now = new Date();
     
-    return [
-      { name: "With Documents", value: withDocs },
-      { name: "Without Documents", value: withoutDocs },
-    ];
+    // Generate last 6 months
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        monthKey: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+        monthLabel: date.toLocaleString('default', { month: 'short', year: '2-digit' })
+      });
+    }
+
+    // Count surveys per month
+    return months.map(({ monthKey, monthLabel }) => {
+      const surveysInMonth = farmers.filter((farmer) => {
+        // Check if farmer has update_record
+        if (!farmer.update_record || farmer.update_record.trim() === "") {
+          return false;
+        }
+
+        // Parse update_record: format is "VoiceRecord/2025-10-29/346|Info/2025-11-05/346|..."
+        const records = farmer.update_record.split("|");
+        
+        // Get the second record (index 1) which contains the date
+        if (records.length < 2) {
+          return false;
+        }
+
+        const secondRecord = records[1]; // e.g., "Info/2025-11-05/346"
+        const parts = secondRecord.split("/");
+        
+        if (parts.length < 2) {
+          return false;
+        }
+
+        const dateString = parts[1]; // e.g., "2025-11-05"
+        
+        // Parse the date
+        const farmerDate = new Date(dateString);
+        
+        if (isNaN(farmerDate.getTime())) {
+          return false;
+        }
+
+        // Compare year-month
+        const farmerMonthKey = `${farmerDate.getFullYear()}-${String(farmerDate.getMonth() + 1).padStart(2, '0')}`;
+        return farmerMonthKey === monthKey;
+      }).length;
+
+      return {
+        month: monthLabel,
+        surveys: surveysInMonth,
+      };
+    });
   }, [farmers]);
 
-  const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
+
+
+  // const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
   return (
     <div className="space-y-6">
@@ -120,29 +138,8 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
         </ResponsiveContainer>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Scheme-wise Beneficiary Distribution */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-xl border border-gray-200 shadow-sm p-6"
-        >
-          <h3 className="text-lg font-bold text-gray-900 mb-4">
-            Scheme-wise Beneficiary Distribution
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={schemeDistributionData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="name" type="category" width={100} />
-              <Tooltip />
-              <Bar dataKey="value" fill="#3B82F6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        {/* Monthly Survey Progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+        {/* Monthly Survey Progress - Last 6 Months */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -150,7 +147,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
           className="bg-white rounded-xl border border-gray-200 shadow-sm p-6"
         >
           <h3 className="text-lg font-bold text-gray-900 mb-4">
-            Monthly Survey Progress
+            Last 6 Months Survey Progress
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthlyProgressData}>
@@ -171,44 +168,9 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
         </motion.div>
       </div>
 
-      {/* Document Availability Donut Chart */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-        className="bg-white rounded-xl border border-gray-200 shadow-sm p-6"
-      >
-        <h3 className="text-lg font-bold text-gray-900 mb-4">
-          Document Availability Status
-        </h3>
-        <div className="flex items-center justify-center">
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={documentAvailabilityData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {documentAvailabilityData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </motion.div>
+
     </div>
   );
 };
 
 export default AdvancedAnalytics;
-

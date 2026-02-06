@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import TabView from "@/components/common/TabView";
+// import TabView from "@/components/common/TabView";
 import { Suspense } from "react";
 import Loader from "@/common/Loader";
 // import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
@@ -31,11 +31,11 @@ import { motion } from 'framer-motion';
 import DistrictSummaryRibbon from './DistrictSummaryRibbon';
 import EnhancedKPICards from './EnhancedKPICards';
 import AdvancedAnalytics from './AdvancedAnalytics';
-import AlertsSection from './AlertsSection';
-import PendingApprovalsSection from './PendingApprovalsSection';
-import RecentlyUpdatedRecords from './RecentlyUpdatedRecords';
+
 import PerformanceScorecard from './PerformanceScorecard';
 import { toast } from 'react-hot-toast';
+import TodaySurveyComponent from "../common/TodaySurveyComponent";
+import MainTab from "../common/MainTab";
 // import { useRouter } from 'next/navigation';
 
 interface Metrics {
@@ -2575,6 +2575,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       transition={{ duration: 0.5 }}
       className="w-full space-y-6"
     >
+      
       {/* District Summary Ribbon */}
       <DistrictSummaryRibbon
         farmers={farmersData.farmers}
@@ -2588,15 +2589,29 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         schemesCount={metrics.schemes.length}
         usersCount={metrics.users.length}
       />
+      
+      {/* Original Dashboard Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.5 }}
+        className="grid grid-cols-6 gap-4 md:gap-6"
+      >
+        <div className="col-span-12 space-y-2 xl:col-span-7">
+          <Suspense fallback={<Loader />}>
+            <DashboardTalukatabview farmersData={farmersData} />
+          </Suspense>
+        </div>
+      </motion.div>
 
       {/* Alerts and Pending Approvals Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AlertsSection />
         <PendingApprovalsSection />
-      </div>
+      </div> */}
 
       {/* Recently Updated Records */}
-      <RecentlyUpdatedRecords farmers={farmersData.farmers} />
+      {/* <RecentlyUpdatedRecords farmers={farmersData.farmers} /> */}
 
       {/* Advanced Analytics */}
       <AdvancedAnalytics
@@ -2611,19 +2626,6 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         farmers={farmersData.farmers}
       />
 
-      {/* Original Dashboard Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
-        className="grid grid-cols-6 gap-4 md:gap-6"
-      >
-        <div className="col-span-12 space-y-2 xl:col-span-7">
-          <Suspense fallback={<Loader />}>
-            <DashboardTalukatabview farmersData={farmersData} />
-          </Suspense>
-        </div>
-      </motion.div>
     </motion.div>
   );
 
@@ -2727,10 +2729,11 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
   return (
     <div className="w-full">
+      <TodaySurveyComponent metrics={metrics} farmersData={farmersData} />
       {isSection32Only && section32Tab ? (
         <>{section32Tab.content}</>
       ) : (
-        <TabView tabs={tabs} defaultTab={defaultTabId} />
+        <MainTab tabs={tabs} defaultTab={defaultTabId} />
       )}
 
       {/* Individual Taluka Detail Modal */}
