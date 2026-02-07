@@ -2645,7 +2645,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   const isSection32Only = categoryId === "24";
   
   // For user_category_id = 32, show Category32Dashboard in Section 3(2)
-  const isCategory32 = categoryId === "32";
+  // const isCategory32 = categoryId === "32";
   
   // For user_category_id = 4, show Category32Dashboard in Section 3(2) (similar to category 32)
   const isCategory4 = categoryId === "4";
@@ -2673,7 +2673,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     // DC Dashboard tab - only show for District Collector (category_id = 32)
     ...(isDistrictCollector ? [{
       id: "dc-dashboard",
-      label: "DC Dashboard",
+      label: "Section 3(2)",
       content: <DCDashboard />
     }] : []),
     // DLC Dashboard tab - only show for DLC (category_id = 35)
@@ -2687,7 +2687,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       label: "Section 3(2)",
       content: <div className="grid grid-cols-6 gap-4 md:gap-6">
         <div className="col-span-12 space-y-6 xl:col-span-7">
-        {isSection32Only ? <ProposalManagementDashboard /> : (isCategory32 || isCategory4 || isCategory8) ? <Category32Dashboard /> : <Section32Tabs />}
+        {isSection32Only ? <ProposalManagementDashboard /> : (isCategory4 || isCategory8) ? <Category32Dashboard /> : <Section32Tabs />}
         </div>
       </div>
     },
@@ -2706,6 +2706,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   // - PESA Coordinator (37): only IFR Dashboard
   // - Section 3(2) only (24): only Section 3(2)
   // - DLC (35): only DLC Dashboard tab
+  // - District Collector (32): all tabs except notification (Section 3(2))
   // - Others: all tabs
   const tabs = isPESACoordinator
     ? allTabs.filter(tab => tab.id === "main-dashboard")
@@ -2713,15 +2714,17 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       ? allTabs.filter(tab => tab.id === "notification")
       : isDLC
         ? allTabs.filter(tab => tab.id === "dlc-dashboard")
-        : allTabs;
+        : isDistrictCollector
+          ? allTabs.filter(tab => tab.id !== "notification")
+          : allTabs;
 
   // Decide which tab should be selected by default.
   // Prefer DC Dashboard for District Collector, DLC Dashboard for DLC, 
-  // "Section 3(2)" tab when available, otherwise fall back to the first tab.
+  // "IFR Dashboard" (main-dashboard) as default, otherwise fall back to the first tab.
   const defaultTabId = 
     isDistrictCollector ? "dc-dashboard" :
     isDLC ? "dlc-dashboard" :
-    tabs.find(tab => tab.id === "notification")?.id ?? tabs[0]?.id ?? "main-dashboard";
+    tabs.find(tab => tab.id === "main-dashboard")?.id ?? tabs[0]?.id ?? "main-dashboard";
 
   // When user is category_id = 24, we only show Section 3(2) dashboard content.
   // In that case, hide the TabView completely and render the content directly.

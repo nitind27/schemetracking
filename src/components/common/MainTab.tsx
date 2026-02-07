@@ -20,7 +20,7 @@ const MainTab: React.FC<MainTabProps> = ({ tabs, defaultTab }) => {
   return (
     <div className="w-full mx-auto space-y-6">
       {/* Navigation Container: Glassmorphism + Neumorphic base */}
-      <nav className="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 p-2  bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900  text-white  dark:bg-neutral-900/80 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-neutral-800 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
+      <nav className="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 p-2  bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900  text-white  dark:bg-neutral-900/80 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-neutral-800 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
         {tabs.slice(0, 6).map((tab) => {
           const isActive = activeTab === tab.id;
 
