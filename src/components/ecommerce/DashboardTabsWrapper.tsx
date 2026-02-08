@@ -1856,16 +1856,26 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         <Modal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          className="max-w-6xl"
+          className="max-w-7xl w-[95vw]"
         >
-          <div className="p-6 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                Proposal Details
-              </h2>
+          <div className="p-8 max-h-[85vh] overflow-y-auto bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+            <div className="flex justify-between items-center mb-8 pb-6 border-b-2 border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 -m-8 px-8 pt-8 rounded-t-3xl">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">
+                    Proposal Details
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Complete proposal information and actions</p>
+                </div>
+              </div>
               <button
                 onClick={handleCloseModal}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all duration-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1874,102 +1884,146 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             </div>
 
             {selectedProposal && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Side - Proposal Information (2 columns) */}
                 <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg space-y-4">
+                  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 space-y-6 backdrop-blur-sm">
                     {/* Header with Proposal ID and Status */}
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Proposal ID</p>
-                          <p className="text-xl text-gray-900 dark:text-white font-bold">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 mb-6 pb-6 border-b-2 border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-6">
+                        <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl shadow-md">
+                          <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Proposal ID</p>
+                          <p className="text-2xl text-blue-900 dark:text-blue-100 font-bold mt-1">
                             #{selectedProposal.proposal_id}
                           </p>
                         </div>
-                        <div className="h-12 w-px bg-gray-300 dark:bg-gray-600"></div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</p>
-                          <div className="mt-1">
+                        <div className="h-16 w-px bg-gradient-to-b from-gray-300 to-gray-200 dark:from-gray-600 dark:to-gray-700"></div>
+                        <div className="p-4 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl shadow-md">
+                          <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">Status</p>
+                          <div className="mt-2">
                             {getStatusBadge(selectedProposal)}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
                       {selectedProposal.proposal_category_name || 'Proposal Work Category'}
                     </h3>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Location Information - Inline */}
-                      <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Location</p>
-                        <div className="flex flex-wrap items-center gap-2 text-base text-gray-900 dark:text-white">
-                          {selectedProposal.taluka_name && (
-                            <>
-                              <span className="bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full text-sm font-medium">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Location Information - Inline */}
+                        <div className="md:col-span-2">
+                          <p className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wide flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Location Details
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3">
+                            {selectedProposal.taluka_name && (
+                              <span className="bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 px-4 py-2 rounded-xl text-sm font-semibold text-blue-900 dark:text-blue-100 shadow-md border border-blue-300 dark:border-blue-600 flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
                                 Taluka: {selectedProposal.taluka_name}
                               </span>
-                            </>
-                          )}
-                          {selectedProposal.village_name && (
-                            <>
-                              <span className="bg-green-100 dark:bg-green-900 px-3 py-1 rounded-full text-sm font-medium">
+                            )}
+                            {selectedProposal.village_name && (
+                              <span className="bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/40 dark:to-green-800/40 px-4 py-2 rounded-xl text-sm font-semibold text-green-900 dark:text-green-100 shadow-md border border-green-300 dark:border-green-600 flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
                                 Village: {selectedProposal.village_name}
                               </span>
-                            </>
-                          )}
-                          {selectedProposal.gp_name && (
-                            <>
-                              <span className="bg-purple-100 dark:bg-purple-900 px-3 py-1 rounded-full text-sm font-medium">
+                            )}
+                            {selectedProposal.gp_name && (
+                              <span className="bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 px-4 py-2 rounded-xl text-sm font-semibold text-purple-900 dark:text-purple-100 shadow-md border border-purple-300 dark:border-purple-600 flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
                                 GP: {selectedProposal.gp_name}
                               </span>
-                            </>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
 
                       {selectedProposal.land_details && (
-                        <div className="md:col-span-2">
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Land Details</p>
-                          <p className="text-base text-gray-900 dark:text-white">
+                        <div className="md:col-span-2 p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border border-amber-200 dark:border-amber-700">
+                          <p className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            Land Details
+                          </p>
+                          <p className="text-base font-medium text-gray-900 dark:text-white leading-relaxed">
                             {selectedProposal.land_details}
                           </p>
                         </div>
                       )}
 
                       {selectedProposal.number_of_tree && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Number of Trees</p>
-                          <p className="text-base text-gray-900 dark:text-white">
+                        <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-200 dark:border-emerald-700">
+                          <p className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            Number of Trees
+                          </p>
+                          <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
                             {selectedProposal.number_of_tree}
                           </p>
                         </div>
                       )}
 
                       {selectedProposal.beneficiaries && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Beneficiaries</p>
-                          <p className="text-base text-gray-900 dark:text-white">
+                        <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-xl border border-cyan-200 dark:border-cyan-700">
+                          <p className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Beneficiaries
+                          </p>
+                          <p className="text-lg font-semibold text-cyan-900 dark:text-cyan-100">
                             {selectedProposal.beneficiaries}
                           </p>
                         </div>
                       )}
 
                       {selectedProposal.user_name && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Created By</p>
-                          <p className="text-base text-gray-900 dark:text-white">
+                        <div className="p-4 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-xl border border-violet-200 dark:border-violet-700">
+                          <p className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Created By
+                          </p>
+                          <p className="text-lg font-semibold text-violet-900 dark:text-violet-100 flex items-center gap-2">
+                            <span className="p-1.5 bg-violet-200 dark:bg-violet-800 rounded-full">
+                              <svg className="w-4 h-4 text-violet-700 dark:text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </span>
                             {selectedProposal.user_name}
                           </p>
                         </div>
                       )}
 
                       {selectedProposal.created_at && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Proposal Created At</p>
-                          <p className="text-base text-gray-900 dark:text-white">
+                        <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 rounded-xl border border-sky-200 dark:border-sky-700">
+                          <p className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Proposal Created At
+                          </p>
+                          <p className="text-base font-semibold text-sky-900 dark:text-sky-100">
                             {new Date(selectedProposal.created_at).toLocaleDateString('en-IN', {
                               year: 'numeric',
                               month: 'long',
@@ -1982,9 +2036,14 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       )}
 
                       {selectedProposal.updated_at && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Proposal Last Updated</p>
-                          <p className="text-base text-gray-900 dark:text-white">
+                        <div className="p-4 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl border border-rose-200 dark:border-rose-700">
+                          <p className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Proposal Last Updated
+                          </p>
+                          <p className="text-base font-semibold text-rose-900 dark:text-rose-100">
                             {new Date(selectedProposal.updated_at).toLocaleDateString('en-IN', {
                               year: 'numeric',
                               month: 'long',
@@ -1998,28 +2057,36 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
                       {selectedProposal.remarks && (
                         <div className="md:col-span-2">
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Remarks</p>
-                          <div className={`p-4 rounded-lg ${
+                          <p className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wide flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                            </svg>
+                            Remarks
+                          </p>
+                          <div className={`p-5 rounded-xl shadow-lg ${
                             selectedProposal.work_status === 'correction needed' 
-                              ? 'bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-300 dark:border-orange-700' 
-                              : 'bg-gray-50 dark:bg-gray-800'
+                              ? 'bg-gradient-to-br from-orange-50 via-red-50 to-amber-50 dark:from-orange-900/30 dark:via-red-900/20 dark:to-amber-900/20 border-2 border-orange-300 dark:border-orange-600' 
+                              : 'bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700'
                           }`}>
-                            <p className={`text-base ${
+                            <p className={`text-base leading-relaxed ${
                               selectedProposal.work_status === 'correction needed' 
-                                ? 'text-orange-900 dark:text-orange-200 font-semibold' 
+                                ? 'text-orange-900 dark:text-orange-100 font-semibold' 
                                 : 'text-gray-900 dark:text-white'
                             }`}>
                               {selectedProposal.remarks}
                             </p>
                             {selectedProposal.work_status === 'correction needed' && (
-                              <div className="mt-3 p-3 bg-orange-100 dark:bg-orange-800/30 rounded-lg border border-orange-200 dark:border-orange-600">
-                                <p className="text-sm text-orange-800 dark:text-orange-200 font-medium flex items-center gap-2">
-                                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className="mt-4 p-4 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-800/40 dark:to-red-800/40 rounded-xl border-2 border-orange-300 dark:border-orange-600 shadow-md">
+                                <p className="text-sm text-orange-900 dark:text-orange-100 font-bold flex items-center gap-2 mb-2">
+                                  <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                   </svg>
-                                  Action Required: Please review the remarks above and take appropriate action
+                                  Action Required
                                 </p>
-                                <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
+                                  Please review the remarks above and take appropriate action
+                                </p>
+                                <p className="text-xs text-orange-700 dark:text-orange-300 font-medium">
                                   You can Accept the proposal (with checklist), Reject it, or Send it back for further correction.
                                 </p>
                               </div>
@@ -2032,9 +2099,15 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
                   {/* Documents Section */}
                   <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Documents
+                    </h3>
                     {/* PDF Document */}
                     {selectedProposal.pdf && (
-                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                      <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-blue-900/30 dark:via-indigo-900/20 dark:to-blue-800/20 p-5 rounded-xl border-2 border-blue-200 dark:border-blue-700 shadow-lg hover:shadow-xl transition-all duration-200">
                         <button
                           onClick={() => {
                             if (selectedProposal.pdf) {
@@ -2073,13 +2146,15 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                               alert('PDF document not available');
                             }
                           }}
-                          className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors w-full"
+                          className="flex items-center gap-3 text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 font-semibold transition-all duration-200 w-full group"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                          </svg>
-                          View PDF Document
-                          <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="p-2 bg-blue-200 dark:bg-blue-800 rounded-lg group-hover:bg-blue-300 dark:group-hover:bg-blue-700 transition-colors">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <span className="flex-1">View PDF Document</span>
+                          <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                           </svg>
                         </button>
@@ -2088,7 +2163,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
                     {/* Supporting Map Document */}
                     {selectedProposal.supporting_map_doc && (
-                      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                      <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/30 dark:via-emerald-900/20 dark:to-teal-900/20 p-5 rounded-xl border-2 border-green-200 dark:border-green-700 shadow-lg hover:shadow-xl transition-all duration-200">
                         <button
                           onClick={() => {
                             if (selectedProposal.supporting_map_doc) {
@@ -2127,13 +2202,15 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                               alert('Supporting map document not available');
                             }
                           }}
-                          className="flex items-center gap-2 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-medium transition-colors w-full"
+                          className="flex items-center gap-3 text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 font-semibold transition-all duration-200 w-full group"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                          </svg>
-                          View Supporting Map Document
-                          <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="p-2 bg-green-200 dark:bg-green-800 rounded-lg group-hover:bg-green-300 dark:group-hover:bg-green-700 transition-colors">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                            </svg>
+                          </div>
+                          <span className="flex-1">View Supporting Map Document</span>
+                          <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                           </svg>
                         </button>
@@ -2146,15 +2223,21 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                 <div className="lg:col-span-1 space-y-6">
                   {/* Review Section - Show ONLY after clicking "Accept Proposal (Review Completed)" */}
                   {showReviewChecklist && (
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                    <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/30 dark:via-indigo-900/20 dark:to-purple-900/20 p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-700 shadow-xl">
+                      <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
+                        <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-md">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
                         Review Checklist
                       </h3>
-                      <div className="space-y-4">
-                        <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                      <div className="space-y-3">
+                        <label className={`flex items-center gap-4 cursor-pointer p-4 rounded-xl transition-all duration-200 ${
+                          reviewCheckboxes.siteInspection
+                            ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border-2 border-blue-300 dark:border-blue-600 shadow-md'
+                            : 'bg-white/50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600'
+                        }`}>
                           <input
                             type="checkbox"
                             checked={reviewCheckboxes.siteInspection}
@@ -2164,14 +2247,29 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                                 siteInspection: e.target.checked
                               })
                             }
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            className="w-6 h-6 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
                             disabled={proposalRejected || proposalSentBack}
                           />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            Site inspection Completed.
-                          </span>
+                          <div className="flex-1">
+                            <span className={`text-sm font-semibold ${
+                              reviewCheckboxes.siteInspection
+                                ? 'text-blue-900 dark:text-blue-100'
+                                : 'text-gray-700 dark:text-gray-300'
+                            }`}>
+                              Site inspection Completed.
+                            </span>
+                          </div>
+                          {reviewCheckboxes.siteInspection && (
+                            <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
                         </label>
-                        <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                        <label className={`flex items-center gap-4 cursor-pointer p-4 rounded-xl transition-all duration-200 ${
+                          reviewCheckboxes.boundaryVerified
+                            ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border-2 border-blue-300 dark:border-blue-600 shadow-md'
+                            : 'bg-white/50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600'
+                        }`}>
                           <input
                             type="checkbox"
                             checked={reviewCheckboxes.boundaryVerified}
@@ -2181,14 +2279,29 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                                 boundaryVerified: e.target.checked
                               })
                             }
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            className="w-6 h-6 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
                             disabled={proposalRejected || proposalSentBack}
                           />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            Boundary verified
-                          </span>
+                          <div className="flex-1">
+                            <span className={`text-sm font-semibold ${
+                              reviewCheckboxes.boundaryVerified
+                                ? 'text-blue-900 dark:text-blue-100'
+                                : 'text-gray-700 dark:text-gray-300'
+                            }`}>
+                              Boundary verified
+                            </span>
+                          </div>
+                          {reviewCheckboxes.boundaryVerified && (
+                            <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
                         </label>
-                        <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                        <label className={`flex items-center gap-4 cursor-pointer p-4 rounded-xl transition-all duration-200 ${
+                          reviewCheckboxes.fraCompliance
+                            ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border-2 border-blue-300 dark:border-blue-600 shadow-md'
+                            : 'bg-white/50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600'
+                        }`}>
                           <input
                             type="checkbox"
                             checked={reviewCheckboxes.fraCompliance}
@@ -2198,14 +2311,29 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                                 fraCompliance: e.target.checked
                               })
                             }
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            className="w-6 h-6 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
                             disabled={proposalRejected || proposalSentBack}
                           />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            Compliance with FRA Section 3(2) norms
-                          </span>
+                          <div className="flex-1">
+                            <span className={`text-sm font-semibold ${
+                              reviewCheckboxes.fraCompliance
+                                ? 'text-blue-900 dark:text-blue-100'
+                                : 'text-gray-700 dark:text-gray-300'
+                            }`}>
+                              Compliance with FRA Section 3(2) norms
+                            </span>
+                          </div>
+                          {reviewCheckboxes.fraCompliance && (
+                            <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
                         </label>
-                        <label className="flex items-center space-x-3 cursor-pointer p-3 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                        <label className={`flex items-center gap-4 cursor-pointer p-4 rounded-xl transition-all duration-200 ${
+                          reviewCheckboxes.treeCount
+                            ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border-2 border-blue-300 dark:border-blue-600 shadow-md'
+                            : 'bg-white/50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600'
+                        }`}>
                           <input
                             type="checkbox"
                             checked={reviewCheckboxes.treeCount}
@@ -2215,12 +2343,23 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                                 treeCount: e.target.checked
                               })
                             }
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            className="w-6 h-6 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
                             disabled={proposalRejected || proposalSentBack}
                           />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            Tree count and ecological impact noted.
-                          </span>
+                          <div className="flex-1">
+                            <span className={`text-sm font-semibold ${
+                              reviewCheckboxes.treeCount
+                                ? 'text-blue-900 dark:text-blue-100'
+                                : 'text-gray-700 dark:text-gray-300'
+                            }`}>
+                              Tree count and ecological impact noted.
+                            </span>
+                          </div>
+                          {reviewCheckboxes.treeCount && (
+                            <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
                         </label>
                       </div>
                     </div>
@@ -2228,11 +2367,13 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
                   {/* Forward Proposal Section - Show in the SAME Proposal Details modal */}
                   {showReviewChecklist && (
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-lg border border-green-200 dark:border-green-800">
-                      <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
+                    <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/30 dark:via-emerald-900/20 dark:to-teal-900/20 p-6 rounded-2xl border-2 border-green-200 dark:border-green-700 shadow-xl">
+                      <h4 className="text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
+                        <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-md">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                        </div>
                         Forward Proposal
                       </h4>
                       <div className="space-y-4">
@@ -2241,68 +2382,121 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             <button
                               onClick={handleShowForwardSelect}
                               disabled={!anyChecklistChecked || proposalRejected || proposalSentBack}
-                              className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
+                              className={`w-full px-5 py-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 font-semibold shadow-lg hover:shadow-2xl transform hover:scale-[1.02] ${
                                 !anyChecklistChecked || proposalRejected || proposalSentBack
-                                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                                  : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800'
+                                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                  : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white hover:from-green-700 hover:via-emerald-700 hover:to-teal-700'
                               }`}
                             >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                               </svg>
-                              Forward
+                              Forward to User
                             </button>
                             {!anyChecklistChecked && (
-                              <p className="text-xs text-gray-600 dark:text-gray-300">
-                                Select at least 1 checklist item to enable forwarding.
-                              </p>
+                              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                                <p className="text-xs text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  Select at least 1 checklist item to enable forwarding.
+                                </p>
+                              </div>
                             )}
                           </>
                         ) : (
                           <>
-                            <SearchableSelect
-                              options={availableUsers.map(user => ({
-                                value: user.user_id.toString(),
-                                label: user.name,
-                                subtitle: user.category_name || user.user_category_name || 'No Category'
-                              }))}
-                              value={selectedForwardUser}
-                              onChange={(value) => setSelectedForwardUser(value.toString())}
-                              searchPlaceholder="Search and select user to forward to..."
-                              className="w-full"
-                              clearable={true}
-                            />
+                            <div className="mb-4">
+                              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Search and Select User
+                              </label>
+                              <SearchableSelect
+                                options={availableUsers.map(user => ({
+                                  value: user.user_id.toString(),
+                                  label: user.name,
+                                  subtitle: user.category_name || user.user_category_name || 'No Category'
+                                }))}
+                                value={selectedForwardUser}
+                                onChange={(value) => setSelectedForwardUser(value.toString())}
+                                searchPlaceholder="Search by name or category..."
+                                className="w-full"
+                                clearable={true}
+                              />
+                            </div>
                             {/* Quick list of users to forward */}
-                            <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 p-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
+                            <div className="max-h-64 overflow-y-auto border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-4 space-y-3 shadow-inner">
+                              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Available Users</p>
                               {availableUsers.length === 0 ? (
-                                <p className="text-center text-gray-500 dark:text-gray-400">No users available</p>
+                                <div className="text-center py-8">
+                                  <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                  </svg>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">No users available</p>
+                                </div>
                               ) : (
                                 availableUsers.map(user => (
                                   <div
                                     key={user.user_id}
-                                    className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 last:border-b-0 pb-2 last:pb-0"
+                                    className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:shadow-md ${
+                                      selectedForwardUser === user.user_id.toString()
+                                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/20 border-green-400 dark:border-green-600'
+                                        : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-600'
+                                    }`}
+                                    onClick={() => setSelectedForwardUser(user.user_id.toString())}
                                   >
-                                    <div>
-                                      <p className="font-medium">{user.name}</p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {user.category_name || user.user_category_name || 'No Category'} · ID: {user.user_id}
-                                      </p>
+                                    <div className="flex items-center gap-3 flex-1">
+                                      <div className={`p-2 rounded-full ${
+                                        selectedForwardUser === user.user_id.toString()
+                                          ? 'bg-gradient-to-br from-green-500 to-emerald-600'
+                                          : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                                      }`}>
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className={`font-semibold text-sm ${
+                                          selectedForwardUser === user.user_id.toString()
+                                            ? 'text-green-900 dark:text-green-100'
+                                            : 'text-gray-900 dark:text-white'
+                                        }`}>
+                                          {user.name}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                            selectedForwardUser === user.user_id.toString()
+                                              ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200'
+                                              : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                                          }`}>
+                                            {user.category_name || user.user_category_name || 'No Category'}
+                                          </span>
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            ID: {user.user_id}
+                                          </span>
+                                        </div>
+                                      </div>
                                     </div>
-                                    <button
-                                      className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                      onClick={() => setSelectedForwardUser(user.user_id.toString())}
-                                    >
-                                      Select
-                                    </button>
+                                    {selectedForwardUser === user.user_id.toString() && (
+                                      <div className="ml-2">
+                                        <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      </div>
+                                    )}
                                   </div>
                                 ))
                               )}
                             </div>
                             <button
                               onClick={handleForwardProposal}
-                              className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                              disabled={!selectedForwardUser}
+                              className={`w-full px-5 py-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 font-semibold shadow-lg hover:shadow-2xl transform hover:scale-[1.02] ${
+                                !selectedForwardUser
+                                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                  : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white hover:from-green-700 hover:via-emerald-700 hover:to-teal-700'
+                              }`}
                             >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                               </svg>
                               Confirm Forward
