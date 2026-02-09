@@ -16,10 +16,35 @@ export async function POST(req: Request) {
     const description = formData.get('description') as string;
     const link = formData.get('link') as string || '';
     const pdfFile = formData.get('pdf_file') as File | null;
+    const userId = formData.get('user_id') as string | null;
 
-    if (!title || !description) {
+    // Validation
+    if (!title || !title.trim()) {
       return NextResponse.json(
-        { error: 'Title and description are required' },
+        { error: 'Title is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!description || !description.trim()) {
+      return NextResponse.json(
+        { error: 'Description is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size if PDF is uploaded (max 10MB)
+    if (pdfFile && pdfFile.size > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'PDF file size must be less than 10MB' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file type
+    if (pdfFile && pdfFile.type !== 'application/pdf') {
+      return NextResponse.json(
+        { error: 'Only PDF files are allowed' },
         { status: 400 }
       );
     }
@@ -59,19 +84,24 @@ export async function POST(req: Request) {
           description TEXT NOT NULL,
           link VARCHAR(500),
           pdf_file VARCHAR(500),
+          user_id INT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          status ENUM('Active', 'Inactive') DEFAULT 'Active'
+          status ENUM('Active', 'Inactive') DEFAULT 'Active',
+          INDEX idx_user_id (user_id),
+          INDEX idx_status (status),
+          INDEX idx_created_at (created_at)
         )
       `);
-    } catch {
-      console.log('Table creation skipped - may already exist');
+    } catch (error) {
+      console.log('Table creation skipped - may already exist', error);
     }
 
+    // Insert notification with user_id if provided
     const [result] = await pool.query<InsertResult>(
-      `INSERT INTO notifications (title, description, link, pdf_file, created_at)
-       VALUES (?, ?, ?, ?, NOW())`,
-      [title, description, link, pdfPath]
+      `INSERT INTO notifications (title, description, link, pdf_file, user_id, created_at)
+       VALUES (?, ?, ?, ?, ?, NOW())`,
+      [title.trim(), description.trim(), link.trim() || null, pdfPath || null, userId ? parseInt(userId) : null]
     );
 
     return NextResponse.json({

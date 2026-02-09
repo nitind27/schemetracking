@@ -134,6 +134,7 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
             <Legend />
             <Bar dataKey="completed" fill="#10B981" name="Completed" />
             <Bar dataKey="pending" fill="#F59E0B" name="Pending" />
+            <Bar dataKey="total" fill="#3B82F6" name="Total" />
           </BarChart>
         </ResponsiveContainer>
       </motion.div>

@@ -1,25 +1,25 @@
 "use client";
-
-import React, { useEffect } from "react";
-import { createPortal } from "react-dom";
+import React, { useRef, useEffect } from "react";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  children: React.ReactNode;
   className?: string;
-  isFullscreen?: boolean;
-  showCloseButton?: boolean;
+  children: React.ReactNode;
+  showCloseButton?: boolean; // New prop to control close button visibility
+  isFullscreen?: boolean; // Default to false for backwards compatibility
 }
 
-export function Modal({ 
-  isOpen, 
-  onClose, 
-  children, 
-  className = "",
+export const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  children,
+  className,
+  // showCloseButton = true, // Default to true for backwards compatibility
   isFullscreen = false,
-  showCloseButton = false
-}: ModalProps) {
+}) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -29,46 +29,47 @@ export function Modal({
 
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
     }
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "unset";
     };
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
+  const contentClasses = isFullscreen
+    ? "w-full h-full"
+    : "relative w-full rounded-3xl bg-white  dark:bg-gray-900";
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center overflow-y-auto modal z-99999">
+      {!isFullscreen && (
+        <div
+          className="fixed inset-0 h-full w-full bg-black/30 backdrop-blur-md backdrop-saturate-150"
+          onClick={onClose}
+        ></div>
+      )}
       <div
-        className="absolute inset-0 bg-black bg-opacity-50"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div className={`relative bg-white rounded-lg shadow-xl ${
-        isFullscreen 
-          ? "w-full h-full m-0 rounded-none" 
-          : "max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto"
-      } ${className}`}>
-        {showCloseButton && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Close modal"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
-        {children}
+        ref={modalRef}
+        className={`${contentClasses}  ${className}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+       
+        <div>{children}</div>
       </div>
     </div>
   );
-
-  return createPortal(modalContent, document.body);
-}
+};

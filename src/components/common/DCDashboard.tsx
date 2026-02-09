@@ -115,19 +115,55 @@ export default function DCDashboard() {
     fetchDCData();
   }, []);
 
+  // Refresh function
+  const handleRefresh = () => {
+    fetchDCData();
+  };
+
   const fetchDCData = async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/dc-dashboard');
+      
       if (response.ok) {
         const data = await response.json();
-        setProposals(data.proposals);
-        setStats(data.stats);
-        setActionRequiredProposals(data.actionRequired);
+        console.log('DC Dashboard Data:', {
+          proposalsCount: data.proposals?.length || 0,
+          stats: data.stats,
+          actionRequiredCount: data.actionRequired?.length || 0,
+          actionRequiredSample: data.actionRequired?.slice(0, 3) || []
+        });
+        
+        const actionRequired = data.actionRequired || [];
+        console.log('Action Required Details:', actionRequired.map((p: Proposal) => ({
+          id: p.proposal_id,
+          days_pending: p.days_pending,
+          months_pending: p.months_pending,
+          created_at: p.created_at,
+          work_status: p.work_status
+        })));
+        
+        setProposals(data.proposals || []);
+        setStats(data.stats || {
+          totalProposals: 0,
+          pendingAtRFODFO: 0,
+          rejectedByRFODFO: 0,
+          pendingAtDLC: 0,
+          dlcCompleted: 0,
+        });
+        setActionRequiredProposals(actionRequired);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to fetch DC data:', response.status, errorData);
+        toast.error('Failed to fetch dashboard data');
+        setProposals([]);
+        setActionRequiredProposals([]);
       }
     } catch (error) {
       console.error('Error fetching DC data:', error);
       toast.error('Failed to fetch dashboard data');
+      setProposals([]);
+      setActionRequiredProposals([]);
     } finally {
       setLoading(false);
     }
@@ -204,6 +240,29 @@ export default function DCDashboard() {
         initial="hidden"
         animate="visible"
       >
+        {/* Header with Refresh Button */}
+        <motion.div 
+          variants={itemVariants}
+          className="flex justify-between items-center mb-4"
+        >
+          <h1 className="text-3xl font-bold text-gray-800">District Collector Dashboard</h1>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            title="Refresh Data"
+          >
+            <svg 
+              className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </motion.div>
       
         {/* Enhanced Stats Cards */}
         <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
@@ -445,19 +504,26 @@ export default function DCDashboard() {
                     Action Required
                   </h2>
                   <p className="text-pink-100 text-sm">
-                    Proposals pending from more than 1 month
+                    Proposals pending from more than 1 month ({actionRequiredProposals.length} found)
                   </p>
                 </div>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => exportToPDF('Action Required', actionRequiredProposals)}
-                className="flex items-center gap-2 bg-white text-rose-600 px-5 py-3 rounded-xl font-semibold hover:bg-rose-50 transition-colors shadow-lg"
-              >
-                <FiDownload className="w-5 h-5" />
-                Export PDF
-              </motion.button>
+              <div className="flex items-center gap-3">
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="text-xs text-pink-100 bg-white/20 px-3 py-1 rounded">
+                    Debug: {actionRequiredProposals.length} proposals
+                  </div>
+                )}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => exportToPDF('Action Required', actionRequiredProposals)}
+                  className="flex items-center gap-2 bg-white text-rose-600 px-5 py-3 rounded-xl font-semibold hover:bg-rose-50 transition-colors shadow-lg"
+                >
+                  <FiDownload className="w-5 h-5" />
+                  Export PDF
+                </motion.button>
+              </div>
             </div>
           </div>
           
@@ -505,8 +571,21 @@ export default function DCDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {actionRequiredProposals.length > 0 ? (
-                  actionRequiredProposals.map((proposal, index) => (
+                {actionRequiredProposals && actionRequiredProposals.length > 0 ? (
+                  actionRequiredProposals.map((proposal, index) => {
+                    // Calculate days and months pending if not available
+                    let daysPending = Number(proposal.days_pending) || 0;
+                    let monthsPending = Number(proposal.months_pending) || 0;
+                    
+                    if (daysPending === 0 && proposal.created_at) {
+                      const createdDate = new Date(proposal.created_at);
+                      const now = new Date();
+                      const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+                      daysPending = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                      monthsPending = Math.floor(daysPending / 30);
+                    }
+                    
+                    return (
                     <motion.tr 
                       key={proposal.proposal_id} 
                       initial={{ opacity: 0, x: -20 }}
@@ -553,8 +632,17 @@ export default function DCDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-semibold">
                           <FiClock className="w-3 h-3" />
-                          {proposal.months_pending ? `${proposal.months_pending} Month${proposal.months_pending > 1 ? 's' : ''} ${proposal.days_pending ? `${proposal.days_pending % 30} Days` : ''}` : 
-                           proposal.days_pending ? `${proposal.days_pending} Days` : '0 Days'}
+                          {(() => {
+                            const remainingDays = daysPending % 30;
+                            
+                            if (monthsPending > 0) {
+                              return `${monthsPending} Month${monthsPending > 1 ? 's' : ''}${remainingDays > 0 ? ` ${remainingDays} Day${remainingDays > 1 ? 's' : ''}` : ''}`;
+                            } else if (daysPending > 0) {
+                              return `${daysPending} Day${daysPending > 1 ? 's' : ''}`;
+                            } else {
+                              return '0 Days';
+                            }
+                          })()}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -571,7 +659,8 @@ export default function DCDashboard() {
                         </span>
                       </td>
                     </motion.tr>
-                  ))
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan={8} className="px-6 py-12 text-center">

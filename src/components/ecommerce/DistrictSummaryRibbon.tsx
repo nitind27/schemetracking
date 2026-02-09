@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FarmdersType } from "@/components/farmersdata/farmers";
 import { Taluka } from "@/components/Taluka/Taluka";
@@ -17,6 +17,33 @@ const DistrictSummaryRibbon: React.FC<DistrictSummaryRibbonProps> = ({
   talukas,
   villages,
 }) => {
+  const [userName, setUserName] = useState<string>("");
+  const [talukaName, setTalukaName] = useState<string>("");
+
+  useEffect(() => {
+    // Get user name from sessionStorage
+    const storedUserName = sessionStorage.getItem("userName");
+    if (storedUserName) {
+      setUserName(storedUserName);
+    }
+
+    // Get taluka_id from sessionStorage and find taluka name
+    const storedTalukaId = sessionStorage.getItem("taluka_id");
+    if (storedTalukaId && talukas.length > 0) {
+      const taluka = talukas.find(
+        (t) => String(t.taluka_id) === String(storedTalukaId)
+      );
+      if (taluka) {
+        setTalukaName(taluka.name);
+      } else {
+        // Fallback to "District" if taluka not found
+        setTalukaName("District");
+      }
+    } else {
+      // Fallback to "District" if no taluka_id in sessionStorage
+      setTalukaName("District");
+    }
+  }, [talukas]);
   // Calculate statistics
   const totalTalukas = talukas.length;
   const totalVillages = villages.length;
@@ -96,8 +123,12 @@ const DistrictSummaryRibbon: React.FC<DistrictSummaryRibbonProps> = ({
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">District Summary</h2>
-              <p className="text-sm text-blue-100">Nandurbar District Overview</p>
+              <h2 className="text-lg font-bold text-white">
+                {userName ? `${userName} Summary` : "District Summary"}
+              </h2>
+              <p className="text-sm text-blue-100">
+                {talukaName ? `${talukaName} District Overview` : "District Overview"}
+              </p>
             </div>
           </div>
           

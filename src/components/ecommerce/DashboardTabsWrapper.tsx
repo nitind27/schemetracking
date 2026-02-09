@@ -1,6 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+
+// Extend Window interface to include refreshProposals
+declare global {
+  interface Window {
+    refreshProposals?: () => void;
+  }
+}
 // import TabView from "@/components/common/TabView";
 import { Suspense } from "react";
 import Loader from "@/common/Loader";
@@ -82,8 +89,16 @@ interface Proposal {
   remarks?: string;
   pdf?: string;
   supporting_map_doc?: string;
+  proposal_document_id?: string | number;
   created_at?: string;
   updated_at?: string;
+}
+
+interface ProposalDocument {
+  proposal_document_id: number;
+  document_name: string;
+  exists: boolean;
+  status?: string | null;
 }
 
 interface User {
@@ -109,6 +124,11 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   
+  // Document modal states
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+  const [proposalDocuments, setProposalDocuments] = useState<ProposalDocument[]>([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  
   // Action states for accept/reject/send back
   const [rejectReason, setRejectReason] = useState('');
   const [sendBackReason, setSendBackReason] = useState('');
@@ -131,6 +151,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   const [allUsers, setAllUsers] = useState<User[]>([]); // Store all users for agency checks
   const [selectedForwardUser, setSelectedForwardUser] = useState<string>('');
   const anyChecklistChecked = Object.values(reviewCheckboxes).some(Boolean);
+  
+  // Loading states for async operations
+  const [isLoadingAction, setIsLoadingAction] = useState(false);
+  const [loadingActionType, setLoadingActionType] = useState<'start_review' | 'forward' | 'forward_dlc' | 'reject' | 'send_back' | null>(null);
 
   useEffect(() => {
     const category_id = sessionStorage.getItem('category_id');
@@ -191,6 +215,37 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     setProposalSentBack(false);
     // setShowForwardDropdown(false);
     setSelectedForwardUser('');
+  };
+
+  // Fetch proposal documents
+  const fetchProposalDocuments = async (proposal: Proposal) => {
+    if (!proposal.proposal_document_id) {
+      toast.error('No document IDs found for this proposal');
+      return;
+    }
+
+    try {
+      setLoadingDocuments(true);
+      const documentIds = String(proposal.proposal_document_id);
+      const response = await fetch(`/api/proposal-documents?document_ids=${encodeURIComponent(documentIds)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setProposalDocuments(data.documents || []);
+        setIsDocumentModalOpen(true);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to fetch documents:', errorData);
+        toast.error('Failed to fetch proposal documents');
+        setProposalDocuments([]);
+      }
+    } catch (error) {
+      console.error('Error fetching proposal documents:', error);
+      toast.error('Failed to fetch proposal documents');
+      setProposalDocuments([]);
+    } finally {
+      setLoadingDocuments(false);
+    }
   };
 
   // Helper function to determine available actions based on proposal status
@@ -456,7 +511,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   const availableActions = getAvailableActions(selectedProposal);
 
   const handleStartReview = async () => {
-    if (!selectedProposal) return;
+    if (!selectedProposal || isLoadingAction) return;
+
+    setIsLoadingAction(true);
+    setLoadingActionType('start_review');
 
     try {
       const response = await fetch('/api/proposals/updatestatus', {
@@ -478,19 +536,27 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
           ...selectedProposal,
           work_status: 'under review'
         });
-        // Refresh page or refetch data
-        window.location.reload();
+        // Trigger refresh in ProposalManagementDashboard if it exists
+        if (typeof window !== 'undefined' && window.refreshProposals) {
+          window.refreshProposals();
+        }
       } else {
         toast.error('Failed to start review');
       }
     } catch (error) {
       console.error('Error starting review:', error);
       toast.error('Failed to start review');
+    } finally {
+      setIsLoadingAction(false);
+      setLoadingActionType(null);
     }
   };
 
   const handleForwardToDLC = async () => {
-    if (!selectedProposal) return;
+    if (!selectedProposal || isLoadingAction) return;
+
+    setIsLoadingAction(true);
+    setLoadingActionType('forward_dlc');
 
     try {
       const response = await fetch('/api/proposals/updatestatus', {
@@ -511,7 +577,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       if (response.ok) {
         toast.success('Proposal forwarded to DLC successfully');
         handleCloseModal();
-        window.location.reload();
+        // Trigger refresh in ProposalManagementDashboard if it exists
+        if (typeof window !== 'undefined' && window.refreshProposals) {
+          window.refreshProposals();
+        }
       } else {
         console.error('API Error:', result);
         toast.error(result.error || 'Failed to forward to DLC');
@@ -519,6 +588,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     } catch (error) {
       console.error('Error forwarding to DLC:', error);
       toast.error('Failed to forward to DLC');
+    } finally {
+      setIsLoadingAction(false);
+      setLoadingActionType(null);
     }
   };
 
@@ -547,7 +619,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       return;
     }
 
-    if (!selectedProposal) return;
+    if (!selectedProposal || isLoadingAction) return;
+
+    setIsLoadingAction(true);
+    setLoadingActionType('forward');
 
     try {
       const targetUser = allUsers.find(u => u.user_id.toString() === selectedForwardUser);
@@ -576,7 +651,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       if (response.ok) {
         toast.success(isDLC ? 'Proposal forwarded to DLC successfully' : 'Proposal forwarded successfully');
         handleCloseModal();
-        window.location.reload();
+        // Trigger refresh in ProposalManagementDashboard if it exists
+        if (typeof window !== 'undefined' && window.refreshProposals) {
+          window.refreshProposals();
+        }
       } else {
         console.error('API Error:', result);
         toast.error(result.error || 'Failed to forward proposal');
@@ -584,6 +662,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     } catch (error) {
       console.error('Error forwarding proposal:', error);
       toast.error('Failed to forward proposal');
+    } finally {
+      setIsLoadingAction(false);
+      setLoadingActionType(null);
     }
   };
 
@@ -597,7 +678,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       return;
     }
 
-    if (!selectedProposal) return;
+    if (!selectedProposal || isLoadingAction) return;
+
+    setIsLoadingAction(true);
+    setLoadingActionType('reject');
 
     try {
       // For category_id = 24, reject should close the proposal but show status as Rejected
@@ -619,14 +703,19 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         setProposalRejected(true);
         setShowRejectModal(false);
         handleCloseModal();
-        // Refresh page or refetch data
-        window.location.reload();
+        // Trigger refresh in ProposalManagementDashboard if it exists
+        if (typeof window !== 'undefined' && window.refreshProposals) {
+          window.refreshProposals();
+        }
       } else {
         toast.error('Failed to reject proposal');
       }
     } catch (error) {
       console.error('Error rejecting proposal:', error);
       toast.error('Failed to reject proposal');
+    } finally {
+      setIsLoadingAction(false);
+      setLoadingActionType(null);
     }
   };
 
@@ -640,7 +729,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       return;
     }
 
-    if (!selectedProposal) return;
+    if (!selectedProposal || isLoadingAction) return;
+
+    setIsLoadingAction(true);
+    setLoadingActionType('send_back');
 
     try {
       // For category_id = 24, send back to agency (category_id = 36)
@@ -675,14 +767,19 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         setProposalSentBack(true);
         setShowSendBackModal(false);
         handleCloseModal();
-        // Refresh page or refetch data
-        window.location.reload();
+        // Trigger refresh in ProposalManagementDashboard if it exists
+        if (typeof window !== 'undefined' && window.refreshProposals) {
+          window.refreshProposals();
+        }
       } else {
         toast.error('Failed to send back proposal');
       }
     } catch (error) {
       console.error('Error sending back proposal:', error);
       toast.error('Failed to send back proposal');
+    } finally {
+      setIsLoadingAction(false);
+      setLoadingActionType(null);
     }
   };
 
@@ -839,7 +936,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       }
 
       setFilteredFarmers(filtered);
-    }, [farmersData.farmers, searchQuery, selectedTaluka, selectedVillage, userCategoryId]);
+    }, [farmersData.farmers, searchQuery, selectedTaluka, selectedVillage, userCategoryId, allowedTalukaIdsCategory4, allowedTalukaIdsCategory8]);
 
     useEffect(() => {
       applyFilters();
@@ -1296,6 +1393,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
     useEffect(() => {
       fetchProposals();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const applyFilters = () => {
@@ -1341,7 +1439,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [proposals, searchQuery, selectedTaluka, selectedVillage, selectedStatus]);
 
-    const fetchProposals = async () => {
+    const fetchProposals = useCallback(async () => {
       try {
         setLoading(true);
         const userId = sessionStorage.getItem('user_id');
@@ -1362,7 +1460,19 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       } finally {
         setLoading(false);
       }
-    };
+    }, []);
+
+    // Expose refresh function globally for use in action handlers
+    useEffect(() => {
+      if (typeof window !== 'undefined') {
+        window.refreshProposals = fetchProposals;
+      }
+      return () => {
+        if (typeof window !== 'undefined') {
+          delete window.refreshProposals;
+        }
+      };
+    }, [fetchProposals]);
 
     // Get unique talukas and villages for filters
     const uniqueTalukas = Array.from(new Set(proposals.map(p => ({ id: p.taluka_id, name: p.taluka_name })).filter(t => t.id && t.name)))
@@ -1904,6 +2014,24 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             {getStatusBadge(selectedProposal)}
                           </div>
                         </div>
+                        <div className="h-16 w-px bg-gradient-to-b from-gray-300 to-gray-200 dark:from-gray-600 dark:to-gray-700"></div>
+                        <button
+                          onClick={() => fetchProposalDocuments(selectedProposal)}
+                          disabled={loadingDocuments || !selectedProposal.proposal_document_id}
+                          className="p-4 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide">Document</p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            {loadingDocuments ? (
+                              <span className="text-sm text-green-700 dark:text-green-300">Loading...</span>
+                            ) : (
+                              <span className="text-sm text-green-700 dark:text-green-300 font-semibold">View</span>
+                            )}
+                          </div>
+                        </button>
                       </div>
                     </div>
 
@@ -2489,17 +2617,29 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             </div>
                             <button
                               onClick={handleForwardProposal}
-                              disabled={!selectedForwardUser}
+                              disabled={!selectedForwardUser || isLoadingAction}
                               className={`w-full px-5 py-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 font-semibold shadow-lg hover:shadow-2xl transform hover:scale-[1.02] ${
-                                !selectedForwardUser
+                                !selectedForwardUser || isLoadingAction
                                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                   : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white hover:from-green-700 hover:via-emerald-700 hover:to-teal-700'
                               }`}
                             >
-                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                              </svg>
-                              Confirm Forward
+                              {isLoadingAction && loadingActionType === 'forward' ? (
+                                <>
+                                  <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Forwarding...
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                  </svg>
+                                  Confirm Forward
+                                </>
+                              )}
                             </button>
                           </>
                         )}
@@ -2546,12 +2686,27 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       {availableActions.canStartReview && (
                         <button
                           onClick={handleStartReview}
-                          className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                          disabled={isLoadingAction}
+                          className={`w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
+                            isLoadingAction ? 'opacity-75 cursor-not-allowed' : ''
+                          }`}
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Start Review
+                          {isLoadingAction && loadingActionType === 'start_review' ? (
+                            <>
+                              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Starting Review...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Start Review
+                            </>
+                          )}
                         </button>
                       )}
                       {/* Accept Button */}
@@ -2614,12 +2769,27 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       {availableActions.canForwardToDLC && (
                         <button
                           onClick={handleForwardToDLC}
-                          className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl"
+                          disabled={isLoadingAction}
+                          className={`w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
+                            isLoadingAction ? 'opacity-75 cursor-not-allowed' : ''
+                          }`}
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                          </svg>
-                          Forward to DLC
+                          {isLoadingAction && loadingActionType === 'forward_dlc' ? (
+                            <>
+                              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Forwarding to DLC...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              </svg>
+                              Forward to DLC
+                            </>
+                          )}
                         </button>
                       )}
 
@@ -2700,9 +2870,22 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                   </button>
                   <button
                     onClick={handleConfirmReject}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    disabled={isLoadingAction}
+                    className={`flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2 ${
+                      isLoadingAction ? 'opacity-75 cursor-not-allowed' : ''
+                    }`}
                   >
-                    Confirm Reject
+                    {isLoadingAction && loadingActionType === 'reject' ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Rejecting...
+                      </>
+                    ) : (
+                      'Confirm Reject'
+                    )}
                   </button>
                 </div>
               </div>
@@ -2748,9 +2931,22 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                   </button>
                   <button
                     onClick={handleConfirmSendBack}
-                    className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    disabled={isLoadingAction}
+                    className={`flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 ${
+                      isLoadingAction ? 'opacity-75 cursor-not-allowed' : ''
+                    }`}
                   >
-                    Confirm Send Back
+                    {isLoadingAction && loadingActionType === 'send_back' ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Sending Back...
+                      </>
+                    ) : (
+                      'Confirm Send Back'
+                    )}
                   </button>
                 </div>
               </div>
@@ -2923,11 +3119,17 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   // When user is category_id = 24, we only show Section 3(2) dashboard content.
   // In that case, hide the TabView completely and render the content directly.
   const section32Tab = allTabs.find(tab => tab.id === "notification");
+  
+  // When user is category_id = 35 (DLC), we only show DLC Dashboard content.
+  // In that case, hide the TabView completely and render the content directly.
+  const dlcTab = allTabs.find(tab => tab.id === "dlc-dashboard");
 
   return (
     <div className="w-full">
       <TodaySurveyComponent metrics={metrics} farmersData={farmersData} />
-      {isSection32Only && section32Tab ? (
+      {isDLC && dlcTab ? (
+        <>{dlcTab.content}</>
+      ) : isSection32Only && section32Tab ? (
         <>{section32Tab.content}</>
       ) : (
         <MainTab tabs={tabs} defaultTab={defaultTabId} />
@@ -3061,6 +3263,120 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
               className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200"
             >
               बंद करा (Close)
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Document Modal */}
+      <Modal
+        isOpen={isDocumentModalOpen}
+        onClose={() => {
+          setIsDocumentModalOpen(false);
+          setProposalDocuments([]);
+        }}
+        className="max-w-4xl"
+      >
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                Proposal Documents
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Document status for Proposal #{selectedProposal?.proposal_id}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setIsDocumentModalOpen(false);
+                setProposalDocuments([]);
+              }}
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {loadingDocuments ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : proposalDocuments.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300 dark:border-gray-700">
+                <thead>
+                  <tr className="bg-gray-100 dark:bg-gray-800">
+                    <th className="border border-gray-300 dark:border-gray-700 px-4 py-3 text-left font-semibold text-gray-800 dark:text-white">
+                      Document ID
+                    </th>
+                    <th className="border border-gray-300 dark:border-gray-700 px-4 py-3 text-left font-semibold text-gray-800 dark:text-white">
+                      Document Name
+                    </th>
+                    <th className="border border-gray-300 dark:border-gray-700 px-4 py-3 text-left font-semibold text-gray-800 dark:text-white">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {proposalDocuments.map((doc, index) => (
+                    <tr 
+                      key={doc.proposal_document_id || index}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <td className="border border-gray-300 dark:border-gray-700 px-4 py-3 text-gray-800 dark:text-white">
+                        #{doc.proposal_document_id}
+                      </td>
+                      <td className="border border-gray-300 dark:border-gray-700 px-4 py-3 text-gray-800 dark:text-white">
+                        {doc.document_name}
+                      </td>
+                      <td className="border border-gray-300 dark:border-gray-700 px-4 py-3">
+                        {doc.exists ? (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full text-sm font-semibold">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Yes
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-full text-sm font-semibold">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            No
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">No documents found</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                {selectedProposal?.proposal_document_id 
+                  ? 'No documents match the provided IDs'
+                  : 'No document IDs specified for this proposal'}
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => {
+                setIsDocumentModalOpen(false);
+                setProposalDocuments([]);
+              }}
+              className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Close
             </button>
           </div>
         </div>

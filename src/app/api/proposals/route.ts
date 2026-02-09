@@ -23,7 +23,13 @@ export async function GET() {
       WHERE proposal.status = 'Active'
       ORDER BY proposal.created_at DESC`
     );
-    return NextResponse.json(rows);
+    
+    // Ensure proposal_document_id is included (it should be in proposal.* but making sure)
+    const proposalsWithDocumentId = rows.map((row) => ({
+      ...row,
+      proposal_document_id: row.proposal_document_id || null
+    }));
+    return NextResponse.json(proposalsWithDocumentId);
   } catch (error) {
     console.error('Error fetching proposals:', error);
     return NextResponse.json(

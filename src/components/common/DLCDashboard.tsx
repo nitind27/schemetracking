@@ -6,7 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import NotificationsList from "./NotificationsList";
 
 interface Proposal {
@@ -77,6 +77,7 @@ export default function DLCDashboard() {
     pdf_file: ''
   });
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchDLCProposals();
@@ -136,11 +137,43 @@ export default function DLCDashboard() {
   };
 
   const uploadNotification = async () => {
+    // Validation
+    if (!notification.title.trim()) {
+      toast.error('Please enter a notification title');
+      return;
+    }
+
+    if (!notification.description.trim()) {
+      toast.error('Please enter a notification description');
+      return;
+    }
+
+    // Validate file size if PDF is uploaded (max 10MB)
+    if (uploadedFile && uploadedFile.size > 10 * 1024 * 1024) {
+      toast.error('PDF file size must be less than 10MB');
+      return;
+    }
+
+    // Validate file type
+    if (uploadedFile && uploadedFile.type !== 'application/pdf') {
+      toast.error('Only PDF files are allowed');
+      return;
+    }
+
+    setIsUploading(true);
+
     try {
       const formData = new FormData();
-      formData.append('title', notification.title);
-      formData.append('description', notification.description);
-      formData.append('link', notification.link || '');
+      formData.append('title', notification.title.trim());
+      formData.append('description', notification.description.trim());
+      formData.append('link', notification.link?.trim() || '');
+      
+      // Get user_id from sessionStorage for tracking
+      const userId = sessionStorage.getItem('user_id');
+      if (userId) {
+        formData.append('user_id', userId);
+      }
+      
       if (uploadedFile) {
         formData.append('pdf_file', uploadedFile);
       }
@@ -150,50 +183,89 @@ export default function DLCDashboard() {
         body: formData,
       });
 
+      const result = await response.json();
+
       if (response.ok) {
         toast.success('Notification uploaded successfully');
         setIsNotificationModalOpen(false);
         setNotification({ title: '', description: '', link: '', pdf_file: '' });
         setUploadedFile(null);
+        
+        // Refresh notifications list by triggering a custom event
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refreshNotifications'));
+        }
       } else {
-        toast.error('Failed to upload notification');
+        toast.error(result.error || 'Failed to upload notification');
       }
     } catch (error) {
       console.error('Error uploading notification:', error);
-      toast.error('Failed to upload notification');
+      toast.error('Failed to upload notification. Please try again.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const exportPendencyReport = () => {
-    const doc = new jsPDF();
-    const currentDate = new Date().toLocaleDateString();
-    
-    // Header
-    doc.setFontSize(16);
-    doc.text('DLC Pendency Report', 20, 20);
-    doc.setFontSize(12);
-    doc.text(`Generated on: ${currentDate}`, 20, 30);
-    doc.text(`Total Pending Proposals: ${proposals.length}`, 20, 40);
-    
-    // Table
-    const headers = ['Proposal ID', 'Category', 'Village', 'Submitted By', 'Days Pending'];
-    const rows = proposals.map(p => [
-      p.proposal_id,
-      p.proposal_category_name,
-      p.village_name,
-      p.user_name,
-      p.days_pending || 0
-    ]);
-    
-    (doc as unknown as typeof jsPDF & { autoTable: (options: Record<string, unknown>) => void }).autoTable({
-      head: [headers],
-      body: rows,
-      startY: 50,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [59, 130, 246] },
-    });
-    
-    doc.save(`DLC_Pendency_Report_${currentDate}.pdf`);
+    try {
+      // Check if proposals exist
+      if (!proposals || proposals.length === 0) {
+        toast.error('No proposals available to export');
+        return;
+      }
+
+      const doc = new jsPDF();
+      const currentDate = new Date().toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      
+      // Header
+      doc.setFontSize(16);
+      doc.text('DLC Pendency Report', 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Generated on: ${currentDate}`, 20, 30);
+      doc.text(`Total Pending Proposals: ${proposals.length}`, 20, 40);
+      
+      // Prepare table data with proper type conversion
+      const headers = ['Proposal ID', 'Category', 'Village', 'Submitted By', 'Days Pending'];
+      const rows = proposals.map(p => [
+        String(p.proposal_id || 'N/A'),
+        String(p.proposal_category_name || 'N/A'),
+        String(p.village_name || 'N/A'),
+        String(p.user_name || 'N/A'),
+        String(p.days_pending || 0)
+      ]);
+      
+      // Use autoTable function directly
+      autoTable(doc, {
+        head: [headers],
+        body: rows,
+        startY: 50,
+        styles: { 
+          fontSize: 8,
+          cellPadding: 2
+        },
+        headStyles: { 
+          fillColor: [59, 130, 246],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [245, 247, 250]
+        },
+        margin: { top: 50 }
+      });
+      
+      // Save PDF with sanitized filename
+      const sanitizedDate = currentDate.replace(/\//g, '-');
+      doc.save(`DLC_Pendency_Report_${sanitizedDate}.pdf`);
+      toast.success('Pendency report exported successfully');
+    } catch (error) {
+      console.error('Error exporting pendency report:', error);
+      toast.error('Failed to export pendency report. Please try again.');
+    }
   };
 
   if (loading) {
@@ -389,7 +461,16 @@ export default function DLCDashboard() {
       </Modal>
 
       {/* Notification Upload Modal */}
-      <Modal isOpen={isNotificationModalOpen} onClose={() => setIsNotificationModalOpen(false)}>
+      <Modal 
+        isOpen={isNotificationModalOpen} 
+        onClose={() => {
+          setIsNotificationModalOpen(false);
+          // Reset form when closing
+          setNotification({ title: '', description: '', link: '', pdf_file: '' });
+          setUploadedFile(null);
+          setIsUploading(false);
+        }}
+      >
         <div className="p-6">
           <h3 className="text-lg font-semibold mb-4">Upload Notification</h3>
           
@@ -437,6 +518,28 @@ export default function DLCDashboard() {
                 onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {uploadedFile && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-sm text-gray-700">{uploadedFile.name}</span>
+                    <span className="text-xs text-gray-500">
+                      ({(uploadedFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setUploadedFile(null)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           
@@ -449,10 +552,24 @@ export default function DLCDashboard() {
             </button>
             <button
               onClick={uploadNotification}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              disabled={!notification.title.trim() || !notification.description.trim()}
+              className={`px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 ${
+                isUploading || !notification.title.trim() || !notification.description.trim()
+                  ? 'opacity-75 cursor-not-allowed'
+                  : ''
+              }`}
+              disabled={isUploading || !notification.title.trim() || !notification.description.trim()}
             >
-              Upload Notification
+              {isUploading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Uploading...
+                </>
+              ) : (
+                'Upload Notification'
+              )}
             </button>
           </div>
         </div>

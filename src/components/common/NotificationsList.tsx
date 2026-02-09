@@ -39,6 +39,17 @@ export default function NotificationsList() {
 
   useEffect(() => {
     fetchNotifications();
+
+    // Listen for refresh event
+    const handleRefresh = () => {
+      fetchNotifications();
+    };
+
+    window.addEventListener('refreshNotifications', handleRefresh);
+    
+    return () => {
+      window.removeEventListener('refreshNotifications', handleRefresh);
+    };
   }, []);
 
   const fetchNotifications = async () => {
