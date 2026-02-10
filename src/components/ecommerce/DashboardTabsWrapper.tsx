@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 
 // Extend Window interface to include refreshProposals
 declare global {
@@ -15,7 +15,8 @@ import Loader from "@/common/Loader";
 import DashboardTalukatabview from "@/components/ecommerce/DashboardTalukatabview";
 import { CFREcommer } from "@/components/ecommerce/CFREcommer";
 import Section32Tabs from "@/components/common/Section32Tabs";
-import Category32Dashboard from "@/components/common/Category32Dashboard";
+// import Category32Dashboard from "@/components/common/Category32Dashboard";
+import Category48Dashboard from "@/components/common/Category48Dashboard";
 import DCDashboard from "@/components/common/DCDashboard";
 import DLCDashboard from "@/components/common/DLCDashboard";
 import { FarmdersType } from "@/components/farmersdata/farmers";
@@ -84,6 +85,7 @@ interface Proposal {
   beneficiaries?: string;
   number_of_tree?: number | string;
   work_status?: string;
+  work_status_record?: string;
   forward_to?: string;
   user_category_id?: number;
   remarks?: string;
@@ -150,11 +152,13 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]); // Store all users for agency checks
   const [selectedForwardUser, setSelectedForwardUser] = useState<string>('');
-  const anyChecklistChecked = Object.values(reviewCheckboxes).some(Boolean);
+  // Check if ALL 4 checkboxes are checked (not just any one)
+  const allChecklistChecked = Object.values(reviewCheckboxes).every(Boolean);
+  // const anyChecklistChecked = Object.values(reviewCheckboxes).some(Boolean);
   
   // Loading states for async operations
   const [isLoadingAction, setIsLoadingAction] = useState(false);
-  const [loadingActionType, setLoadingActionType] = useState<'start_review' | 'forward' | 'forward_dlc' | 'reject' | 'send_back' | null>(null);
+  const [loadingActionType, setLoadingActionType] = useState<'start_review' | 'forward' | 'forward_dlc' | 'reject' | 'send_back' | 'accept' | null>(null);
 
   useEffect(() => {
     const category_id = sessionStorage.getItem('category_id');
@@ -166,12 +170,42 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`/api/users/forward-list?category_id=${categoryId || ''}`);
+        // Fetch users with category_id 4 and 8 directly from API
+        const response = await fetch(`/api/users/forward-list?category_id=&filter_categories=4,8`);
         if (response.ok) {
           const users = await response.json();
-          // Store all users for agency checks
-          setAllUsers(users);
-          setAvailableUsers(users);
+          // Store all users for agency checks (fetch separately without filter)
+          const allUsersResponse = await fetch(`/api/users/forward-list?category_id=${categoryId || ''}`);
+          if (allUsersResponse.ok) {
+            const allUsers = await allUsersResponse.json();
+            setAllUsers(allUsers);
+          }
+          
+          // Users from API are already filtered to category_id 4 and 8
+          // Double-check filtering to ensure only 4 and 8
+          const filteredUsers = users.filter((user: User) => {
+            const userCategoryId = user.user_category_id;
+            // Handle both string and number types for comparison
+            const categoryIdNum = typeof userCategoryId === 'string' 
+              ? parseInt(userCategoryId, 10) 
+              : (typeof userCategoryId === 'number' ? userCategoryId : null);
+            
+            // Check if category_id is 4 or 8
+            return categoryIdNum === 4 || categoryIdNum === 8;
+          });
+          
+          console.log('Users for Forward Proposal (Category 4 & 8):', {
+            totalUsersFromAPI: users.length,
+            filteredCount: filteredUsers.length,
+            users: filteredUsers.map((u: User) => ({
+              id: u.user_id,
+              name: u.name,
+              category_id: u.user_category_id,
+              category_name: u.user_category_name || u.category_name
+            }))
+          });
+          
+          setAvailableUsers(filteredUsers);
         }
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -180,6 +214,74 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     fetchUsers();
   }, [categoryId]);
 
+  // Load checkbox state from database when proposal is selected
+  useEffect(() => {
+    if (selectedProposal?.proposal_id) {
+      // Load checkboxes from work_status_record
+      if (selectedProposal.work_status_record) {
+        try {
+          const recordData = JSON.parse(selectedProposal.work_status_record);
+          if (recordData.review_checkboxes) {
+            setReviewCheckboxes(recordData.review_checkboxes);
+            // If checkboxes exist, show the review checklist
+            setShowReviewChecklist(true);
+          }
+        } catch (error) {
+          // If parsing fails, try to parse as plain string or ignore
+          console.error('Error parsing work_status_record:', error);
+        }
+      }
+      
+      // Show Review Checklist if status is "under review" or if Accept was already clicked
+      const currentStatus = selectedProposal.work_status?.toLowerCase()?.trim() || '';
+      if (currentStatus === 'under review') {
+        setShowReviewChecklist(true);
+      }
+    }
+  }, [selectedProposal?.proposal_id, selectedProposal?.work_status_record, selectedProposal?.work_status]);
+
+  // Save checkbox state to database whenever it changes (debounced)
+  // Use a ref to track if this is the initial load
+  const isInitialLoad = useRef(true);
+  
+  useEffect(() => {
+    if (!selectedProposal?.proposal_id) {
+      isInitialLoad.current = true;
+      return;
+    }
+    
+    // Skip saving on initial load (when proposal is first opened)
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      return;
+    }
+    
+    // Debounce: wait 500ms after last change before saving
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/proposals/updatestatus', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            proposal_id: selectedProposal.proposal_id,
+            work_status: selectedProposal.work_status || 'under review',
+            review_checkboxes: reviewCheckboxes
+          })
+        });
+
+        if (!response.ok) {
+          console.error('Failed to save checkbox state to database');
+        }
+      } catch (error) {
+        console.error('Error saving checkbox state to database:', error);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [reviewCheckboxes, selectedProposal?.proposal_id, selectedProposal?.work_status]);
+
   // Proposal action handlers
   const handleOpenModal = (proposal: Proposal) => {
     setSelectedProposal(proposal);
@@ -187,18 +289,21 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     // Reset all states when opening a new proposal
     setRejectReason('');
     setSendBackReason('');
-    setShowReviewChecklist(false);
     setShowForwardSelect(false);
     setProposalRejected(false);
     setProposalSentBack(false);
     // setShowForwardDropdown(false);
     setSelectedForwardUser('');
+    // Reset initial load flag for new proposal
+    isInitialLoad.current = true;
+    // Initialize checkboxes - will be loaded from database in useEffect
     setReviewCheckboxes({
       siteInspection: false,
       boundaryVerified: false,
       fraCompliance: false,
       treeCount: false
     });
+    // Note: Review Checklist visibility will be set in useEffect based on status and saved checkboxes
   };
 
   const handleCloseModal = () => {
@@ -594,23 +699,85 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     }
   };
 
-  const handleAccept = () => {
-    setShowReviewChecklist(true);
-    setShowForwardSelect(false);
-    toast.success('Review checklist opened. Complete all items, then Forward.');
+  const handleAccept = async () => {
+    if (!selectedProposal || isLoadingAction) return;
+
+    // Check if status needs to be updated to "under review"
+    const currentStatus = selectedProposal.work_status?.toLowerCase()?.trim() || '';
+    const needsStatusUpdate = currentStatus !== 'under review' && 
+                              currentStatus !== 'pending' && 
+                              currentStatus !== 'submitted';
+
+    // If status is not "under review", update it first
+    if (needsStatusUpdate) {
+      setIsLoadingAction(true);
+      setLoadingActionType('accept');
+
+      try {
+        const response = await fetch('/api/proposals/updatestatus', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            proposal_id: selectedProposal.proposal_id,
+            work_status: 'under review',
+            action: 'start_review',
+            review_checkboxes: reviewCheckboxes // Save current checkbox state
+          })
+        });
+
+        if (response.ok) {
+          // Update the selected proposal status locally
+          setSelectedProposal({
+            ...selectedProposal,
+            work_status: 'under review'
+          });
+          // Show review checklist immediately
+          setShowReviewChecklist(true);
+          setShowForwardSelect(false);
+          toast.success('Proposal status updated to "Under Review". Review checklist opened.');
+          // Trigger refresh in ProposalManagementDashboard if it exists
+          if (typeof window !== 'undefined' && window.refreshProposals) {
+            window.refreshProposals();
+          }
+        } else {
+          const result = await response.json();
+          console.error('API Error:', result);
+          toast.error(result.error || 'Failed to update proposal status');
+          setIsLoadingAction(false);
+          setLoadingActionType(null);
+          return;
+        }
+      } catch (error) {
+        console.error('Error updating proposal status:', error);
+        toast.error('Failed to update proposal status');
+        setIsLoadingAction(false);
+        setLoadingActionType(null);
+        return;
+      } finally {
+        setIsLoadingAction(false);
+        setLoadingActionType(null);
+      }
+    } else {
+      // Status is already "under review", just show review checklist
+      setShowReviewChecklist(true);
+      setShowForwardSelect(false);
+      toast.success('Review checklist opened. Complete all items, then Forward.');
+    }
   };
 
   const handleShowForwardSelect = () => {
-    if (!anyChecklistChecked) {
-      toast.error('Please select at least one checklist item before forwarding.');
+    if (!allChecklistChecked) {
+      toast.error('Please complete all 4 checklist items before forwarding.');
       return;
     }
     setShowForwardSelect(true);
   };
 
   const handleForwardProposal = async () => {
-    if (!anyChecklistChecked) {
-      toast.error('Please select at least one checklist item before forwarding.');
+    if (!allChecklistChecked) {
+      toast.error('Please complete all 4 checklist items before forwarding.');
       return;
     }
 
@@ -2509,9 +2676,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                           <>
                             <button
                               onClick={handleShowForwardSelect}
-                              disabled={!anyChecklistChecked || proposalRejected || proposalSentBack}
+                              disabled={!allChecklistChecked || proposalRejected || proposalSentBack}
                               className={`w-full px-5 py-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 font-semibold shadow-lg hover:shadow-2xl transform hover:scale-[1.02] ${
-                                !anyChecklistChecked || proposalRejected || proposalSentBack
+                                !allChecklistChecked || proposalRejected || proposalSentBack
                                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                   : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white hover:from-green-700 hover:via-emerald-700 hover:to-teal-700'
                               }`}
@@ -2521,13 +2688,13 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                               </svg>
                               Forward to User
                             </button>
-                            {!anyChecklistChecked && (
+                            {!allChecklistChecked && (
                               <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
                                 <p className="text-xs text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
-                                  Select at least 1 checklist item to enable forwarding.
+                                  Complete all 4 checklist items to enable forwarding. ({Object.values(reviewCheckboxes).filter(Boolean).length}/4 completed)
                                 </p>
                               </div>
                             )}
@@ -2553,13 +2720,18 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             </div>
                             {/* Quick list of users to forward */}
                             <div className="max-h-64 overflow-y-auto border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-4 space-y-3 shadow-inner">
-                              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Available Users</p>
+                              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                                Available Users
+                              </p>
                               {availableUsers.length === 0 ? (
                                 <div className="text-center py-8">
                                   <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                   </svg>
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">No users available</p>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">No users available</p>
+                                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                    No users found with Category ID 4 or 8. Please check the console for details.
+                                  </p>
                                 </div>
                               ) : (
                                 availableUsers.map(user => (
@@ -2598,9 +2770,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                                           }`}>
                                             {user.category_name || user.user_category_name || 'No Category'}
                                           </span>
-                                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            ID: {user.user_id}
-                                          </span>
+                                          
                                         </div>
                                       </div>
                                     </div>
@@ -2713,19 +2883,31 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       {availableActions.canAccept && (
                         <button
                           onClick={handleAccept}
-                          disabled={showReviewChecklist || proposalRejected || proposalSentBack}
+                          disabled={isLoadingAction || proposalRejected || proposalSentBack}
                           className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
-                            showReviewChecklist || proposalRejected || proposalSentBack
+                            isLoadingAction || proposalRejected || proposalSentBack
                               ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                               : selectedProposal?.work_status?.toLowerCase()?.trim() === 'correction needed'
                                 ? 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 ring-2 ring-green-300 ring-opacity-50'
                                 : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800'
                           }`}
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Accept Proposal (Review Completed)
+                          {isLoadingAction && loadingActionType === 'accept' ? (
+                            <>
+                              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Updating Status...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Accept Proposal (Review Completed)
+                            </>
+                          )}
                         </button>
                       )}
 
@@ -3075,11 +3257,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     {
       id: "notification",
       label: "Section 3(2)",
-      content: <div className="grid grid-cols-6 gap-4 md:gap-6">
-        <div className="col-span-12 space-y-6 xl:col-span-7">
-        {isSection32Only ? <ProposalManagementDashboard /> : (isCategory4 || isCategory8) ? <Category32Dashboard /> : <Section32Tabs />}
-        </div>
-      </div>
+      content: isSection32Only ? <ProposalManagementDashboard /> : (isCategory4 || isCategory8) ? <Category48Dashboard /> : <Section32Tabs />
     },
     {
       id: "death-ifr-holder",

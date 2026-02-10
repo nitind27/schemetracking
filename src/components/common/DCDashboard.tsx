@@ -16,6 +16,7 @@ import {
   // FiTrendingUp,
   FiMapPin,
   FiCalendar,
+  FiX,
   // FiUsers
 } from "react-icons/fi";
 // import { HiOfficeBuilding } from "react-icons/hi";
@@ -44,11 +45,11 @@ interface Proposal {
 
 interface DCStats {
   totalProposals: number;
-  // pendingAtRFODFO: number;
-  rejectedByRFODFO: number;
-  pendingAtRFODFO: number;
-  pendingAtDLC: number;
-  dlcCompleted: number;
+  pendingForAcceptAtRFODFO: number; // Pending for Accept at RFO/DFO
+  rejectedByRFODFO: number; // Rejected by RFO/DFO
+  pendingAtRFODFO: number; // Pending at RFO/DFO (Under Review)
+  pendingAtDLC: number; // Pending at DLC
+  dlcCompleted: number; // DLC Completed
 }
 
 const containerVariants = {
@@ -103,13 +104,16 @@ export default function DCDashboard() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [stats, setStats] = useState<DCStats>({
     totalProposals: 0,
-    pendingAtRFODFO: 0,
+    pendingForAcceptAtRFODFO: 0,
     rejectedByRFODFO: 0,
-    // pendingAtRFODFO: 0,
+    pendingAtRFODFO: 0,
     pendingAtDLC: 0,
     dlcCompleted: 0,
   });
   const [actionRequiredProposals, setActionRequiredProposals] = useState<Proposal[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalProposals, setModalProposals] = useState<Proposal[]>([]);
 
   useEffect(() => {
     fetchDCData();
@@ -143,14 +147,71 @@ export default function DCDashboard() {
           work_status: p.work_status
         })));
         
-        setProposals(data.proposals || []);
-        setStats(data.stats || {
-          totalProposals: 0,
-          pendingAtRFODFO: 0,
-          rejectedByRFODFO: 0,
-          pendingAtDLC: 0,
-          dlcCompleted: 0,
-        });
+        const proposalsData = data.proposals || [];
+        setProposals(proposalsData);
+        
+        // Use stats directly from API response - API calculates based on database work_status values
+        // work_status is varchar(50) in database with values: 'pending', 'under review', 'correction needed', 'pending at dlc', 'rejected', 'forwarded'
+        // API already handles proper normalization and counting
+        if (data.stats) {
+          setStats(data.stats);
+        } else {
+          // Fallback: Calculate stats if API doesn't provide them
+          // Helper function to normalize work_status (same as API)
+          const normalizeWorkStatus = (status: string | number | null | undefined): string => {
+            if (status === null || status === undefined) return '';
+            return String(status).trim().toLowerCase();
+          };
+          
+          // Helper function to normalize user_category_id
+          // const normalizeUserCategoryId = (categoryId: string | number | null | undefined): number | null => {
+          //   if (categoryId === null || categoryId === undefined) return null;
+          //   if (typeof categoryId === 'number') return categoryId;
+          //   if (typeof categoryId === 'string') {
+          //     const parsed = parseInt(categoryId, 10);
+          //     return isNaN(parsed) ? null : parsed;
+          //   }
+          //   return null;
+          // };
+          
+          const calculatedStats: DCStats = {
+            totalProposals: proposalsData.length,
+            // Pending for Accept at RFO/DFO: work_status = 0 (or '0' as string)
+            pendingForAcceptAtRFODFO: proposalsData.filter((p: Proposal) => {
+              const status = p.work_status;
+              // Check for 0 (number) or '0' (string) - work_status is varchar(50) so could be either
+              return (typeof status === 'number' && status === 0) || 
+                     (typeof status === 'string' && status.trim() === '0') ||
+                     normalizeWorkStatus(status) === '0';
+            }).length,
+            // Rejected by RFO/DFO: work_status = 'rejected'
+            rejectedByRFODFO: proposalsData.filter((p: Proposal) => {
+              const status = normalizeWorkStatus(p.work_status);
+              return status === 'rejected';
+            }).length,
+            // Pending at RFO/DFO: work_status = 'under review'
+            pendingAtRFODFO: proposalsData.filter((p: Proposal) => {
+              const status = normalizeWorkStatus(p.work_status);
+              return status === 'under review';
+            }).length,
+            // Pending at DLC: work_status = 'pending at dlc'
+            pendingAtDLC: proposalsData.filter((p: Proposal) => {
+              const status = normalizeWorkStatus(p.work_status);
+              return status === 'pending at dlc';
+            }).length,
+            // DLC Completed: work_status = 'forwarded' (or legacy: completed, complete, approved, sanctioned)
+            dlcCompleted: proposalsData.filter((p: Proposal) => {
+              const status = normalizeWorkStatus(p.work_status);
+              return status === 'forwarded' ||
+                     status === 'completed' ||
+                     status === 'complete' ||
+                     status === 'approved' ||
+                     status === 'sanctioned';
+            }).length
+          };
+          
+          setStats(calculatedStats);
+        }
         setActionRequiredProposals(actionRequired);
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -167,6 +228,87 @@ export default function DCDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to normalize work_status (same as API)
+  // work_status is varchar(50) in database - must check exact string values
+  const normalizeWorkStatus = (status: string | number | null | undefined): string => {
+    if (status === null || status === undefined) return '';
+    return String(status).trim().toLowerCase();
+  };
+  
+  // Helper function to normalize user_category_id
+  // const normalizeUserCategoryId = (categoryId: string | number | null | undefined): number | null => {
+  //   if (categoryId === null || categoryId === undefined) return null;
+  //   if (typeof categoryId === 'number') return categoryId;
+  //   if (typeof categoryId === 'string') {
+  //     const parsed = parseInt(categoryId, 10);
+  //     return isNaN(parsed) ? null : parsed;
+  //   }
+  //   return null;
+  // };
+
+  // Function to get filtered proposals based on card type
+  // Using exact database work_status values: 'pending', 'under review', 'correction needed', 'pending at dlc', 'rejected', 'forwarded'
+  const getFilteredProposals = (cardType: string): Proposal[] => {
+    switch (cardType) {
+      case 'total':
+        return proposals;
+      case 'pendingForAccept':
+        // Pending for Accept: work_status = 0 (or '0' as string)
+        return proposals.filter(p => {
+          const status = p.work_status;
+          // Check for 0 (number) or '0' (string) - work_status is varchar(50) so could be either
+          return (typeof status === 'number' && status === 0) || 
+                 (typeof status === 'string' && status.trim() === '0') ||
+                 normalizeWorkStatus(status) === '0';
+        });
+      case 'rejected':
+        // Rejected: work_status = 'rejected'
+        return proposals.filter(p => {
+          const status = normalizeWorkStatus(p.work_status);
+          return status === 'rejected';
+        });
+      case 'pendingAtRFODFO':
+        // Pending (Under Review): work_status = 'under review'
+        return proposals.filter(p => {
+          const status = normalizeWorkStatus(p.work_status);
+          return status === 'under review';
+        });
+      case 'pendingAtDLC':
+        // DLC - Pending at DLC: work_status = 'pending at dlc'
+        return proposals.filter(p => {
+          const status = normalizeWorkStatus(p.work_status);
+          return status === 'pending at dlc';
+        });
+      case 'dlcCompleted':
+        // DLC Completed: work_status = 'forwarded' (or legacy: completed, complete, approved, sanctioned)
+        return proposals.filter(p => {
+          const status = normalizeWorkStatus(p.work_status);
+          return status === 'forwarded' ||
+                 status === 'completed' ||
+                 status === 'complete' ||
+                 status === 'approved' ||
+                 status === 'sanctioned';
+        });
+      default:
+        return [];
+    }
+  };
+
+  // Handle card click to show modal
+  const handleCardClick = (cardType: string, title: string) => {
+    const filtered = getFilteredProposals(cardType);
+    setModalProposals(filtered);
+    setModalTitle(title);
+    setShowModal(true);
+  };
+
+  // Close modal
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setModalProposals([]);
+    setModalTitle('');
   };
 
   const exportToPDF = (reportType: string, data: Proposal[]) => {
@@ -271,7 +413,8 @@ export default function DCDashboard() {
             variants={cardHoverVariants}
             initial="rest"
             whileHover="hover"
-            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100"
+            onClick={() => handleCardClick('total', 'Total Proposals')}
+            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative p-6">
@@ -307,7 +450,8 @@ export default function DCDashboard() {
             variants={cardHoverVariants}
             initial="rest"
             whileHover="hover"
-            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100"
+            onClick={() => handleCardClick('pendingForAccept', 'Pending for Accept at RFO/DFO')}
+            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative p-6">
@@ -318,7 +462,10 @@ export default function DCDashboard() {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => exportToPDF('Pending at RFO/DFO', proposals.filter(p => p.work_status === 'Pending at RFO/DFO'))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    exportToPDF('Pending for Accept at RFO/DFO', getFilteredProposals('pendingForAccept'));
+                  }}
                   className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
                   title="Export PDF"
                 >
@@ -333,7 +480,7 @@ export default function DCDashboard() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2, duration: 0.5, type: "spring" as const, stiffness: 100 }}
               >
-                {stats.pendingAtRFODFO}
+                {stats.pendingForAcceptAtRFODFO}
               </motion.p>
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-500 to-amber-500"></div>
@@ -344,7 +491,8 @@ export default function DCDashboard() {
             variants={cardHoverVariants}
             initial="rest"
             whileHover="hover"
-            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100"
+            onClick={() => handleCardClick('rejected', 'Rejected by RFO/DFO')}
+            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative p-6">
@@ -355,7 +503,10 @@ export default function DCDashboard() {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => exportToPDF('Rejected by RFO/DFO', proposals.filter(p => p.work_status === 'Rejected'))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    exportToPDF('Rejected by RFO/DFO', getFilteredProposals('rejected'));
+                  }}
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   title="Export PDF"
                 >
@@ -381,7 +532,8 @@ export default function DCDashboard() {
             variants={cardHoverVariants}
             initial="rest"
             whileHover="hover"
-            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100"
+            onClick={() => handleCardClick('pendingAtRFODFO', 'Pending at RFO/DFO (Under Review)')}
+            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-orange-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative p-6">
@@ -392,7 +544,10 @@ export default function DCDashboard() {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => exportToPDF('Pending at RFO/DFO', proposals.filter(p => p.work_status === 'Under Review'))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    exportToPDF('Pending at RFO/DFO (Under Review)', getFilteredProposals('pendingAtRFODFO'));
+                  }}
                   className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                   title="Export PDF"
                 >
@@ -400,7 +555,7 @@ export default function DCDashboard() {
                 </motion.button>
               </div>
               <p className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Pending</p>
-              <p className="text-xs text-gray-500 mb-2">at RFO/DFO</p>
+              <p className="text-xs text-gray-500 mb-2">at RFO/DFO (Under Review)</p>
               <motion.p 
                 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent"
                 initial={{ opacity: 0, scale: 0.5 }}
@@ -418,7 +573,8 @@ export default function DCDashboard() {
             variants={cardHoverVariants}
             initial="rest"
             whileHover="hover"
-            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100"
+            onClick={() => handleCardClick('pendingAtDLC', 'Pending at DLC')}
+            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-violet-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative p-6">
@@ -429,7 +585,10 @@ export default function DCDashboard() {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => exportToPDF('Pending at DLC', proposals.filter(p => p.work_status === 'pending at DLC'))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    exportToPDF('Pending at DLC', getFilteredProposals('pendingAtDLC'));
+                  }}
                   className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                   title="Export PDF"
                 >
@@ -455,7 +614,8 @@ export default function DCDashboard() {
             variants={cardHoverVariants}
             initial="rest"
             whileHover="hover"
-            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100"
+            onClick={() => handleCardClick('dlcCompleted', 'DLC Completed')}
+            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative p-6">
@@ -466,7 +626,10 @@ export default function DCDashboard() {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => exportToPDF('DLC Completed', proposals.filter(p => p.work_status === 'Completed'))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    exportToPDF('DLC Completed', getFilteredProposals('dlcCompleted'));
+                  }}
                   className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                   title="Export PDF"
                 >
@@ -678,6 +841,167 @@ export default function DCDashboard() {
             </table>
           </div>
         </motion.div>
+
+        {/* Modal for showing filtered proposals */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">{modalTitle}</h2>
+                  <p className="text-blue-100 mt-1">{modalProposals.length} proposal(s) found</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => exportToPDF(modalTitle, modalProposals)}
+                    className="flex items-center gap-2 bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                  >
+                    <FiDownload className="w-5 h-5" />
+                    Export PDF
+                  </motion.button>
+                  <button
+                    onClick={handleCloseModal}
+                    className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    <FiX className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {modalProposals.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                        <tr>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <div className="flex items-center gap-2">
+                              <FiFileText className="w-4 h-4" />
+                              Proposal ID
+                            </div>
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Category
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <div className="flex items-center gap-2">
+                              <FiMapPin className="w-4 h-4" />
+                              Taluka
+                            </div>
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            GP
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Village
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <div className="flex items-center gap-2">
+                              <FiCalendar className="w-4 h-4" />
+                              Created Date
+                            </div>
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            User
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {modalProposals.map((proposal, index) => (
+                          <motion.tr
+                            key={proposal.proposal_id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.02 }}
+                            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm font-bold text-gray-900">
+                                #{proposal.proposal_id}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm text-gray-700">
+                                {proposal.proposal_category_name || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm text-gray-600">
+                                {proposal.taluka_name || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm text-gray-600">
+                                {proposal.gp_name || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm text-gray-600">
+                                {proposal.village_name || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm text-gray-600">
+                                {new Date(proposal.created_at).toLocaleDateString('en-IN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-3 py-1.5 text-xs font-semibold rounded-lg ${
+                                proposal.work_status?.toLowerCase() === 'rejected' ? 
+                                  'bg-red-100 text-red-800' :
+                                proposal.work_status?.toLowerCase() === 'pending at dlc' ? 
+                                  'bg-purple-100 text-purple-800' :
+                                proposal.work_status?.toLowerCase() === 'under review' ? 
+                                  'bg-blue-100 text-blue-800' :
+                                proposal.work_status?.toLowerCase() === 'completed' || 
+                                proposal.work_status?.toLowerCase() === 'complete' ||
+                                proposal.work_status?.toLowerCase() === 'approved' ||
+                                proposal.work_status?.toLowerCase() === 'sanctioned' ? 
+                                  'bg-green-100 text-green-800' :
+                                  'bg-gray-100 text-gray-800'
+                              }`}>
+                                {proposal.work_status || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm text-gray-600">
+                                {proposal.user_name || 'N/A'}
+                              </span>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                      <FiFileText className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 font-medium">No proposals found</p>
+                    <p className="text-sm text-gray-400 mt-1">No data available for this category</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
       </motion.div>
     </div>
   );
