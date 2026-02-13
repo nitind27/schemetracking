@@ -1557,9 +1557,11 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     const [selectedVillage, setSelectedVillage] = useState<string>('all');
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [showFilters, setShowFilters] = useState(true);
+    const [allUsers, setAllUsers] = useState<User[]>([]);
 
     useEffect(() => {
       fetchProposals();
+      fetchAllUsers();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -1629,6 +1631,28 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       }
     }, []);
 
+    const fetchAllUsers = async () => {
+      try {
+        // Fetch all active users to lookup forwarded user names
+        const response = await fetch(`/api/users`);
+        if (response.ok) {
+          const data = await response.json();
+          // Map the response to match User interface structure
+          const users = data.map((user: User) => ({
+            user_id: user.user_id,
+            name: user.name,
+            category_name: user.user_category_name || user.category_name,
+            user_category_name: user.user_category_name || user.category_name,
+            user_category_id: user.user_category_id
+          }));
+          setAllUsers(users);
+          console.log('Fetched all users for lookup:', users.length);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+
     // Expose refresh function globally for use in action handlers
     useEffect(() => {
       if (typeof window !== 'undefined') {
@@ -1675,7 +1699,27 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         text = 'Pending at DLC';
       } else if (status === 'forwarded') {
         bgColor = 'bg-blue-100 text-blue-800';
-        text = 'Forwarded';
+        // Find the user name from forward_to
+        if (proposal.forward_to && allUsers.length > 0) {
+          const forwardToId = proposal.forward_to.toString().trim();
+          const forwardedUser = allUsers.find(u => {
+            const userId = u.user_id?.toString().trim();
+            return userId === forwardToId;
+          });
+          if (forwardedUser && forwardedUser.name) {
+            text = `Forwarded to ${forwardedUser.name}`;
+          } else {
+            // Debug: log if user not found
+            console.log('Forwarded user not found:', {
+              forward_to: proposal.forward_to,
+              allUsersCount: allUsers.length,
+              sampleUserIds: allUsers.slice(0, 3).map(u => u.user_id)
+            });
+            text = 'Forwarded';
+          }
+        } else {
+          text = 'Forwarded';
+        }
       }
 
       return (
@@ -1693,8 +1737,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       }).length,
       underReview: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'under review').length,
       rejected: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'rejected').length,
+      pendingAtPO: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'pending at po').length,
       pendingAtDLC: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'pending at dlc').length,
       correctionNeeded: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'correction needed').length,
+      completed: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'completed').length,
       forwarded: (() => {
         const currentUserId = sessionStorage.getItem('user_id');
         return proposals.filter(p => p.forward_to && p.forward_to.toString() === currentUserId).length;
@@ -1740,7 +1786,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8 gap-4">
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
@@ -1801,6 +1847,20 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-sm text-gray-600">Pending at PO</p>
+                <p className="text-2xl font-bold text-indigo-600">{stats.pendingAtPO}</p>
+              </div>
+              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm text-gray-600">Pending at DLC</p>
                 <p className="text-2xl font-bold text-purple-600">{stats.pendingAtDLC}</p>
               </div>
@@ -1821,6 +1881,20 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
               <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Completed</p>
+                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+              </div>
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
@@ -2528,7 +2602,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                         Review Checklist
                       </h3>
                       <div className="space-y-3">
-                        <label className={`flex items-center gap-4 cursor-pointer p-4 rounded-xl transition-all duration-200 ${
+                        <label className={`flex items-center gap-4 ${selectedProposal?.work_status?.toLowerCase()?.trim() === 'forwarded' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} p-4 rounded-xl transition-all duration-200 ${
                           reviewCheckboxes.siteInspection
                             ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border-2 border-blue-300 dark:border-blue-600 shadow-md'
                             : 'bg-white/50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600'
@@ -2543,7 +2617,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                               })
                             }
                             className="w-6 h-6 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
-                            disabled={proposalRejected || proposalSentBack}
+                            disabled={proposalRejected || proposalSentBack || selectedProposal?.work_status?.toLowerCase()?.trim() === 'forwarded'}
                           />
                           <div className="flex-1">
                             <span className={`text-sm font-semibold ${
@@ -2560,7 +2634,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             </svg>
                           )}
                         </label>
-                        <label className={`flex items-center gap-4 cursor-pointer p-4 rounded-xl transition-all duration-200 ${
+                        <label className={`flex items-center gap-4 ${selectedProposal?.work_status?.toLowerCase()?.trim() === 'forwarded' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} p-4 rounded-xl transition-all duration-200 ${
                           reviewCheckboxes.boundaryVerified
                             ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border-2 border-blue-300 dark:border-blue-600 shadow-md'
                             : 'bg-white/50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600'
@@ -2575,7 +2649,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                               })
                             }
                             className="w-6 h-6 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
-                            disabled={proposalRejected || proposalSentBack}
+                            disabled={proposalRejected || proposalSentBack || selectedProposal?.work_status?.toLowerCase()?.trim() === 'forwarded'}
                           />
                           <div className="flex-1">
                             <span className={`text-sm font-semibold ${
@@ -2592,7 +2666,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             </svg>
                           )}
                         </label>
-                        <label className={`flex items-center gap-4 cursor-pointer p-4 rounded-xl transition-all duration-200 ${
+                        <label className={`flex items-center gap-4 ${selectedProposal?.work_status?.toLowerCase()?.trim() === 'forwarded' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} p-4 rounded-xl transition-all duration-200 ${
                           reviewCheckboxes.fraCompliance
                             ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border-2 border-blue-300 dark:border-blue-600 shadow-md'
                             : 'bg-white/50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600'
@@ -2607,7 +2681,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                               })
                             }
                             className="w-6 h-6 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
-                            disabled={proposalRejected || proposalSentBack}
+                            disabled={proposalRejected || proposalSentBack || selectedProposal?.work_status?.toLowerCase()?.trim() === 'forwarded'}
                           />
                           <div className="flex-1">
                             <span className={`text-sm font-semibold ${
@@ -2624,7 +2698,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                             </svg>
                           )}
                         </label>
-                        <label className={`flex items-center gap-4 cursor-pointer p-4 rounded-xl transition-all duration-200 ${
+                        <label className={`flex items-center gap-4 ${selectedProposal?.work_status?.toLowerCase()?.trim() === 'forwarded' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} p-4 rounded-xl transition-all duration-200 ${
                           reviewCheckboxes.treeCount
                             ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border-2 border-blue-300 dark:border-blue-600 shadow-md'
                             : 'bg-white/50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600'
@@ -2639,7 +2713,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                               })
                             }
                             className="w-6 h-6 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
-                            disabled={proposalRejected || proposalSentBack}
+                            disabled={proposalRejected || proposalSentBack || selectedProposal?.work_status?.toLowerCase()?.trim() === 'forwarded'}
                           />
                           <div className="flex-1">
                             <span className={`text-sm font-semibold ${
@@ -2661,7 +2735,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                   )}
 
                   {/* Forward Proposal Section - Show in the SAME Proposal Details modal */}
-                  {showReviewChecklist && (
+                  {showReviewChecklist && selectedProposal?.work_status?.toLowerCase()?.trim() !== 'forwarded' && (
                     <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/30 dark:via-emerald-900/20 dark:to-teal-900/20 p-6 rounded-2xl border-2 border-green-200 dark:border-green-700 shadow-xl">
                       <h4 className="text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
                         <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-md">
@@ -2842,12 +2916,31 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                         {availableActions.statusMessage}
                       </p>
                       {selectedProposal?.work_status?.toLowerCase()?.trim() === 'correction needed' && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-orange-700 dark:text-orange-300 font-medium">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Review remarks and choose: Accept, Reject, or Send Back
-                        </div>
+                        <>
+                          <div className="mt-2 flex items-center gap-2 text-xs text-orange-700 dark:text-orange-300 font-medium">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Review remarks and choose: Accept, Reject, or Send Back
+                          </div>
+                          {selectedProposal?.remarks && (
+                            <div className="mt-3 p-3 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg className="w-4 h-4 text-orange-700 dark:text-orange-300 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                </svg>
+                                <div className="flex-1">
+                                  <p className="text-xs font-semibold text-orange-800 dark:text-orange-200 mb-1">
+                                    Remarks: 
+                                  </p>
+                                  <p className="text-sm text-orange-900 dark:text-orange-100 whitespace-pre-wrap break-words">
+                                    {selectedProposal.remarks}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -2856,9 +2949,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       {availableActions.canStartReview && (
                         <button
                           onClick={handleStartReview}
-                          disabled={isLoadingAction}
+                          disabled={isLoadingAction || selectedProposal?.work_status?.toLowerCase()?.trim() === 'under review'}
                           className={`w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
-                            isLoadingAction ? 'opacity-75 cursor-not-allowed' : ''
+                            isLoadingAction || selectedProposal?.work_status?.toLowerCase()?.trim() === 'under review' ? 'opacity-75 cursor-not-allowed' : ''
                           }`}
                         >
                           {isLoadingAction && loadingActionType === 'start_review' ? (
@@ -2883,9 +2976,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       {availableActions.canAccept && (
                         <button
                           onClick={handleAccept}
-                          disabled={isLoadingAction || proposalRejected || proposalSentBack}
+                          disabled={isLoadingAction || proposalRejected || proposalSentBack || selectedProposal?.work_status?.toLowerCase()?.trim() === 'under review'}
                           className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
-                            isLoadingAction || proposalRejected || proposalSentBack
+                            isLoadingAction || proposalRejected || proposalSentBack || selectedProposal?.work_status?.toLowerCase()?.trim() === 'under review'
                               ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                               : selectedProposal?.work_status?.toLowerCase()?.trim() === 'correction needed'
                                 ? 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 ring-2 ring-green-300 ring-opacity-50'
@@ -2915,9 +3008,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       {availableActions.canReject && (
                         <button
                           onClick={handleReject}
-                          disabled={proposalRejected || proposalSentBack}
+                          disabled={proposalRejected || proposalSentBack || selectedProposal?.work_status?.toLowerCase()?.trim() === 'under review'}
                           className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
-                            proposalRejected || proposalSentBack
+                            proposalRejected || proposalSentBack || selectedProposal?.work_status?.toLowerCase()?.trim() === 'under review'
                               ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                               : 'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800'
                           }`}
@@ -2933,9 +3026,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       {availableActions.canSendBack && (
                         <button
                           onClick={handleSendBack}
-                          disabled={proposalRejected || proposalSentBack}
+                          disabled={proposalRejected || proposalSentBack || selectedProposal?.work_status?.toLowerCase()?.trim() === 'under review'}
                           className={`w-full px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
-                            proposalRejected || proposalSentBack
+                            proposalRejected || proposalSentBack || selectedProposal?.work_status?.toLowerCase()?.trim() === 'under review'
                               ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                               : 'bg-gradient-to-r from-orange-600 to-orange-700 text-white hover:from-orange-700 hover:to-orange-800'
                           }`}
@@ -2951,9 +3044,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       {availableActions.canForwardToDLC && (
                         <button
                           onClick={handleForwardToDLC}
-                          disabled={isLoadingAction}
+                          disabled={isLoadingAction || selectedProposal?.work_status?.toLowerCase()?.trim() === 'under review'}
                           className={`w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl ${
-                            isLoadingAction ? 'opacity-75 cursor-not-allowed' : ''
+                            isLoadingAction || selectedProposal?.work_status?.toLowerCase()?.trim() === 'under review' ? 'opacity-75 cursor-not-allowed' : ''
                           }`}
                         >
                           {isLoadingAction && loadingActionType === 'forward_dlc' ? (

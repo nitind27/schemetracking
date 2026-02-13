@@ -86,11 +86,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Set a persistent cookie with user info (7 days expiry)
+    // Set a session cookie (expires when browser closes)
     const cookie = serialize('auth_token', String(user.user_id), {
       httpOnly: true,
       path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+      // No maxAge means it's a session cookie - will be cleared when browser closes
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
     });
