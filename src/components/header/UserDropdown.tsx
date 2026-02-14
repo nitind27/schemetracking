@@ -67,7 +67,7 @@ export default function UserDropdown() {
           {imageError ? (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold text-lg">
               {storedValue ? storedValue.charAt(0).toUpperCase() : 'U'}
-            </div>
+            </div>  
           ) : (
             <Image
               width={44}

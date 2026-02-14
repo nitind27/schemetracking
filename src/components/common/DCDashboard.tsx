@@ -1,11 +1,24 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Loader from "@/common/Loader";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 // import { Modal } from "@/components/ui/modal";
 import { 
   FiFileText, 
@@ -18,6 +31,7 @@ import {
   FiMapPin,
   FiCalendar,
   FiX,
+  FiBarChart2,
   // FiUsers
 } from "react-icons/fi";
 // import { HiOfficeBuilding } from "react-icons/hi";
@@ -50,6 +64,7 @@ interface DCStats {
   pendingForAcceptAtRFODFO: number; // Pending for Accept at RFO/DFO
   rejectedByRFODFO: number; // Rejected by RFO/DFO
   pendingAtRFODFO: number; // Pending at RFO/DFO (Under Review)
+  pendingAtPO: number; // Pending at PO
   pendingAtDLC: number; // Pending at DLC
   dlcCompleted: number; // DLC Completed
 }
@@ -109,6 +124,7 @@ export default function DCDashboard() {
     pendingForAcceptAtRFODFO: 0,
     rejectedByRFODFO: 0,
     pendingAtRFODFO: 0,
+    pendingAtPO: 0,
     pendingAtDLC: 0,
     dlcCompleted: 0,
   });
@@ -306,6 +322,11 @@ export default function DCDashboard() {
               const status = normalizeWorkStatus(p.work_status);
               return status === 'under review';
             }).length,
+            // Pending at PO: work_status = 'pending at po'
+            pendingAtPO: proposalsData.filter((p: Proposal) => {
+              const status = normalizeWorkStatus(p.work_status);
+              return status === 'pending at po';
+            }).length,
             // Pending at DLC: work_status = 'pending at dlc'
             pendingAtDLC: proposalsData.filter((p: Proposal) => {
               const status = normalizeWorkStatus(p.work_status);
@@ -348,6 +369,80 @@ export default function DCDashboard() {
     if (status === null || status === undefined) return '';
     return String(status).trim().toLowerCase();
   };
+
+  // Calculate chart data for proposals by category
+  const chartData = useMemo(() => {
+    if (!proposals || proposals.length === 0) return [];
+
+    // Group proposals by category
+    const categoryMap = new Map<string, { complete: number; pending: number; total: number }>();
+
+    proposals.forEach((proposal) => {
+      const categoryName = proposal.proposal_category_name || 'Unknown';
+      const status = normalizeWorkStatus(proposal.work_status);
+      
+      // Determine if completed
+      const isCompleted = 
+        status === 'forwarded' ||
+        status === 'completed' ||
+        status === 'complete' ||
+        status === 'approved' ||
+        status === 'sanctioned';
+
+      if (!categoryMap.has(categoryName)) {
+        categoryMap.set(categoryName, { complete: 0, pending: 0, total: 0 });
+      }
+
+      const categoryData = categoryMap.get(categoryName)!;
+      categoryData.total++;
+      
+      if (isCompleted) {
+        categoryData.complete++;
+      } else {
+        categoryData.pending++;
+      }
+    });
+
+    // Convert to array format for chart
+    return Array.from(categoryMap.entries())
+      .map(([name, data]) => ({
+        name: name.length > 20 ? name.substring(0, 20) + '...' : name,
+        fullName: name,
+        Complete: data.complete,
+        Pending: data.pending,
+        Total: data.total,
+      }))
+      .sort((a, b) => b.Total - a.Total); // Sort by total descending
+  }, [proposals]);
+
+  // Pie chart data for overall status
+  const pieChartData = useMemo(() => {
+    if (!proposals || proposals.length === 0) return [];
+
+    let complete = 0;
+    let pending = 0;
+
+    proposals.forEach((proposal) => {
+      const status = normalizeWorkStatus(proposal.work_status);
+      const isCompleted = 
+        status === 'forwarded' ||
+        status === 'completed' ||
+        status === 'complete' ||
+        status === 'approved' ||
+        status === 'sanctioned';
+
+      if (isCompleted) {
+        complete++;
+      } else {
+        pending++;
+      }
+    });
+
+    return [
+      { name: 'Completed', value: complete, color: '#10b981' },
+      { name: 'Pending', value: pending, color: '#f59e0b' },
+    ];
+  }, [proposals]);
   
   // Helper function to normalize user_category_id
   // const normalizeUserCategoryId = (categoryId: string | number | null | undefined): number | null => {
@@ -386,6 +481,12 @@ export default function DCDashboard() {
         return proposals.filter(p => {
           const status = normalizeWorkStatus(p.work_status);
           return status === 'under review';
+        });
+      case 'pendingAtPO':
+        // Pending at PO: work_status = 'pending at po'
+        return proposals.filter(p => {
+          const status = normalizeWorkStatus(p.work_status);
+          return status === 'pending at po';
         });
       case 'pendingAtDLC':
         // DLC - Pending at DLC: work_status = 'pending at dlc'
@@ -519,7 +620,7 @@ export default function DCDashboard() {
         </motion.div>
       
         {/* Enhanced Stats Cards */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-6">
           {/* Total Proposals Card */}
           <motion.div
             variants={cardHoverVariants}
@@ -680,6 +781,47 @@ export default function DCDashboard() {
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-orange-600"></div>
           </motion.div>
 
+          {/* Pending at PO Card */}
+          <motion.div
+            variants={cardHoverVariants}
+            initial="rest"
+            whileHover="hover"
+            onClick={() => handleCardClick('pendingAtPO', 'Pending at PO')}
+            className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl shadow-lg">
+                  <FiClock className="w-6 h-6 text-white" />
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    exportToPDF('Pending at PO', getFilteredProposals('pendingAtPO'));
+                  }}
+                  className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                  title="Export PDF"
+                >
+                  <FiDownload className="w-4 h-4" />
+                </motion.button>
+              </div>
+              <p className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Pending</p>
+              <p className="text-xs text-gray-500 mb-2">at PO</p>
+              <motion.p 
+                className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5, duration: 0.5, type: "spring" as const, stiffness: 100 }}
+              >
+                {stats.pendingAtPO}
+              </motion.p>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-cyan-500"></div>
+          </motion.div>
+
           {/* Pending at DLC Card */}
           <motion.div
             variants={cardHoverVariants}
@@ -713,7 +855,7 @@ export default function DCDashboard() {
                 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent"
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5, duration: 0.5, type: "spring" as const, stiffness: 100 }}
+                transition={{ delay: 0.6, duration: 0.5, type: "spring" as const, stiffness: 100 }}
               >
                 {stats.pendingAtDLC}
               </motion.p>
@@ -753,13 +895,174 @@ export default function DCDashboard() {
                 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.6, duration: 0.5, type: "spring" as const, stiffness: 100 }}
+                transition={{ delay: 0.7, duration: 0.5, type: "spring" as const, stiffness: 100 }}
               >
                 {stats.dlcCompleted}
               </motion.p>
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-emerald-500"></div>
           </motion.div>
+        </motion.div>
+
+        {/* Proposal Type Wise Chart Section */}
+        <motion.div 
+          variants={itemVariants} 
+          className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100"
+        >
+          {/* Section Header */}
+          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                  <FiBarChart2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">
+                    Proposal Analytics
+                  </h2>
+                  <p className="text-indigo-100 text-sm">
+                    Proposal type wise status breakdown
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Content */}
+          <div className="p-6">
+            {chartData.length > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Bar Chart - Category Wise */}
+                <div className="lg:col-span-2">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                    <FiBarChart2 className="w-5 h-5 text-indigo-600" />
+                    Proposals by Category
+                  </h3>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart
+                      data={chartData}
+                      margin={{
+                        top: 20,
+                        right: 30,
+                        left: 20,
+                        bottom: 60,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="name" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={100}
+                        tick={{ fontSize: 12 }}
+                        stroke="#6b7280"
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        stroke="#6b7280"
+                      />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        }}
+                        formatter={(value: number, name: string) => [value, name]}
+                        labelFormatter={(label) => `Category: ${label}`}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="circle"
+                      />
+                      <Bar 
+                        dataKey="Complete" 
+                        fill="#10b981" 
+                        name="Completed"
+                        radius={[8, 8, 0, 0]}
+                      />
+                      <Bar 
+                        dataKey="Pending" 
+                        fill="#f59e0b" 
+                        name="Pending"
+                        radius={[8, 8, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Pie Chart - Overall Status */}
+                <div className="lg:col-span-1">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                    <FiCheckCircle className="w-5 h-5 text-green-600" />
+                    Overall Status
+                  </h3>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                      <Pie
+                        data={pieChartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={120}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {pieChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        }}
+                        formatter={(value: number) => [value, 'Count']}
+                      />
+                      <Legend 
+                        verticalAlign="bottom"
+                        height={36}
+                        iconType="circle"
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  
+                  {/* Summary Stats */}
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <span className="text-sm font-medium text-green-700 dark:text-green-300">Completed</span>
+                      <span className="text-lg font-bold text-green-900 dark:text-green-200">
+                        {pieChartData.find(d => d.name === 'Completed')?.value || 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <span className="text-sm font-medium text-amber-700 dark:text-amber-300">Pending</span>
+                      <span className="text-lg font-bold text-amber-900 dark:text-amber-200">
+                        {pieChartData.find(d => d.name === 'Pending')?.value || 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Total</span>
+                      <span className="text-lg font-bold text-blue-900 dark:text-blue-200">
+                        {proposals.length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <FiBarChart2 className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No chart data available</p>
+                <p className="text-sm text-gray-400 mt-1">Proposals data is loading or not available</p>
+              </div>
+            )}
+          </div>
         </motion.div>
 
         {/* Enhanced Action Required Section */}
@@ -1306,7 +1609,32 @@ export default function DCDashboard() {
                       
                       {/* Timeline Items */}
                       <div className="space-y-6 relative">
-                        {statusHistory.map((item) => {
+                        {statusHistory.map((item, index) => {
+                          // Calculate time differences
+                          const currentDate = new Date(item.date);
+                          const nextItem = statusHistory[index + 1];
+                          const nextDate = nextItem ? new Date(nextItem.date) : new Date(); // Use current date if it's the last item
+                          // const now = new Date();
+                          
+                          // Calculate duration in this status (days)
+                          const durationInStatus = Math.floor((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+                          
+                          // Calculate gap from previous status (if not first item)
+                          const prevItem = index > 0 ? statusHistory[index - 1] : null;
+                          const prevDate = prevItem ? new Date(prevItem.date) : null;
+                          const gapFromPrevious = prevDate ? Math.floor((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                          
+                          // Format duration text
+                          const formatDuration = (days: number) => {
+                            if (days === 0) return 'Same day';
+                            if (days === 1) return '1 day';
+                            if (days < 30) return `${days} days`;
+                            const months = Math.floor(days / 30);
+                            const remainingDays = days % 30;
+                            if (remainingDays === 0) return `${months} month${months > 1 ? 's' : ''}`;
+                            return `${months} month${months > 1 ? 's' : ''} ${remainingDays} day${remainingDays > 1 ? 's' : ''}`;
+                          };
+
                           // Determine icon and color based on action/status
                           const getIconAndColor = () => {
                             if (item.action === 'Proposal Created') {
@@ -1410,6 +1738,60 @@ export default function DCDashboard() {
                                     })}
                                   </span>
                                 </div>
+                                
+                                {/* Time Information Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+                                  {/* Gap from Previous Status */}
+                                  {gapFromPrevious !== null && gapFromPrevious > 0 && (
+                                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2">
+                                      <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-0.5">Gap from Previous</p>
+                                      <p className="text-xs font-bold text-amber-900 dark:text-amber-200">{formatDuration(gapFromPrevious)}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Duration in Status */}
+                                  <div className={`border rounded-lg p-2 ${
+                                    item.isCurrent 
+                                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' 
+                                      : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                                  }`}>
+                                    <p className={`text-xs font-medium mb-0.5 ${
+                                      item.isCurrent 
+                                        ? 'text-blue-700 dark:text-blue-300' 
+                                        : 'text-gray-700 dark:text-gray-300'
+                                    }`}>
+                                      {item.isCurrent ? 'Pending Since' : 'Duration in Status'}
+                                    </p>
+                                    <p className={`text-xs font-bold ${
+                                      item.isCurrent 
+                                        ? 'text-blue-900 dark:text-blue-200' 
+                                        : 'text-gray-900 dark:text-gray-200'
+                                    }`}>
+                                      {formatDuration(durationInStatus)}
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Next Update Date */}
+                                  {nextItem && (
+                                    <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-2">
+                                      <p className="text-xs font-medium text-purple-700 dark:text-purple-300 mb-0.5">Next Update</p>
+                                      <p className="text-xs font-bold text-purple-900 dark:text-purple-200">
+                                        {new Date(nextItem.date).toLocaleDateString('en-IN', {
+                                          day: 'numeric',
+                                          month: 'short',
+                                          year: 'numeric'
+                                        })}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {!nextItem && item.isCurrent && (
+                                    <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-2">
+                                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Next Update</p>
+                                      <p className="text-xs font-bold text-gray-900 dark:text-gray-200">Pending</p>
+                                    </div>
+                                  )}
+                                </div>
+                                
                                 <div className="space-y-2">
                                   <p className="text-sm text-gray-600 dark:text-gray-400">
                                     {item.action === 'Proposal Created' 

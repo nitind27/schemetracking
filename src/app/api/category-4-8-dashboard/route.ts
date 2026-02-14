@@ -33,6 +33,7 @@ interface Category48Stats {
   pendingForAcceptAtRFODFO: number; // Pending for Accept at RFO/DFO
   rejectedByRFODFO: number; // Rejected by RFO/DFO
   pendingAtRFODFO: number; // Pending at RFO/DFO (Under Review)
+  pendingAtPO: number; // Pending at PO
   pendingAtDLC: number; // Pending at DLC
   dlcCompleted: number; // DLC Completed
 }
@@ -51,9 +52,9 @@ export async function GET(request: Request) {
       );
     }
 
-    // Fetch ALL proposals from proposal table
-    // NO filtering by taluka_id - show ALL proposals from proposal table
-    // NO filtering by user_category_id - show all proposals
+    // Fetch proposals filtered by proposal_category_id
+    // Filter by proposal_category_id to show only Category 4 or Category 8 proposals
+    const categoryIdNum = parseInt(categoryId, 10);
     const [proposalsResult] = await pool.query<RowDataPacket[]>(`
       SELECT 
         p.*,
@@ -77,18 +78,15 @@ export async function GET(request: Request) {
       LEFT JOIN grampanchyat gp ON p.gp_id = gp.gp_id
       LEFT JOIN village v ON p.village_id = v.village_id
       WHERE p.status = 'Active'
-        -- NO filtering by taluka_id - show ALL proposals
-        -- NO filtering by user_category_id - show all proposals
+        AND p.proposal_category_id = ?
       ORDER BY p.created_at DESC
-    `);
+    `, [categoryIdNum]);
 
     const proposals = (Array.isArray(proposalsResult) ? proposalsResult : []) as Proposal[];
     
-    // Show ALL proposals from proposal table
-    // NO filtering by taluka_id - showing ALL proposals
-    // NO filtering by user_category_id - showing ALL proposals
-    console.log(`Category ${categoryId} Dashboard - Total proposals fetched (ALL proposals from proposal table):`, proposals.length);
-    console.log(`No taluka_id filtering - No user_category_id filtering - showing ALL Active proposals`);
+    // Show proposals filtered by proposal_category_id
+    console.log(`Category ${categoryId} Dashboard - Total proposals fetched (filtered by proposal_category_id = ${categoryIdNum}):`, proposals.length);
+    console.log(`Filtered by proposal_category_id = ${categoryIdNum} - showing only Category ${categoryId} proposals`);
     
     // Helper function to normalize work_status for comparison
     const normalizeWorkStatus = (status: string | number | null | undefined): string => {
@@ -134,6 +132,12 @@ export async function GET(request: Request) {
     const pendingAtRFODFOList = proposals.filter(p => {
       const status = normalizeWorkStatus(p.work_status);
       return status === 'under review';
+    });
+
+    // pendingAtPO: work_status = 'pending at po'
+    const pendingAtPOList = proposals.filter(p => {
+      const status = normalizeWorkStatus(p.work_status);
+      return status === 'pending at po';
     });
 
     // pendingAtDLC: work_status = 'pending at dlc'
@@ -183,6 +187,15 @@ export async function GET(request: Request) {
           work_status_normalized: normalizeWorkStatus(p.work_status)
         }))
       },
+      pendingAtPO: {
+        count: pendingAtPOList.length,
+        condition: "work_status = 'pending at po'",
+        sample: pendingAtPOList.slice(0, 3).map(p => ({
+          proposal_id: p.proposal_id,
+          work_status: p.work_status,
+          work_status_normalized: normalizeWorkStatus(p.work_status)
+        }))
+      },
       pendingAtDLC: {
         count: pendingAtDLCList.length,
         condition: "work_status = 'pending at dlc'",
@@ -209,6 +222,7 @@ export async function GET(request: Request) {
       pendingForAcceptAtRFODFO: pendingForAcceptList.length,
       rejectedByRFODFO: rejectedList.length,
       pendingAtRFODFO: pendingAtRFODFOList.length,
+      pendingAtPO: pendingAtPOList.length,
       pendingAtDLC: pendingAtDLCList.length,
       dlcCompleted: dlcCompletedList.length
     };
@@ -272,6 +286,7 @@ export async function GET(request: Request) {
       pendingForAcceptAtRFODFO: stats.pendingForAcceptAtRFODFO,
       rejectedByRFODFO: stats.rejectedByRFODFO,
       pendingAtRFODFO: stats.pendingAtRFODFO,
+      pendingAtPO: stats.pendingAtPO,
       pendingAtDLC: stats.pendingAtDLC,
       dlcCompleted: stats.dlcCompleted,
       actionRequiredCount: finalActionRequired.length
