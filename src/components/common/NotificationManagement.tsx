@@ -322,7 +322,7 @@ const NotificationManagement: React.FC = () => {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-              Notification Management
+            Important Notifications
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Manage and organize your notifications
