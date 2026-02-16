@@ -56,9 +56,10 @@ export default function SignInForm() {
         throw new Error(data.message || 'Login failed');
       }
 
-      // ✅ Store name in session storage
+      // ✅ Store user data in session storage
       if (data.user.name) {
         sessionStorage.setItem('userName', data.user.name);
+        sessionStorage.setItem('user_id', data.user.user_id?.toString() || '');
         sessionStorage.setItem('category_name', data.user.category_name);
         sessionStorage.setItem('category_id', data.user.category_id);
         sessionStorage.setItem('village_id', data.user.village_id);

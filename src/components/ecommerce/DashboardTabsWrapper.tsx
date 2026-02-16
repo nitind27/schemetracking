@@ -44,6 +44,7 @@ import PerformanceScorecard from './PerformanceScorecard';
 import { toast } from 'react-hot-toast';
 import TodaySurveyComponent from "../common/TodaySurveyComponent";
 import MainTab from "../common/MainTab";
+import NotificationManagement from "../common/NotificationManagement";
 // import { useRouter } from 'next/navigation';
 
 interface Metrics {
@@ -1558,6 +1559,21 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [showFilters, setShowFilters] = useState(true);
     const [allUsers, setAllUsers] = useState<User[]>([]);
+    // Initialize activeTab from localStorage or default to 'proposals'
+    const [activeTab, setActiveTab] = useState<'proposals' | 'notifications'>(() => {
+      if (typeof window !== 'undefined') {
+        const savedTab = sessionStorage.getItem('proposalManagementActiveTab') as 'proposals' | 'notifications' | null;
+        return savedTab || 'proposals';
+      }
+      return 'proposals';
+    });
+
+    // Save activeTab to sessionStorage whenever it changes
+    useEffect(() => {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('proposalManagementActiveTab', activeTab);
+      }
+    }, [activeTab]);
 
     useEffect(() => {
       fetchProposals();
@@ -1770,20 +1786,56 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Proposal Management Dashboard
-          </h2>
-          <button
-            onClick={fetchProposals}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Refresh
-          </button>
+        {/* Tab Navigation */}
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveTab('proposals')}
+              className={`px-4 py-2 font-semibold transition-colors border-b-2 ${
+                activeTab === 'proposals'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+              }`}
+            >
+              Proposals
+            </button>
+            <button
+              onClick={() => setActiveTab('notifications')}
+              className={`px-4 py-2 font-semibold transition-colors border-b-2 flex items-center gap-2 ${
+                activeTab === 'notifications'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              Notifications
+            </button>
+          </div>
+          {activeTab === 'proposals' && (
+            <button
+              onClick={fetchProposals}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
+          )}
         </div>
+
+        {/* Tab Content */}
+        {activeTab === 'notifications' ? (
+          <NotificationManagement />
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                Proposal Management Dashboard
+              </h2>
+            </div>
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8 gap-4">
@@ -3226,6 +3278,8 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                 </div>
               </div>
             </Modal>
+          </>
+        )}
           </>
         )}
       </div>

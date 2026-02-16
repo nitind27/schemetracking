@@ -17,6 +17,7 @@ export function useAuth() {
     const loadUserData = () => {
       try {
         const userName = sessionStorage.getItem('userName');
+        const userId = sessionStorage.getItem('user_id');
         const categoryName = sessionStorage.getItem('category_name');
         const categoryId = sessionStorage.getItem('category_id');
         const talukaId = sessionStorage.getItem('taluka_id');
@@ -25,7 +26,7 @@ export function useAuth() {
         if (userName && categoryName && categoryId) {
           setUser({
             name: userName,
-            user_id: '', // This would need to be stored if needed
+            user_id: userId || '',
             category_name: categoryName,
             category_id: categoryId,
             taluka_id: talukaId || '',
@@ -64,6 +65,7 @@ export function useAuth() {
         if (data.user) {
           // Update sessionStorage
           sessionStorage.setItem('userName', data.user.name);
+          sessionStorage.setItem('user_id', data.user.user_id?.toString() || '');
           sessionStorage.setItem('category_name', data.user.category_name);
           sessionStorage.setItem('category_id', data.user.category_id);
           sessionStorage.setItem('village_id', data.user.village_id);
@@ -72,7 +74,7 @@ export function useAuth() {
           // Update state
           setUser({
             name: data.user.name,
-            user_id: data.user.user_id,
+            user_id: data.user.user_id?.toString() || '',
             category_name: data.user.category_name,
             category_id: data.user.category_id,
             taluka_id: data.user.taluka_id,

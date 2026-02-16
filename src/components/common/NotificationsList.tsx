@@ -55,7 +55,11 @@ export default function NotificationsList() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/dlc-dashboard/notification');
+      // Try new API first, fallback to old API
+      let response = await fetch('/api/notifications');
+      if (!response.ok) {
+        response = await fetch('/api/dlc-dashboard/notification');
+      }
       if (response.ok) {
         const data = await response.json();
         setNotifications(data.notifications || []);
@@ -131,7 +135,9 @@ export default function NotificationsList() {
                     )}
                     {notification.pdf_file && (
                       <a
-                        href={notification.pdf_file}
+                        href={notification.pdf_file.startsWith('/api/') || notification.pdf_file.startsWith('http') 
+                          ? notification.pdf_file 
+                          : `/api/notifications/${notification.pdf_file}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-red-600 hover:text-red-800 font-medium flex items-center gap-1"

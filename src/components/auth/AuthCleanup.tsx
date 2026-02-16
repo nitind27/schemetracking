@@ -28,6 +28,7 @@ export default function AuthCleanup() {
             // Restore user data in sessionStorage
             if (data.user) {
               sessionStorage.setItem('userName', data.user.name);
+              sessionStorage.setItem('user_id', data.user.user_id?.toString() || '');
               sessionStorage.setItem('category_name', data.user.category_name);
               sessionStorage.setItem('category_id', data.user.category_id);
               sessionStorage.setItem('village_id', data.user.village_id);
