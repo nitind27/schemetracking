@@ -9,6 +9,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const categoryId = searchParams.get('category_id');
+    const dlcOnly = searchParams.get('dlc_only'); // New parameter to fetch only DLC users
 
     // Check if we need to filter for specific categories (4 and 8)
     const filterCategories = searchParams.get('filter_categories');
@@ -26,8 +27,12 @@ export async function GET(req: Request) {
       WHERE u.status = 'Active'
     `;
     
+    // If dlc_only is requested, directly filter for category_id 35 (DLC)
+    if (dlcOnly === 'true' || dlcOnly === '1') {
+      query += ` AND u.user_category_id = 35`;
+    }
     // If filter_categories is requested, filter for category_id 4 and 8
-    if (filterCategories === 'true' || filterCategories === '4,8') {
+    else if (filterCategories === 'true' || filterCategories === '4,8') {
       query += ` AND u.user_category_id IN (4, 8)`;
     }
     
@@ -52,9 +57,21 @@ export async function GET(req: Request) {
       }))
     });
 
+    // Log DLC users for debugging
+    const dlcUsers = users.filter(u => u.user_category_id === 35);
+    console.log('DLC users (category_id 35):', {
+      total: dlcUsers.length,
+      users: dlcUsers.map(u => ({
+        user_id: u.user_id,
+        name: u.name,
+        user_category_id: u.user_category_id,
+        category_name: u.user_category_name
+      }))
+    });
+
     // Filtering rules (can be extended later):
     // - If current user is category 24, only show DLC (35)
-    if (categoryId === '24' && filterCategories !== 'true' && filterCategories !== '4,8') {
+    if (categoryId === '24' && filterCategories !== 'true' && filterCategories !== '4,8' && dlcOnly !== 'true' && dlcOnly !== '1') {
       users = users.filter(u => u.user_category_id === 35);
     }
 

@@ -1691,11 +1691,19 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       .filter(Boolean) as { id: number; name: string }[];
 
     const getStatusBadge = (proposal: Proposal) => {
-      const status = proposal.work_status?.toLowerCase()?.trim() || '';
+      const rawStatus = proposal.work_status?.toString().trim() || '';
+      const status = rawStatus.toLowerCase();
       let bgColor = 'bg-gray-100 text-gray-800';
       let text = 'Not Started';
 
-      if (!status || status === 'not started yet' || status === 'not started') {
+      // Check for status = "0" - show "Not Started"
+      if (rawStatus === '0') {
+        bgColor = 'bg-gray-100 text-gray-800';
+        text = 'Not Started';
+      } else if (status === 'completed' || status === 'complete') {
+        bgColor = 'bg-green-100 text-green-800';
+        text = 'Completed';
+      } else if (!status || status === 'not started yet' || status === 'not started') {
         bgColor = 'bg-gray-100 text-gray-800';
         text = 'Pending';
       } else if (status === 'pending') {
@@ -1745,18 +1753,74 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       );
     };
 
+    // Helper function to get forwarded user category
+    const getForwardedUserCategory = (proposal: Proposal): number | null => {
+      if (!proposal.forward_to || !allUsers.length) return null;
+      const forwardToId = proposal.forward_to.toString().trim();
+      const forwardedUser = allUsers.find(u => {
+        const userId = u.user_id?.toString().trim();
+        return userId === forwardToId;
+      });
+      return forwardedUser?.user_category_id || null;
+    };
+
     const stats = {
       total: proposals.length,
       pending: proposals.filter(p => {
         const s = p.work_status?.toLowerCase()?.trim() || '';
-        return !s || s === 'not started yet' || s === 'not started' || s === 'submitted' || s === 'pending';
+        return !s || s === "0";
       }).length,
-      underReview: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'under review').length,
+      underReview: proposals.filter(p => {
+        const s = p.work_status?.toLowerCase()?.trim() || '';
+        // Include "under review" status
+        if (s === 'under review') return true;
+        // Include forwarded to RFO/DFO (category_id 24)
+        if (s === 'forwarded') {
+          const categoryId = getForwardedUserCategory(p);
+          return categoryId === 24;
+        }
+        return false;
+      }).length,
       rejected: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'rejected').length,
-      pendingAtPO: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'pending at po').length,
-      pendingAtDLC: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'pending at dlc').length,
+      pendingAtPO: proposals.filter(p => {
+        const s = p.forward_to?.toLowerCase()?.trim() || '';
+        console.log("pendingAtPO", s);
+        // Include "pending at po" status
+        if ((s === "920" || s === "457" || s === "921") && p.work_status === "forwarded") return true;
+
+        // Include forwarded to PO (category_id 4 or 8)
+        if (s === 'forwarded') {
+          const categoryId = getForwardedUserCategory(p);
+          return categoryId === 4 || categoryId === 8;
+        }
+        return false;
+      }).length,
+      pendingAtDLC: proposals.filter(p => {
+        const s = p.forward_to?.toLowerCase()?.trim() || '';
+        // Include "pending at dlc" status
+        if ((s === '470') && p.work_status === "forwarded") return true;
+        // Include forwarded to DLC (category_id 35)
+        if (s === 'forwarded') {
+          const categoryId = getForwardedUserCategory(p);
+          return categoryId === 35;
+        }
+        return false;
+      }).length,
+      pendingAtDC: proposals.filter(p => {
+        const s = p.forward_to?.toLowerCase()?.trim() || '';
+        // Include forwarded to DC (category_id 32)
+        if ((s === '458') && p.work_status === "forwarded") return true;
+        if (s === 'forwarded') {
+          const categoryId = getForwardedUserCategory(p);
+          return categoryId === 32;
+        }
+        return false;
+      }).length,
       correctionNeeded: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'correction needed').length,
-      completed: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'completed').length,
+      completed: proposals.filter(p => {
+        const s = p.work_status?.toLowerCase()?.trim() || '';
+        return s === 'completed' || s === 'complete';
+      }).length,
       forwarded: (() => {
         const currentUserId = sessionStorage.getItem('user_id');
         return proposals.filter(p => p.forward_to && p.forward_to.toString() === currentUserId).length;
@@ -1838,14 +1902,14 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Proposals</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-9 gap-4">
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow min-h-[100px] flex flex-col">
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex flex-col justify-center min-h-[60px]">
+                <p className="text-sm text-gray-600 mb-1 leading-tight">Total Proposals</p>
+                <p className="text-2xl font-bold text-gray-900 leading-tight">{stats.total}</p>
               </div>
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -1853,13 +1917,13 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pending Review</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.pending}</p>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow min-h-[100px] flex flex-col">
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex flex-col justify-center min-h-[60px]">
+                <p className="text-sm text-gray-600 mb-1 leading-tight">Pending Review</p>
+                <p className="text-2xl font-bold text-orange-600 leading-tight">{stats.pending}</p>
               </div>
-              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -1867,13 +1931,13 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Under Review</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.underReview}</p>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow min-h-[100px] flex flex-col">
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex flex-col justify-center min-h-[60px]">
+                <p className="text-sm text-gray-600 mb-1 leading-tight">Under Review</p>
+                <p className="text-2xl font-bold text-yellow-600 leading-tight">{stats.underReview}</p>
               </div>
-              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -1882,13 +1946,13 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Rejected</p>
-                <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow min-h-[100px] flex flex-col">
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex flex-col justify-center min-h-[60px]">
+                <p className="text-sm text-gray-600 mb-1 leading-tight">Rejected</p>
+                <p className="text-2xl font-bold text-red-600 leading-tight">{stats.rejected}</p>
               </div>
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -1896,13 +1960,13 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pending at PO</p>
-                <p className="text-2xl font-bold text-indigo-600">{stats.pendingAtPO}</p>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow min-h-[100px] flex flex-col">
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex flex-col justify-center min-h-[60px]">
+                <p className="text-sm text-gray-600 mb-1 leading-tight">Pending at PO</p>
+                <p className="text-2xl font-bold text-indigo-600 leading-tight">{stats.pendingAtPO}</p>
               </div>
-              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -1910,13 +1974,13 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pending at DLC</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.pendingAtDLC}</p>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow min-h-[100px] flex flex-col">
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex flex-col justify-center min-h-[60px]">
+                <p className="text-sm text-gray-600 mb-1 leading-tight">Pending at DLC</p>
+                <p className="text-2xl font-bold text-purple-600 leading-tight">{stats.pendingAtDLC}</p>
               </div>
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
@@ -1924,13 +1988,27 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Correction Needed</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.correctionNeeded}</p>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow min-h-[100px] flex flex-col">
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex flex-col justify-center min-h-[60px]">
+                <p className="text-sm text-gray-600 mb-1 leading-tight">Pending at DC</p>
+                <p className="text-2xl font-bold text-teal-600 leading-tight">{stats.pendingAtDC}</p>
               </div>
-              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow min-h-[100px] flex flex-col">
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex flex-col justify-center min-h-[60px]">
+                <p className="text-sm text-gray-600 mb-1 leading-tight">Correction Needed</p>
+                <p className="text-2xl font-bold text-orange-600 leading-tight">{stats.correctionNeeded}</p>
+              </div>
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
@@ -1938,13 +2016,13 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow min-h-[100px] flex flex-col">
+            <div className="flex items-center justify-between flex-1">
+              <div className="flex flex-col justify-center min-h-[60px]">
+                <p className="text-sm text-gray-600 mb-1 leading-tight">Completed</p>
+                <p className="text-2xl font-bold text-green-600 leading-tight">{stats.completed}</p>
               </div>
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -1953,13 +2031,13 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
           </div>
 
           {stats.forwarded > 0 && (
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Forwarded to Me</p>
-                  <p className="text-2xl font-bold text-blue-600">{stats.forwarded}</p>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow border-l-4 border-l-blue-500 min-h-[100px] flex flex-col">
+              <div className="flex items-center justify-between flex-1">
+                <div className="flex flex-col justify-center min-h-[60px]">
+                  <p className="text-sm text-gray-600 mb-1 leading-tight">Forwarded to Me</p>
+                  <p className="text-2xl font-bold text-blue-600 leading-tight">{stats.forwarded}</p>
                 </div>
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
@@ -2123,10 +2201,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       Taluka
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
+                      Village
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Village
+                      Category
                     </th>
                     
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2168,10 +2246,10 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                         {proposal.taluka_name || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-700">
-                        {getCategoryName(proposal)}
+                        {proposal.village_name || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-700">
-                        {proposal.village_name || 'N/A'}
+                        {getCategoryName(proposal)}
                       </td>
                      
                       <td className="px-4 py-3 text-sm">
@@ -3451,7 +3529,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
   return (
     <div className="w-full">
-      <TodaySurveyComponent metrics={metrics} farmersData={farmersData} />
+      {!isSection32Only && <TodaySurveyComponent metrics={metrics} farmersData={farmersData} />}
       {isDLC && dlcTab ? (
         <>{dlcTab.content}</>
       ) : isSection32Only && section32Tab ? (

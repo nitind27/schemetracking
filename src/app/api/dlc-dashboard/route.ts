@@ -31,14 +31,7 @@ LEFT JOIN users
 LEFT JOIN proposal_category 
     ON proposal.proposal_category_id = proposal_category.proposal_category_id
 WHERE proposal.status = 'Active'
-  AND LOWER(proposal.work_status) IN (
-      'pending',
-      'under review',
-      'correction needed',
-      'pending at dlc',
-      'rejected',
-      'forwarded'
-  )
+ 
 ORDER BY proposal.updated_at ASC;
 `
     );

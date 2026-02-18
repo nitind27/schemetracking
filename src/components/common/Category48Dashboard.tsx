@@ -129,12 +129,13 @@ export default function Category48Dashboard() {
   const [allUsers, setAllUsers] = useState<Array<{ user_id: number | string; name: string }>>([]);
 
   useEffect(() => {
-    // Get category_id from sessionStorage
+    // Get category_id and user_id from sessionStorage
     const catId = sessionStorage.getItem('category_id');
+    const userId = sessionStorage.getItem('user_id');
     setCategoryId(catId);
 
     if (catId === '4' || catId === '8') {
-      fetchDashboardData(catId);
+      fetchDashboardData(catId, userId);
       fetchDLCUsers();
       fetchAllUsers();
     } else {
@@ -165,22 +166,22 @@ export default function Category48Dashboard() {
 
   const getUserNameById = (userId: string | number | null | undefined): string => {
     if (!userId) return 'N/A';
-    
+
     // Try to find user by converting both to string and number
     const userIdStr = String(userId).trim();
     const userIdNum = typeof userId === 'number' ? userId : parseInt(userIdStr, 10);
-    
+
     const user = allUsers.find(u => {
       const uIdStr = String(u.user_id).trim();
       const uIdNum = typeof u.user_id === 'number' ? u.user_id : parseInt(uIdStr, 10);
-      return uIdStr === userIdStr || uIdNum === userIdNum || 
-             (isNaN(userIdNum) === false && isNaN(uIdNum) === false && uIdNum === userIdNum);
+      return uIdStr === userIdStr || uIdNum === userIdNum ||
+        (isNaN(userIdNum) === false && isNaN(uIdNum) === false && uIdNum === userIdNum);
     });
-    
+
     if (user && user.name) {
       return user.name;
     }
-    
+
     // If user not found, log for debugging
     console.warn('User not found for ID:', userId, 'Available users:', allUsers.length);
     return 'Loading...';
@@ -188,37 +189,37 @@ export default function Category48Dashboard() {
 
   const fetchDLCUsers = async () => {
     try {
-      // Fetch all active users first
-      const response = await fetch('/api/users/forward-list');
+      // Directly fetch DLC users (category_id = 35) using dlc_only parameter
+      const response = await fetch('/api/users/forward-list?dlc_only=true');
       if (response.ok) {
-        const users = await response.json();
-        console.log('All users fetched:', users.length);
-        console.log('Users with category 35:', users.filter((u: { user_category_id: number }) => u.user_category_id === 35));
-        
-        // Filter for DLC users (category_id = 35)
-        const dlcUsersList = users.filter((u: { user_category_id: number }) => u.user_category_id === 35);
-        console.log('DLC users found:', dlcUsersList.length, dlcUsersList);
-        
+        const dlcUsersList = await response.json();
+        console.log('DLC users fetched:', dlcUsersList.length, dlcUsersList);
+
         if (dlcUsersList.length > 0) {
           setDlcUsers(dlcUsersList);
           setSelectedDlcUser(dlcUsersList[0].user_id.toString());
         } else {
-          // If no DLC users found, try with category_id=24 which triggers DLC filter in API
+          console.warn('No DLC users found. Trying fallback method...');
+          // Fallback: try with category_id=24 which triggers DLC filter in API
           const response24 = await fetch('/api/users/forward-list?category_id=24');
           if (response24.ok) {
             const users24 = await response24.json();
-            console.log('Users from category_id=24:', users24);
+            console.log('Users from category_id=24 fallback:', users24);
             if (users24.length > 0) {
               setDlcUsers(users24);
               setSelectedDlcUser(users24[0].user_id.toString());
             } else {
-              console.warn('No DLC users found even with category_id=24');
+              console.warn('No DLC users found even with fallback method');
               setDlcUsers([]);
+              toast.error('No DLC users available. Please contact administrator.');
             }
+          } else {
+            setDlcUsers([]);
+            toast.error('Failed to load DLC users. Please refresh the page.');
           }
         }
       } else {
-        console.error('Failed to fetch users:', response.status);
+        console.error('Failed to fetch DLC users:', response.status);
         // Fallback: try with category_id=24
         const response24 = await fetch('/api/users/forward-list?category_id=24');
         if (response24.ok) {
@@ -226,27 +227,50 @@ export default function Category48Dashboard() {
           if (users24.length > 0) {
             setDlcUsers(users24);
             setSelectedDlcUser(users24[0].user_id.toString());
+          } else {
+            setDlcUsers([]);
+            toast.error('No DLC users found. Please contact administrator.');
           }
+        } else {
+          setDlcUsers([]);
+          toast.error('Failed to load DLC users. Please refresh the page.');
         }
       }
     } catch (error) {
       console.error('Error fetching DLC users:', error);
       toast.error('Failed to load DLC users. Please refresh the page.');
+      setDlcUsers([]);
     }
   };
 
   // Refresh function
   const handleRefresh = () => {
     if (categoryId) {
-      fetchDashboardData(categoryId);
+      const userId = sessionStorage.getItem('user_id');
+
+      fetchDashboardData(categoryId, userId);
     }
   };
 
-  const fetchDashboardData = async (catId: string) => {
+  const fetchDashboardData = async (catId: string, userId: string | null = null) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/category-4-8-dashboard?category_id=${catId}`);
 
+      // user_id is required for filtering
+      if (!userId) {
+        toast.error('User ID is required. Please login again.');
+        setLoading(false);
+        return;
+      }
+
+      // Fetch proposals from category-4-8-dashboard API
+      const url = `/api/category-4-8-dashboard?user_id=${userId}`;
+      console.log('Fetching dashboard data for user_id:', userId);
+      const response = await fetch(url);
+
+      // Fetch stats from dc-dashboard API for counting
+      const statsResponse = await fetch('/api/dc-dashboard');
+      
       if (response.ok) {
         const data = await response.json();
         console.log(`Category ${catId} Dashboard Data:`, {
@@ -257,28 +281,73 @@ export default function Category48Dashboard() {
 
         const actionRequired = data.actionRequired || [];
         const proposalsData = data.proposals || [];
+       
         setProposals(proposalsData);
 
-        // Always use stats from API if available
-        if (data.stats && typeof data.stats === 'object') {
-          const newStats: Category48Stats = {
-            totalProposals: Number(data.stats.totalProposals) || 0,
-            pendingForAcceptAtRFODFO: Number(data.stats.pendingForAcceptAtRFODFO) || 0,
-            rejectedByRFODFO: Number(data.stats.rejectedByRFODFO) || 0,
-            pendingAtRFODFO: Number(data.stats.pendingAtRFODFO) || 0,
-            pendingAtPO: Number(data.stats.pendingAtPO) || 0,
-            pendingAtDLC: Number(data.stats.pendingAtDLC) || 0,
-            dlcCompleted: Number(data.stats.dlcCompleted) || 0,
-          };
-          console.log('Setting stats from API:', newStats);
-          setStats(newStats);
+        // Get stats from dc-dashboard API for counting
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          console.log('Stats from dc-dashboard API:', statsData.stats);
+          
+          if (statsData.stats && typeof statsData.stats === 'object') {
+            // Calculate pendingAtPO from proposalsData since dc-dashboard doesn't have it
+            const pendingAtPOCount = proposalsData.filter((p: Proposal) => {
+              const status = normalizeWorkStatus(p.work_status);
+              return status === 'pending at po';
+            }).length;
+            
+            const apiStats: Category48Stats = {
+              totalProposals: Number(statsData.stats.totalProposals) || 0,
+              pendingForAcceptAtRFODFO: Number(statsData.stats.pendingForAcceptAtRFODFO) || 0,
+              rejectedByRFODFO: Number(statsData.stats.rejectedByRFODFO) || 0,
+              pendingAtRFODFO: Number(statsData.stats.pendingAtRFODFO) || 0,
+              pendingAtPO: pendingAtPOCount, // Calculate from proposalsData
+              pendingAtDLC: Number(statsData.stats.pendingAtDLC) || 0,
+              dlcCompleted: Number(statsData.stats.dlcCompleted) || 0,
+            };
+            
+            console.log('Setting stats from dc-dashboard API:', apiStats);
+            setStats(apiStats);
+          } else {
+            // Fallback: calculate from proposalsData if API stats not available
+            const calculatedStats: Category48Stats = {
+              totalProposals: proposalsData.length,
+              pendingForAcceptAtRFODFO: proposalsData.filter((p: Proposal) => {
+                const status = p.work_status;
+                return (typeof status === 'number' && status === 0) ||
+                  (typeof status === 'string' && status.trim() === '0') ||
+                  normalizeWorkStatus(status) === '0';
+              }).length,
+              rejectedByRFODFO: proposalsData.filter((p: Proposal) => {
+                const status = normalizeWorkStatus(p.work_status);
+                return status === 'rejected';
+              }).length,
+              pendingAtRFODFO: proposalsData.filter((p: Proposal) => {
+                const status = normalizeWorkStatus(p.work_status);
+                return status === 'under review';
+              }).length,
+              pendingAtPO: proposalsData.filter((p: Proposal) => {
+                const status = normalizeWorkStatus(p.work_status);
+                return status === 'pending at po';
+              }).length,
+              pendingAtDLC: proposalsData.filter((p: Proposal) => {
+                const status = normalizeWorkStatus(p.work_status);
+                return status === 'pending at dlc';
+              }).length,
+              dlcCompleted: proposalsData.filter((p: Proposal) => {
+                const status = normalizeWorkStatus(p.work_status);
+                return status === 'forwarded' ||
+                  status === 'completed' ||
+                  status === 'complete' ||
+                  status === 'approved' ||
+                  status === 'sanctioned';
+              }).length
+            };
+            console.log('Fallback: Calculated stats from proposals:', calculatedStats);
+            setStats(calculatedStats);
+          }
         } else {
-          // Fallback calculation
-          const normalizeWorkStatus = (status: string | number | null | undefined): string => {
-            if (status === null || status === undefined) return '';
-            return String(status).trim().toLowerCase();
-          };
-
+          // If dc-dashboard API fails, calculate from proposalsData
           const calculatedStats: Category48Stats = {
             totalProposals: proposalsData.length,
             pendingForAcceptAtRFODFO: proposalsData.filter((p: Proposal) => {
@@ -312,9 +381,10 @@ export default function Category48Dashboard() {
                 status === 'sanctioned';
             }).length
           };
-
+          console.log('dc-dashboard API failed, using calculated stats:', calculatedStats);
           setStats(calculatedStats);
         }
+        
         setActionRequiredProposals(actionRequired);
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -418,7 +488,7 @@ export default function Category48Dashboard() {
     setDetailsProposal(proposal);
     setIsDetailsModalOpen(true);
     setLoadingHistory(true);
-    
+
     // Fetch status history
     try {
       const response = await fetch(`/api/proposals/status-history?proposal_id=${proposal.proposal_id}`);
@@ -535,7 +605,8 @@ export default function Category48Dashboard() {
         setSelectedProposal(null);
         // Refresh dashboard data
         if (categoryId) {
-          fetchDashboardData(categoryId);
+          const userId = sessionStorage.getItem('user_id');
+          fetchDashboardData(categoryId, userId);
         }
       } else {
         toast.error(result.error || 'Failed to forward proposal');
@@ -596,7 +667,8 @@ export default function Category48Dashboard() {
         setSendBackReason('');
         // Refresh dashboard data
         if (categoryId) {
-          fetchDashboardData(categoryId);
+          const userId = sessionStorage.getItem('user_id');
+          fetchDashboardData(categoryId, userId);
         }
       } else {
         toast.error(result.error || 'Failed to send back proposal');
@@ -674,7 +746,7 @@ export default function Category48Dashboard() {
   const categoryName = categoryId === '4' ? 'Category 4' : categoryId === '8' ? 'Category 8' : 'Category';
 
   return (
-    <div  className="grid grid-cols-6 gap-4 md:gap-6">
+    <div className="grid grid-cols-6 gap-4 md:gap-6">
       <div className="col-span-12 space-y-2 xl:col-span-7">
 
 
@@ -1174,13 +1246,13 @@ export default function Category48Dashboard() {
                             <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap hidden md:table-cell">
                               {(() => {
                                 const status = normalizeWorkStatus(proposal.work_status);
-                                const isCorrectionNeeded = status === 'correction needed' || 
-                                                          proposal.remarks?.includes('Send Back') ||
-                                                          proposal.remarks?.includes('DLC Send Back');
-                                
+                                const isCorrectionNeeded = status === 'correction needed' ||
+                                  proposal.remarks?.includes('Send Back') ||
+                                  proposal.remarks?.includes('DLC Send Back');
+
                                 let displayText = '';
                                 let badgeClass = 'bg-gray-100 text-gray-800';
-                                
+
                                 if (isCorrectionNeeded) {
                                   displayText = 'Send Back to RFO/DFO';
                                   badgeClass = 'bg-orange-100 text-orange-800';
@@ -1201,7 +1273,7 @@ export default function Category48Dashboard() {
                                 } else {
                                   displayText = proposal.user_name || proposal.work_status || 'N/A';
                                 }
-                                
+
                                 return (
                                   <span className={`inline-flex px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold rounded-lg ${badgeClass}`}>
                                     {displayText}
@@ -1213,13 +1285,15 @@ export default function Category48Dashboard() {
                               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2">
                                 {(() => {
                                   const status = normalizeWorkStatus(proposal.work_status);
-                                  const isCompleted = status === 'completed' || 
-                                                      status === 'complete' || 
-                                                      status === 'approved' || 
-                                                      status === 'sanctioned' ||
-                                                      status === 'forwarded';
-                                  const isPendingAtDLC = status === 'pending at dlc';
-                                  
+                                  const userid = normalizeWorkStatus(proposal.forward_to);
+                                  const user_id = sessionStorage.getItem('user_id');
+
+                                  const isCompleted = status === 'completed' ||
+                                    status === 'complete' ||
+                                    status === 'approved' ||
+                                    status === 'sanctioned' ||
+                                    status === 'forwarded';
+                                  const isPendingAtDLC = status === 'forwarded' && userid === user_id;
                                   return (
                                     <>
                                       <motion.button
@@ -1237,7 +1311,7 @@ export default function Category48Dashboard() {
                                         whileHover={!isCompleted && !isPendingAtDLC ? { scale: 1.05 } : {}}
                                         whileTap={!isCompleted && !isPendingAtDLC ? { scale: 0.95 } : {}}
                                         onClick={() => handleForward(proposal)}
-                                        disabled={isLoadingAction || isPendingAtDLC || isCompleted}
+                                        disabled={isLoadingAction || !isPendingAtDLC}
                                         className="px-2 sm:px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1"
                                         title={isCompleted ? "Proposal is already completed" : isPendingAtDLC ? "Already forwarded to DLC" : "Forward to DLC"}
                                       >
@@ -1407,13 +1481,13 @@ export default function Category48Dashboard() {
                                 <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap">
                                   {(() => {
                                     const status = normalizeWorkStatus(proposal.work_status);
-                                    const isCorrectionNeeded = status === 'correction needed' || 
-                                                              proposal.remarks?.includes('Send Back') ||
-                                                              proposal.remarks?.includes('DLC Send Back');
-                                    
+                                    const isCorrectionNeeded = status === 'correction needed' ||
+                                      proposal.remarks?.includes('Send Back') ||
+                                      proposal.remarks?.includes('DLC Send Back');
+
                                     let displayText = proposal.work_status || 'N/A';
                                     let badgeClass = 'bg-gray-100 text-gray-800';
-                                    
+
                                     if (isCorrectionNeeded) {
                                       displayText = 'Send Back to RFO/DFO';
                                       badgeClass = 'bg-orange-100 text-orange-800';
@@ -1429,7 +1503,7 @@ export default function Category48Dashboard() {
                                       badgeClass = 'bg-green-100 text-green-800';
                                       displayText = 'Completed';
                                     }
-                                    
+
                                     return (
                                       <span className={`inline-flex px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold rounded-lg ${badgeClass}`}>
                                         {displayText}
@@ -1463,7 +1537,7 @@ export default function Category48Dashboard() {
 
             {/* Forward to DLC Modal */}
             {showForwardModal && selectedProposal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -1499,7 +1573,7 @@ export default function Category48Dashboard() {
                       >
                         {dlcUsers.map((user) => (
                           <option key={user.user_id} value={user.user_id.toString()}>
-                            {user.name} (ID: {user.user_id})
+                            {user.name}
                           </option>
                         ))}
                       </select>

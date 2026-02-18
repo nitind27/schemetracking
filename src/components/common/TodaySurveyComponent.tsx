@@ -83,7 +83,7 @@ const TodaySurveyComponent: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   };
 
   const todaySurveys = getTodaySurveys();
-  const todaySurveyCount = todaySurveys.length;
+  // const todaySurveyCount = todaySurveys.length;
 
   // Group today's surveys by taluka
   const getTalukaWiseSurveys = (): TalukaSurveyData[] => {
@@ -142,13 +142,15 @@ const TodaySurveyComponent: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
               >
                 <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
               </svg>
-              <span className="text-sm sm:text-base md:text-lg font-bold truncate">
-                <span className="hidden sm:inline">आजचे सर्वेक्षण: </span>
-                <span className="sm:hidden">आजचे: </span>
-                <span className="ml-1 sm:ml-2 inline-block bg-blue-100 text-blue-700 px-2 sm:px-3 py-1 rounded-full font-extrabold animate-pulse text-xs sm:text-sm md:text-base">
-                  {todaySurveyCount}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 min-w-0">
+                <span className="text-sm sm:text-base font-medium text-gray-700 truncate">
+                  <span className="hidden sm:inline">आजचे सर्वेक्षण: </span>
+                  <span className="sm:hidden">आजचे सर्वेक्षण: </span>
                 </span>
-              </span>
+                <span className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold bg-blue-600 text-white whitespace-nowrap">
+                  {todaySurveys.length}
+                </span>
+              </div>
             </div>
             <svg 
               className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 transition-all duration-300 ease-in-out transform ${showTalukaList ? 'rotate-180' : 'rotate-0'} hover:scale-125 flex-shrink-0`}

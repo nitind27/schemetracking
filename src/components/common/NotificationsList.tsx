@@ -88,7 +88,7 @@ export default function NotificationsList() {
 
   return (
     <motion.div
-      className="bg-white rounded-lg shadow-sm p-6"
+      className="bg-white rounded-lg shadow-sm p-6 h-[400px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       variants={containerVariants}
       initial="hidden"
       animate="visible"

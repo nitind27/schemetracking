@@ -62,9 +62,12 @@ const itemVariants = {
   },
 };
 
+type FilterType = 'all' | 'pending' | 'underReview' | 'rejected' | 'pendingAtPO' | 'pendingAtDLC' | 'correctionNeeded' | 'completed' | 'pendingAtDC' | 'overdue';
+
 export default function DLCDashboard() {
   const [loading, setLoading] = useState(true);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+ 
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
@@ -80,6 +83,7 @@ export default function DLCDashboard() {
   });
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>('pendingAtDLC');
 
   useEffect(() => {
     fetchDLCProposals();
@@ -309,24 +313,116 @@ export default function DLCDashboard() {
       toast.error('Failed to export pendency report. Please try again.');
     }
   };
+  
+
+  // Filter proposals based on selected filter
+  const filterProposals = (filter: FilterType): Proposal[] => {
+    switch (filter) {
+      case 'all':
+        return proposals;
+      case 'pending':
+        return proposals.filter(p => {
+          const s = p.work_status?.toLowerCase()?.trim() || '';
+          return !s || s === "0";
+        });
+      case 'underReview':
+        return proposals.filter(p => {
+          const s = p.work_status?.toLowerCase()?.trim() || '';
+          return s === 'under review';
+        });
+      case 'rejected':
+        return proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'rejected');
+      case 'pendingAtPO':
+        return proposals.filter(p => {
+          const s = p.forward_to?.toLowerCase()?.trim() || '';
+          return (s === "920" || s === "457" || s === "921") && p.work_status === "forwarded";
+        });
+      case 'pendingAtDC':
+        return proposals.filter(p => {
+          const s = p.forward_to?.toLowerCase()?.trim() || '';
+          return (s === '458') && p.work_status === "forwarded";
+        });
+      case 'pendingAtDLC':
+        return proposals.filter(p => {
+          const s = p.forward_to?.toLowerCase()?.trim() || '';
+          return (s === '470') && p.work_status === "forwarded" || p.work_status === "pending at dlc";
+        });
+      case 'correctionNeeded':
+        return proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'correction needed');
+      case 'completed':
+        return proposals.filter(p => {
+          const s = p.work_status?.toLowerCase()?.trim() || '';
+          return s === 'completed' || s === 'complete';
+        });
+      case 'overdue':
+        return proposals.filter(p => (p.days_pending || 0) > 30);
+      default:
+        return proposals;
+    }
+  };
+
+  // Get title based on selected filter
+  const getTableTitle = (filter: FilterType): string => {
+    const titles: Record<FilterType, string> = {
+      all: 'All Proposals',
+      pending: 'Pending Review Proposals',
+      underReview: 'Under Review Proposals',
+      rejected: 'Rejected Proposals',
+      pendingAtPO: 'Pending at PO Proposals',
+      pendingAtDLC: 'Pending at DLC Proposals',
+      correctionNeeded: 'Correction Needed Proposals',
+      completed: 'Completed Proposals',
+      pendingAtDC: 'Pending at DC Proposals',
+      overdue: 'Overdue Proposals (>30 days)'
+    };
+    return titles[filter] || 'Proposals';
+  };
+
+  // Get filtered proposals
+  const filteredProposals = filterProposals(selectedFilter);
 
   // Calculate status-wise statistics
   const stats = {
     total: proposals.length,
     pending: proposals.filter(p => {
       const s = p.work_status?.toLowerCase()?.trim() || '';
-      return !s || s === 'not started yet' || s === 'not started' || s === 'submitted' || s === 'pending';
+      return !s || s === "0";
     }).length,
-    underReview: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'under review').length,
-    rejected: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'rejected').length,
-    pendingAtPO: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'pending at po').length,
-    pendingAtDLC: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'pending at dlc').length,
-    correctionNeeded: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'correction needed').length,
-    completed: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'completed').length,
-    forwarded: proposals.filter(p => {
+    underReview: proposals.filter(p => {
       const s = p.work_status?.toLowerCase()?.trim() || '';
-      return s === 'forwarded';
+      // Include "under review" status
+      if (s === 'under review') return true;
+   
     }).length,
+    rejected: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'rejected').length,
+    pendingAtPO: proposals.filter(p => {
+      const s = p.forward_to?.toLowerCase()?.trim() || '';
+      console.log("pendingAtPO", s);
+      // Include "pending at po" status
+      if ((s === "920" || s === "457" || s === "921") && p.work_status === "forwarded") return true;
+      // Include forwarded to PO (category_id 4 or 8)
+    }).length,
+    pendingAtDC: proposals.filter(p => {
+      const s = p.forward_to?.toLowerCase()?.trim() || '';
+      // Include forwarded to DC (category_id 32)
+      if ((s === '458') && p.work_status === "forwarded") return true;
+    
+    }).length,
+    pendingAtDLC: proposals.filter(p => {
+      const s = p.forward_to?.toLowerCase()?.trim() || '';
+      // Include "pending at dlc" status
+      if ((s === '470') && p.work_status === "forwarded" || p.work_status === "pending at dlc") return true;
+      // Include forwarded to DLC (category_id 35)
+    }).length,
+    correctionNeeded: proposals.filter(p => (p.work_status?.toLowerCase()?.trim() || '') === 'correction needed').length,
+    completed: proposals.filter(p => {
+      const s = p.work_status?.toLowerCase()?.trim() || '';
+      return s === 'completed' || s === 'complete';
+    }).length,
+    forwarded: (() => {
+      const currentUserId = sessionStorage.getItem('user_id');
+      return proposals.filter(p => p.forward_to && p.forward_to.toString() === currentUserId).length;
+    })(),
     averagePendingDays: proposals.length > 0 ? Math.round(proposals.reduce((sum, p) => sum + (p.days_pending || 0), 0) / proposals.length) : 0,
     overdue: proposals.filter(p => (p.days_pending || 0) > 30).length
   };
@@ -372,7 +468,14 @@ export default function DLCDashboard() {
 
       {/* Statistics Cards */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => setSelectedFilter('all')}
+          className={`bg-white p-4 rounded-lg shadow-sm border transition-all cursor-pointer ${
+            selectedFilter === 'all' 
+              ? 'border-blue-500 shadow-md ring-2 ring-blue-200' 
+              : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Proposals</p>
@@ -386,7 +489,14 @@ export default function DLCDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => setSelectedFilter('pending')}
+          className={`bg-white p-4 rounded-lg shadow-sm border transition-all cursor-pointer ${
+            selectedFilter === 'pending' 
+              ? 'border-orange-500 shadow-md ring-2 ring-orange-200' 
+              : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Pending Review</p>
@@ -400,7 +510,14 @@ export default function DLCDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => setSelectedFilter('underReview')}
+          className={`bg-white p-4 rounded-lg shadow-sm border transition-all cursor-pointer ${
+            selectedFilter === 'underReview' 
+              ? 'border-yellow-500 shadow-md ring-2 ring-yellow-200' 
+              : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Under Review</p>
@@ -415,7 +532,14 @@ export default function DLCDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => setSelectedFilter('rejected')}
+          className={`bg-white p-4 rounded-lg shadow-sm border transition-all cursor-pointer ${
+            selectedFilter === 'rejected' 
+              ? 'border-red-500 shadow-md ring-2 ring-red-200' 
+              : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Rejected</p>
@@ -429,7 +553,14 @@ export default function DLCDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => setSelectedFilter('pendingAtPO')}
+          className={`bg-white p-4 rounded-lg shadow-sm border transition-all cursor-pointer ${
+            selectedFilter === 'pendingAtPO' 
+              ? 'border-indigo-500 shadow-md ring-2 ring-indigo-200' 
+              : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Pending at PO</p>
@@ -443,7 +574,14 @@ export default function DLCDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => setSelectedFilter('pendingAtDLC')}
+          className={`bg-white p-4 rounded-lg shadow-sm border transition-all cursor-pointer ${
+            selectedFilter === 'pendingAtDLC' 
+              ? 'border-purple-500 shadow-md ring-2 ring-purple-200' 
+              : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Pending at DLC</p>
@@ -457,7 +595,14 @@ export default function DLCDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => setSelectedFilter('correctionNeeded')}
+          className={`bg-white p-4 rounded-lg shadow-sm border transition-all cursor-pointer ${
+            selectedFilter === 'correctionNeeded' 
+              ? 'border-orange-500 shadow-md ring-2 ring-orange-200' 
+              : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Correction Needed</p>
@@ -471,7 +616,14 @@ export default function DLCDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => setSelectedFilter('completed')}
+          className={`bg-white p-4 rounded-lg shadow-sm border transition-all cursor-pointer ${
+            selectedFilter === 'completed' 
+              ? 'border-green-500 shadow-md ring-2 ring-green-200' 
+              : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Completed</p>
@@ -485,11 +637,18 @@ export default function DLCDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => setSelectedFilter('pendingAtDC')}
+          className={`bg-white p-4 rounded-lg shadow-sm border transition-all cursor-pointer ${
+            selectedFilter === 'pendingAtDC' 
+              ? 'border-teal-500 shadow-md ring-2 ring-teal-200' 
+              : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Forwarded</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.forwarded}</p>
+            <p className="text-sm text-gray-600 mb-1 leading-tight">Pending at DC</p>
+                <p className="text-2xl font-bold text-teal-600 leading-tight">{stats.pendingAtDC}</p>
             </div>
             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -499,7 +658,14 @@ export default function DLCDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div 
+          onClick={() => setSelectedFilter('overdue')}
+          className={`bg-white p-4 rounded-lg shadow-sm border transition-all cursor-pointer ${
+            selectedFilter === 'overdue' 
+              ? 'border-red-500 shadow-md ring-2 ring-red-200' 
+              : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Overdue ({'>'}30 days)</p>
@@ -518,7 +684,7 @@ export default function DLCDashboard() {
       <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Pending Proposals for Review</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">{getTableTitle(selectedFilter)}</h2>
             
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -551,7 +717,14 @@ export default function DLCDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {proposals.map((proposal) => (
+                  {filteredProposals.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                        No proposals found for this filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredProposals.map((proposal) => (
                     <tr key={proposal.proposal_id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {proposal.proposal_id}
@@ -592,7 +765,7 @@ export default function DLCDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         {(() => {
                           const status = proposal.work_status?.toLowerCase()?.trim() || '';
-                          const isSanctioned = status === 'complete' || status === 'completed' || proposal.remarks?.includes('DLC Sanctioned');
+                          const isSanctioned = status == 'complete' || status == 'completed';
                           const isSentBack = status === 'correction needed' || proposal.remarks?.includes('DLC Send Back');
                           
                           return (
@@ -606,6 +779,7 @@ export default function DLCDashboard() {
                                     : 'bg-green-600 text-white hover:bg-green-700'
                                 }`}
                               >
+                                
                                 {isSanctioned ? 'Sanctioned' : 'Sanction'}
                               </button>
                               <button
@@ -624,7 +798,8 @@ export default function DLCDashboard() {
                         })()}
                       </td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

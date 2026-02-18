@@ -42,20 +42,30 @@ interface Category48Stats {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get('category_id'); // 4 or 8
+    const userId = searchParams.get('user_id'); // user_id from sessionStorage
     
-    // Validate category_id
-    if (categoryId !== '4' && categoryId !== '8') {
+    // Validate user_id is provided
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Invalid category_id. Must be 4 or 8' },
+        { error: 'user_id is required' },
         { status: 400 }
       );
     }
 
-    // Fetch proposals filtered by proposal_category_id
-    // Filter by proposal_category_id to show only Category 4 or Category 8 proposals
-    const categoryIdNum = parseInt(categoryId, 10);
-    const [proposalsResult] = await pool.query<RowDataPacket[]>(`
+    // Fetch proposals filtered by: forward_to = user_id OR work_status = 'forwarded'
+    const userIdNum = parseInt(userId, 10);
+    
+    if (isNaN(userIdNum)) {
+      return NextResponse.json(
+        { error: 'Invalid user_id' },
+        { status: 400 }
+      );
+    }
+    
+    // Build query with filtering condition:
+    // - forward_to = user_id OR work_status = 'forwarded'
+    // - No proposal_category_id filter
+    let query = `
       SELECT 
         p.*,
         pc.name AS proposal_category_name,
@@ -78,15 +88,22 @@ export async function GET(request: Request) {
       LEFT JOIN grampanchyat gp ON p.gp_id = gp.gp_id
       LEFT JOIN village v ON p.village_id = v.village_id
       WHERE p.status = 'Active'
-        AND p.proposal_category_id = ?
-      ORDER BY p.created_at DESC
-    `, [categoryIdNum]);
+        AND (p.forward_to = ? OR LOWER(TRIM(p.work_status)) = 'forwarded')
+    `;
+    
+    const queryParams: (string | number)[] = [userIdNum];
+    
+    query += ` ORDER BY p.created_at DESC`;
+    
+    const [proposalsResult] = await pool.query<RowDataPacket[]>(query, queryParams);
 
     const proposals = (Array.isArray(proposalsResult) ? proposalsResult : []) as Proposal[];
     
-    // Show proposals filtered by proposal_category_id
-    console.log(`Category ${categoryId} Dashboard - Total proposals fetched (filtered by proposal_category_id = ${categoryIdNum}):`, proposals.length);
-    console.log(`Filtered by proposal_category_id = ${categoryIdNum} - showing only Category ${categoryId} proposals`);
+    // Show proposals filtered by: forward_to = user_id OR work_status = 'forwarded'
+    const filterInfo = `(forward_to = ${userIdNum} OR work_status = 'forwarded')`;
+    
+    console.log(`Section 3(2) Dashboard - Total proposals fetched (filtered by ${filterInfo}):`, proposals.length);
+    console.log(`Filtered by ${filterInfo} - showing only matching proposals`);
     
     // Helper function to normalize work_status for comparison
     const normalizeWorkStatus = (status: string | number | null | undefined): string => {
@@ -157,7 +174,7 @@ export async function GET(request: Request) {
     });
 
     // Log counting details for debugging
-    console.log(`Category ${categoryId} Dashboard Counting Details:`, {
+    console.log(`Section 3(2) Dashboard Counting Details:`, {
       totalProposals: proposals.length,
       pendingForAccept: {
         count: pendingForAcceptList.length,
@@ -281,7 +298,7 @@ export async function GET(request: Request) {
     }
 
     // Log final stats for debugging
-    console.log(`Category ${categoryId} Dashboard Final Stats:`, {
+    console.log(`Section 3(2) Dashboard Final Stats:`, {
       totalProposals: stats.totalProposals,
       pendingForAcceptAtRFODFO: stats.pendingForAcceptAtRFODFO,
       rejectedByRFODFO: stats.rejectedByRFODFO,
@@ -296,8 +313,7 @@ export async function GET(request: Request) {
       success: true,
       proposals,
       stats,
-      actionRequired: finalActionRequired,
-      categoryId: parseInt(categoryId)
+      actionRequired: finalActionRequired
     });
   } catch (error) {
     console.error('Error fetching Category 4/8 dashboard data:', error);
