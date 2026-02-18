@@ -3365,66 +3365,92 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   };
 
   // Main Dashboard Content Component
-  const MainDashboardContent = () => (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="w-full space-y-6"
-    >
-      
-      {/* District Summary Ribbon */}
-      <DistrictSummaryRibbon
-        farmers={farmersData.farmers}
-        talukas={farmersData.taluka}
-        villages={farmersData.villages}
-      />
+  const MainDashboardContent = () => {
+    // Filter farmersData based on category_id for category 4 and 8
+    const allowedTalukaIdsCategory4 = ['1', '2', '3'];
+    const allowedTalukaIdsCategory8 = ['4', '5', '7'];
+    
+    let filteredFarmersData = farmersData;
+    
+    if (categoryId === '4') {
+      // For category_id = 4, only show data for talukas 1, 2, 3
+      filteredFarmersData = {
+        ...farmersData,
+        farmers: farmersData.farmers.filter(f => allowedTalukaIdsCategory4.includes(String(f.taluka_id))),
+        taluka: farmersData.taluka.filter(t => allowedTalukaIdsCategory4.includes(String(t.taluka_id))),
+        villages: farmersData.villages.filter(v => allowedTalukaIdsCategory4.includes(String(v.taluka_id)))
+      };
+    } else if (categoryId === '8') {
+      // For category_id = 8, only show data for talukas 4, 5, 7
+      filteredFarmersData = {
+        ...farmersData,
+        farmers: farmersData.farmers.filter(f => allowedTalukaIdsCategory8.includes(String(f.taluka_id))),
+        taluka: farmersData.taluka.filter(t => allowedTalukaIdsCategory8.includes(String(t.taluka_id))),
+        villages: farmersData.villages.filter(v => allowedTalukaIdsCategory8.includes(String(v.taluka_id)))
+      };
+    }
 
-      {/* Enhanced KPI Cards */}
-      <EnhancedKPICards
-        farmers={farmersData.farmers}
-        schemesCount={metrics.schemes.length}
-        usersCount={metrics.users.length}
-      />
-      
-      {/* Original Dashboard Content */}
+    return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
-        className="grid grid-cols-6 gap-4 md:gap-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full space-y-6"
       >
-        <div className="col-span-12 space-y-2 xl:col-span-7">
-          <Suspense fallback={<Loader />}>
-            <DashboardTalukatabview farmersData={farmersData} />
-          </Suspense>
-        </div>
+        
+        {/* District Summary Ribbon */}
+        <DistrictSummaryRibbon
+          farmers={filteredFarmersData.farmers}
+          talukas={filteredFarmersData.taluka}
+          villages={filteredFarmersData.villages}
+        />
+
+        {/* Enhanced KPI Cards */}
+        <EnhancedKPICards
+          farmers={filteredFarmersData.farmers}
+          schemesCount={metrics.schemes.length}
+          usersCount={metrics.users.length}
+        />
+        
+        {/* Original Dashboard Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="grid grid-cols-6 gap-4 md:gap-6"
+        >
+          <div className="col-span-12 space-y-2 xl:col-span-7">
+            <Suspense fallback={<Loader />}>
+              <DashboardTalukatabview farmersData={filteredFarmersData} />
+            </Suspense>
+          </div>
+        </motion.div>
+
+        {/* Alerts and Pending Approvals Row */}
+        {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AlertsSection />
+          <PendingApprovalsSection />
+        </div> */}
+
+        {/* Recently Updated Records */}
+        {/* <RecentlyUpdatedRecords farmers={filteredFarmersData.farmers} /> */}
+
+        {/* Advanced Analytics */}
+        <AdvancedAnalytics
+          farmers={filteredFarmersData.farmers}
+          talukas={filteredFarmersData.taluka}
+          schemes={filteredFarmersData.schemes}
+        />
+
+        {/* Performance Scorecard */}
+        <PerformanceScorecard
+          talukas={filteredFarmersData.taluka}
+          farmers={filteredFarmersData.farmers}
+        />
+
       </motion.div>
-
-      {/* Alerts and Pending Approvals Row */}
-      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AlertsSection />
-        <PendingApprovalsSection />
-      </div> */}
-
-      {/* Recently Updated Records */}
-      {/* <RecentlyUpdatedRecords farmers={farmersData.farmers} /> */}
-
-      {/* Advanced Analytics */}
-      <AdvancedAnalytics
-        farmers={farmersData.farmers}
-        talukas={farmersData.taluka}
-        schemes={farmersData.schemes}
-      />
-
-      {/* Performance Scorecard */}
-      <PerformanceScorecard
-        talukas={farmersData.taluka}
-        farmers={farmersData.farmers}
-      />
-
-    </motion.div>
-  );
+    );
+  };
 
   // CFR Dashboard Content Component
   const CFRDashboardContent = () => (

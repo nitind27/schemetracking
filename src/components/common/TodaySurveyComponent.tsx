@@ -60,6 +60,10 @@ const TodaySurveyComponent: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     const userCategoryId = sessionStorage.getItem('category_id');
     const userTalukaId = sessionStorage.getItem('taluka_id');
 
+    // Define allowed taluka IDs for category_id 4 and 8
+    const allowedTalukaIdsCategory4 = ['1', '2', '3'];
+    const allowedTalukaIdsCategory8 = ['4', '5', '7'];
+
     return metrics.farmers.filter(farmer => {
       if (!farmer.update_record) return false;
 
@@ -75,6 +79,16 @@ const TodaySurveyComponent: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       // If user is PESA Coordinator (category_id = 37), only show surveys from their assigned taluka
       if (userCategoryId === '37' && userTalukaId) {
         return farmer.taluka_id === userTalukaId;
+      }
+
+      // If user is category_id = 4, only show surveys from talukas 1, 2, 3
+      if (userCategoryId === '4') {
+        return allowedTalukaIdsCategory4.includes(String(farmer.taluka_id));
+      }
+
+      // If user is category_id = 8, only show surveys from talukas 4, 5, 7
+      if (userCategoryId === '8') {
+        return allowedTalukaIdsCategory8.includes(String(farmer.taluka_id));
       }
 
       // For all other users, show all surveys
@@ -93,11 +107,23 @@ const TodaySurveyComponent: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     const userCategoryId = sessionStorage.getItem('category_id');
     const userTalukaId = sessionStorage.getItem('taluka_id');
 
-    // If user is PESA Coordinator (category_id = 37), only show their assigned taluka
-    // Otherwise, show all talukas
-    const talukasToShow = userCategoryId === '37' && userTalukaId
-      ? farmersData.taluka.filter(taluka => taluka.taluka_id.toString() === userTalukaId)
-      : farmersData.taluka;
+    // Define allowed taluka IDs for category_id 4 and 8
+    const allowedTalukaIdsCategory4 = ['1', '2', '3'];
+    const allowedTalukaIdsCategory8 = ['4', '5', '7'];
+
+    // Filter talukas based on user category
+    let talukasToShow = farmersData.taluka;
+    
+    if (userCategoryId === '37' && userTalukaId) {
+      // If user is PESA Coordinator (category_id = 37), only show their assigned taluka
+      talukasToShow = farmersData.taluka.filter(taluka => taluka.taluka_id.toString() === userTalukaId);
+    } else if (userCategoryId === '4') {
+      // If user is category_id = 4, only show talukas 1, 2, 3
+      talukasToShow = farmersData.taluka.filter(taluka => allowedTalukaIdsCategory4.includes(taluka.taluka_id.toString()));
+    } else if (userCategoryId === '8') {
+      // If user is category_id = 8, only show talukas 4, 5, 7
+      talukasToShow = farmersData.taluka.filter(taluka => allowedTalukaIdsCategory8.includes(taluka.taluka_id.toString()));
+    }
 
     // Initialize talukas with count 0
     talukasToShow.forEach(taluka => {

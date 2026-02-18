@@ -19,8 +19,8 @@ export default function AdminLayout({
     setCategoryId(category_id);
   }, []);
 
-  // Hide sidebar completely when category_id = 32, 24 or 35 (DLC)
-  const shouldHideSidebar = categoryId === "32" || categoryId === "24" || categoryId === "35";
+  // Hide sidebar completely when category_id = 32, 24, 35 (DLC), 4 or 8
+  const shouldHideSidebar = categoryId === "32" || categoryId === "24" || categoryId === "35" || categoryId === "4" || categoryId === "8";
 
   // Dynamic class for main content margin based on sidebar state
   const mainContentMargin = shouldHideSidebar
@@ -33,7 +33,7 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen xl:flex">
-      {/* Sidebar and Backdrop - only show if not category_id = 32/24/35 */}
+      {/* Sidebar and Backdrop - only show if not category_id = 32/24/35/4/8 */}
       {!shouldHideSidebar && <AppSidebar />}
       {!shouldHideSidebar && <Backdrop />}
       

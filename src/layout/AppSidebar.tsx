@@ -372,7 +372,7 @@ const AppSidebar: React.FC = () => {
     );
   }
 
-  // Hide sidebar completely when category_id = 32 (PESA Coordinator) or category_id = 24.
+  // Hide sidebar completely when category_id = 32 (PESA Coordinator), 24, 35, 4 or 8.
   // Also read directly from sessionStorage to avoid any flicker before state is set.
   const sessionCategoryId =
     typeof window !== "undefined" ? sessionStorage.getItem("category_id") : null;
@@ -380,8 +380,14 @@ const AppSidebar: React.FC = () => {
   if (
     storedValuecategory_name === "32" ||
     storedValuecategory_name === "24" ||
+    storedValuecategory_name === "35" ||
+    storedValuecategory_name === "4" ||
+    storedValuecategory_name === "8" ||
     sessionCategoryId === "32" ||
-    sessionCategoryId === "24"
+    sessionCategoryId === "24" ||
+    sessionCategoryId === "35" ||
+    sessionCategoryId === "4" ||
+    sessionCategoryId === "8"
   ) {
     return null;
   }
