@@ -1798,7 +1798,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       pendingAtDLC: proposals.filter(p => {
         const s = p.forward_to?.toLowerCase()?.trim() || '';
         // Include "pending at dlc" status
-        if ((s === '470') && p.work_status === "forwarded") return true;
+        if ((s === '470') && p.work_status === "forwarded" || p.work_status === "pending at dlc") return true;
         // Include forwarded to DLC (category_id 35)
         if (s === 'forwarded') {
           const categoryId = getForwardedUserCategory(p);
