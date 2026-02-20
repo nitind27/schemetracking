@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import type { RowDataPacket, ResultSetHeader } from 'mysql2';
+import type {  ResultSetHeader } from 'mysql2';
 
 export async function POST(request: Request) {
   let connection;
