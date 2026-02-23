@@ -1,6 +1,6 @@
 import pool from '@/lib/db';
 import { NextResponse } from 'next/server';
-import type { ResultSetHeader, RowDataPacket } from 'mysql2';
+import type { RowDataPacket } from 'mysql2';
 
 // Get all documents
 export async function GET() {
