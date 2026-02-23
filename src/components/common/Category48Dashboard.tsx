@@ -305,8 +305,7 @@ export default function Category48Dashboard() {
             }).length;
             const dlcCompletedCount = proposalsForUser.filter((p: Proposal) => {
               const status = normalizeWorkStatus(p.work_status);
-              return status === 'forwarded' ||
-                     status === 'completed' ||
+              return status === 'completed' ||
                      status === 'complete' ||
                      status === 'approved' ||
                      status === 'sanctioned';
@@ -367,8 +366,7 @@ export default function Category48Dashboard() {
               }).length,
               dlcCompleted: proposalsForUser.filter((p: Proposal) => {
                 const status = normalizeWorkStatus(p.work_status);
-                return status === 'forwarded' ||
-                  status === 'completed' ||
+                return status === 'completed' ||
                   status === 'complete' ||
                   status === 'approved' ||
                   status === 'sanctioned';
@@ -405,8 +403,7 @@ export default function Category48Dashboard() {
             }).length,
             dlcCompleted: proposalsForUser.filter((p: Proposal) => {
               const status = normalizeWorkStatus(p.work_status);
-              return status === 'forwarded' ||
-                status === 'completed' ||
+              return status === 'completed' ||
                 status === 'complete' ||
                 status === 'approved' ||
                 status === 'sanctioned';
@@ -479,8 +476,7 @@ export default function Category48Dashboard() {
       case 'dlcCompleted':
         return proposals.filter(p => {
           const status = normalizeWorkStatus(p.work_status);
-          return status === 'forwarded' ||
-            status === 'completed' ||
+          return status === 'completed' ||
             status === 'complete' ||
             status === 'approved' ||
             status === 'sanctioned';
@@ -1089,7 +1085,7 @@ export default function Category48Dashboard() {
                     <div className="p-2 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
                       <FiCheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
-                    <motion.button
+                    <motion.button                
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={(e) => {
@@ -1100,7 +1096,7 @@ export default function Category48Dashboard() {
                       title="Export PDF"
                     >
                       <FiDownload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </motion.button>
+                    </motion.button>                  
                   </div>
                   <p className="text-xs sm:text-sm font-semibold text-gray-600 mb-1 sm:mb-2 uppercase tracking-wide">DLC Completed</p>
                   <motion.p
