@@ -29,6 +29,7 @@ interface Proposal {
   proposal_category_name: string;
   work_status: string;
   forward_to: string;
+  user_id?: number;
   user_category_id: number;
   user_name: string;
   taluka_id: number;
@@ -281,8 +282,15 @@ export default function Category48Dashboard() {
 
         const actionRequired = data.actionRequired || [];
         const proposalsData = data.proposals || [];
-       
-        setProposals(proposalsData);
+        // sessionStorage se user_id lo, jahan forward_to = user_id wahi data dikhao
+        const sessionUserId = sessionStorage.getItem('user_id');
+        const proposalsForUser = sessionUserId
+          ? proposalsData.filter(
+              (p: Proposal) => String(p.forward_to) === sessionUserId
+            )
+          : proposalsData;
+
+        setProposals(proposalsForUser);
 
         // Get stats from dc-dashboard API for counting
         if (statsResponse.ok) {
@@ -290,51 +298,74 @@ export default function Category48Dashboard() {
           console.log('Stats from dc-dashboard API:', statsData.stats);
           
           if (statsData.stats && typeof statsData.stats === 'object') {
-            // Calculate pendingAtPO from proposalsData since dc-dashboard doesn't have it
-            const pendingAtPOCount = proposalsData.filter((p: Proposal) => {
+            // forward_to = session user_id wale proposals se counts
+            const pendingAtPOCount = proposalsForUser.filter((p: Proposal) => {
               const status = normalizeWorkStatus(p.work_status);
               return status === 'pending at po';
             }).length;
-            
+            const dlcCompletedCount = proposalsForUser.filter((p: Proposal) => {
+              const status = normalizeWorkStatus(p.work_status);
+              return status === 'forwarded' ||
+                     status === 'completed' ||
+                     status === 'complete' ||
+                     status === 'approved' ||
+                     status === 'sanctioned';
+            }).length;
+            // forward_to = session user_id wale proposals se hi stats (sab users ke liye)
             const apiStats: Category48Stats = {
-              totalProposals: Number(statsData.stats.totalProposals) || 0,
-              pendingForAcceptAtRFODFO: Number(statsData.stats.pendingForAcceptAtRFODFO) || 0,
-              rejectedByRFODFO: Number(statsData.stats.rejectedByRFODFO) || 0,
-              pendingAtRFODFO: Number(statsData.stats.pendingAtRFODFO) || 0,
-              pendingAtPO: pendingAtPOCount, // Calculate from proposalsData
-              pendingAtDLC: Number(statsData.stats.pendingAtDLC) || 0,
-              dlcCompleted: Number(statsData.stats.dlcCompleted) || 0,
-            };
-            
-            console.log('Setting stats from dc-dashboard API:', apiStats);
-            setStats(apiStats);
-          } else {
-            // Fallback: calculate from proposalsData if API stats not available
-            const calculatedStats: Category48Stats = {
-              totalProposals: proposalsData.length,
-              pendingForAcceptAtRFODFO: proposalsData.filter((p: Proposal) => {
+              totalProposals: proposalsForUser.length,
+              pendingForAcceptAtRFODFO: proposalsForUser.filter((p: Proposal) => {
                 const status = p.work_status;
                 return (typeof status === 'number' && status === 0) ||
                   (typeof status === 'string' && status.trim() === '0') ||
                   normalizeWorkStatus(status) === '0';
               }).length,
-              rejectedByRFODFO: proposalsData.filter((p: Proposal) => {
+              rejectedByRFODFO: proposalsForUser.filter((p: Proposal) => {
                 const status = normalizeWorkStatus(p.work_status);
                 return status === 'rejected';
               }).length,
-              pendingAtRFODFO: proposalsData.filter((p: Proposal) => {
+              pendingAtRFODFO: proposalsForUser.filter((p: Proposal) => {
                 const status = normalizeWorkStatus(p.work_status);
                 return status === 'under review';
               }).length,
-              pendingAtPO: proposalsData.filter((p: Proposal) => {
-                const status = normalizeWorkStatus(p.work_status);
-                return status === 'pending at po';
-              }).length,
-              pendingAtDLC: proposalsData.filter((p: Proposal) => {
+              pendingAtPO: pendingAtPOCount,
+              pendingAtDLC: proposalsForUser.filter((p: Proposal) => {
                 const status = normalizeWorkStatus(p.work_status);
                 return status === 'pending at dlc';
               }).length,
-              dlcCompleted: proposalsData.filter((p: Proposal) => {
+              dlcCompleted: dlcCompletedCount,
+            };
+            
+            console.log('Setting stats from dc-dashboard API:', apiStats);
+            setStats(apiStats);
+            console.log('apiStats:', apiStats);
+          } else {
+            // Fallback: calculate from proposalsForUser (forward_to = session user_id)
+            const calculatedStats: Category48Stats = {
+              totalProposals: proposalsForUser.length,
+              pendingForAcceptAtRFODFO: proposalsForUser.filter((p: Proposal) => {
+                const status = p.work_status;
+                return (typeof status === 'number' && status === 0) ||
+                  (typeof status === 'string' && status.trim() === '0') ||
+                  normalizeWorkStatus(status) === '0';
+              }).length,
+              rejectedByRFODFO: proposalsForUser.filter((p: Proposal) => {
+                const status = normalizeWorkStatus(p.work_status);
+                return status === 'rejected';
+              }).length,
+              pendingAtRFODFO: proposalsForUser.filter((p: Proposal) => {
+                const status = normalizeWorkStatus(p.work_status);
+                return status === 'under review';
+              }).length,
+              pendingAtPO: proposalsForUser.filter((p: Proposal) => {
+                const status = normalizeWorkStatus(p.work_status);
+                return status === 'pending at po';
+              }).length,
+              pendingAtDLC: proposalsForUser.filter((p: Proposal) => {
+                const status = normalizeWorkStatus(p.work_status);
+                return status === 'pending at dlc';
+              }).length,
+              dlcCompleted: proposalsForUser.filter((p: Proposal) => {
                 const status = normalizeWorkStatus(p.work_status);
                 return status === 'forwarded' ||
                   status === 'completed' ||
@@ -347,32 +378,32 @@ export default function Category48Dashboard() {
             setStats(calculatedStats);
           }
         } else {
-          // If dc-dashboard API fails, calculate from proposalsData
+          // If dc-dashboard API fails, calculate from proposalsForUser (forward_to = session user_id)
           const calculatedStats: Category48Stats = {
-            totalProposals: proposalsData.length,
-            pendingForAcceptAtRFODFO: proposalsData.filter((p: Proposal) => {
+            totalProposals: proposalsForUser.length,
+            pendingForAcceptAtRFODFO: proposalsForUser.filter((p: Proposal) => {
               const status = p.work_status;
               return (typeof status === 'number' && status === 0) ||
                 (typeof status === 'string' && status.trim() === '0') ||
                 normalizeWorkStatus(status) === '0';
             }).length,
-            rejectedByRFODFO: proposalsData.filter((p: Proposal) => {
+            rejectedByRFODFO: proposalsForUser.filter((p: Proposal) => {
               const status = normalizeWorkStatus(p.work_status);
               return status === 'rejected';
             }).length,
-            pendingAtRFODFO: proposalsData.filter((p: Proposal) => {
+            pendingAtRFODFO: proposalsForUser.filter((p: Proposal) => {
               const status = normalizeWorkStatus(p.work_status);
               return status === 'under review';
             }).length,
-            pendingAtPO: proposalsData.filter((p: Proposal) => {
+            pendingAtPO: proposalsForUser.filter((p: Proposal) => {
               const status = normalizeWorkStatus(p.work_status);
               return status === 'pending at po';
             }).length,
-            pendingAtDLC: proposalsData.filter((p: Proposal) => {
+            pendingAtDLC: proposalsForUser.filter((p: Proposal) => {
               const status = normalizeWorkStatus(p.work_status);
               return status === 'pending at dlc';
             }).length,
-            dlcCompleted: proposalsData.filter((p: Proposal) => {
+            dlcCompleted: proposalsForUser.filter((p: Proposal) => {
               const status = normalizeWorkStatus(p.work_status);
               return status === 'forwarded' ||
                 status === 'completed' ||
@@ -385,7 +416,13 @@ export default function Category48Dashboard() {
           setStats(calculatedStats);
         }
         
-        setActionRequiredProposals(actionRequired);
+        // forward_to = session user_id wale hi action-required dikhao
+        const actionRequiredForUser = sessionUserId
+          ? actionRequired.filter(
+              (p: Proposal) => String(p.forward_to) === sessionUserId
+            )
+          : actionRequired;
+        setActionRequiredProposals(actionRequiredForUser);
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('Failed to fetch dashboard data:', response.status, errorData);
