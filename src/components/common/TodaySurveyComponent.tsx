@@ -49,12 +49,11 @@ const TodaySurveyComponent: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   const [showTalukaList, setShowTalukaList] = useState(false);
   const [selectedTalukaData, setSelectedTalukaData] = useState<TalukaSurveyData | null>(null);
   const [isTalukaDetailModalOpen, setIsTalukaDetailModalOpen] = useState(false);
+  // Default to current date (yyyy-MM-dd for input[type="date"])
+  const [selectedDate, setSelectedDate] = useState<string>(() => format(new Date(), "yyyy-MM-dd"));
 
-
-  // Filter today's surveys
-  const getTodaySurveys = () => {
-    const today = new Date();
-    const dateStr = format(today, 'yyyy-MM-dd');
+  // Filter surveys by selected date
+  const getSurveysByDate = (dateStr: string) => {
 
     // Get user information from sessionStorage for filtering
     const userCategoryId = sessionStorage.getItem('category_id');
@@ -96,8 +95,9 @@ const TodaySurveyComponent: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     });
   };
 
-  const todaySurveys = getTodaySurveys();
-  // const todaySurveyCount = todaySurveys.length;
+  const filteredSurveys = getSurveysByDate(selectedDate);
+  const isToday = selectedDate === format(new Date(), "yyyy-MM-dd");
+  // const todaySurveyCount = filteredSurveys.length;
 
   // Group today's surveys by taluka
   const getTalukaWiseSurveys = (): TalukaSurveyData[] => {
@@ -136,7 +136,7 @@ const TodaySurveyComponent: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     });
 
     // Count surveys for each taluka
-    todaySurveys.forEach(farmer => {
+    filteredSurveys.forEach(farmer => {
       const talukaId = farmer.taluka_id?.toString() || '';
       if (talukaMap.has(talukaId)) {
         const talukaData = talukaMap.get(talukaId);
@@ -153,41 +153,62 @@ const TodaySurveyComponent: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
   return (
     <div className="w-full">
-      {/* Today's Survey Count Button */}
+      {/* One card: date picker + label + count + up/down arrow */}
       <div className="w-full mb-4">
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => setShowTalukaList(!showTalukaList)}
-          className="w-full bg-white hover:bg-gray-50 text-black font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-lg shadow-lg hover:shadow-xl border-2 border-gray-200 hover:border-blue-300 transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.99]"
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setShowTalukaList(!showTalukaList)}
+          className="w-full bg-white hover:bg-gray-50 text-black font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-lg shadow-lg hover:shadow-xl border-2 border-gray-200 hover:border-blue-300 transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-between gap-2"
         >
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-              <svg 
-                className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 transition-all duration-300 transform hover:scale-110 hover:rotate-12 flex-shrink-0" 
-                fill="currentColor" 
-                viewBox="0 0 20 20"
-              >
-                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-              </svg>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 min-w-0">
-                <span className="text-sm sm:text-base font-medium text-gray-700 truncate">
-                  <span className="hidden sm:inline">आजचे सर्वेक्षण: </span>
-                  <span className="sm:hidden">आजचे सर्वेक्षण: </span>
-                </span>
-                <span className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold bg-blue-600 text-white whitespace-nowrap">
-                  {todaySurveys.length}
-                </span>
-              </div>
-            </div>
-            <svg 
-              className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 transition-all duration-300 ease-in-out transform ${showTalukaList ? 'rotate-180' : 'rotate-0'} hover:scale-125 flex-shrink-0`}
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <svg
+              className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
             </svg>
+            {/* Date picker - click opens native picker, does not toggle expand */}
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              max={format(new Date(), "yyyy-MM-dd")}
+              className="flex-shrink-0 w-[130px] sm:w-[140px] px-2 py-1.5 sm:px-3 sm:py-2 rounded-md border-2 border-gray-200 bg-white text-gray-800 text-xs sm:text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none cursor-pointer"
+              title="तारीख निवडा"
+            />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 min-w-0">
+              <span className="text-sm sm:text-base font-medium text-gray-700 truncate">
+                {isToday ? (
+                  <>
+                    <span className="hidden sm:inline">आजचे सर्वेक्षण: </span>
+                    <span className="sm:hidden">आजचे सर्वेक्षण: </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">तारखेनुसार सर्वेक्षण: </span>
+                    <span className="sm:hidden">तारखेनुसार: </span>
+                  </>
+                )}
+              </span>
+              <span className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold bg-blue-600 text-white whitespace-nowrap">
+                {filteredSurveys.length}
+              </span>
+            </div>
           </div>
-        </button>
+          <svg
+            className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 transition-all duration-300 ease-in-out transform flex-shrink-0 ${showTalukaList ? "rotate-180" : "rotate-0"}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
 
         {/* Taluka List - Expandable */}
         <div 

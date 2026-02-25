@@ -41,6 +41,48 @@ const STATUS_LABELS = [
 ];
 const PAGE_SIZE = 50;
 
+/** Play/pause button for audio from /api/uploadsaudio */
+function AudioPlayButton({ url }: { url: string }) {
+  const audioRef = React.useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = React.useState(false);
+
+  const toggle = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (playing) {
+      el.pause();
+    } else {
+      el.play().catch(() => {});
+    }
+    setPlaying(!playing);
+  };
+
+  return (
+    <>
+      <audio
+        ref={audioRef}
+        src={url}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+        preload="metadata"
+      />
+      <button
+        type="button"
+        onClick={toggle}
+        className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+        title={playing ? "Pause" : "Play"}
+      >
+        {playing ? (
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+        ) : (
+          <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+        )}
+      </button>
+    </>
+  );
+}
+
 function getLatestSchemeStatuses(schemesString: string | undefined) {
   if (!schemesString) return {};
   const entries = schemesString.split("|");
@@ -209,14 +251,18 @@ const SchemeStatusBarChart = ({
   // Download Excel
   const handleDownload = () => {
     if (!paginatedFarmers.length) return;
-    const data = paginatedFarmers.map((farmer) => ({
-      FarmerId: farmer.farmer_id || "",
-      Name: farmer.farmer_record?.split('|')[0] || "",
-      Aadhaar: farmer.farmer_record?.split('|')[5] || "",
-      Taluka: taluka.find((t) => t.taluka_id === Number(farmer.taluka_id))?.name || "",
-      Village: villages.find((v) => v.village_id === Number(farmer.village_id))?.name || "",
-      SchemeStatus: selectedStatus,
-    }));
+    const data = paginatedFarmers.map((farmer) => {
+      const record = farmer.farmer_record?.split("|") || [];
+      return {
+        FarmerId: farmer.farmer_id || "",
+        ClaimID: record[15] || "",
+        Name: record[0] || "",
+        Aadhaar: record[5] || "",
+        Shera: (record[19] ?? "").trim() || "",
+        Remarks: (record[18] ?? "").trim() || "",
+        SchemeStatus: selectedStatus,
+      };
+    });
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Farmers");
@@ -273,6 +319,18 @@ const SchemeStatusBarChart = ({
         <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-4">
           Scheme wise IFR holders
         </h2>
+        {/* Color legend: which bar is for what */}
+        <div className="flex flex-wrap gap-4 sm:gap-6 mb-3 text-sm">
+          {STATUS_LABELS.map((s) => (
+            <span key={s.value} className="flex items-center gap-2">
+              <span
+                className="w-4 h-4 rounded shrink-0"
+                style={{ backgroundColor: s.color }}
+              />
+              <span className="text-gray-700">{s.label}</span>
+            </span>
+          ))}
+        </div>
         <div className="h-[300px] md:h-[500px] w-full min-w-[600px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -360,6 +418,18 @@ const SchemeStatusBarChart = ({
               </div>
             </div>
           </div>
+        </div>
+        {/* Color legend: which bar is for what */}
+        <div className="flex flex-wrap gap-4 sm:gap-6 mb-3 text-sm">
+          {STATUS_LABELS.map((s) => (
+            <span key={s.value} className="flex items-center gap-2">
+              <span
+                className="w-4 h-4 rounded shrink-0"
+                style={{ backgroundColor: s.color }}
+              />
+              <span className="text-gray-700">{s.label}</span>
+            </span>
+          ))}
         </div>
         <div className="h-[300px] md:h-[500px] w-full min-w-[600px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -474,28 +544,31 @@ const SchemeStatusBarChart = ({
             </div>
           </div>
           <div className="space-y-4">
-            {talukaStats.map((t) => (
-              <div key={t.taluka_id} className="mb-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">{t.name}</span>
-                  <span className="text-xs text-gray-600">
-                    {t.count} / {t.total} ({t.percent.toFixed(1)}%)
-                  </span>
-                </div>
-                <div
-                  className="bg-gray-200 rounded h-4 cursor-pointer w-full"
-                  onClick={() => {
-                    setSelectedTaluka(t);
-                    setModalLevel("taluka");
-                  }}
-                >
+            {talukaStats.map((t) => {
+              const remainingPercent = Math.round((100 - t.percent) * 10) / 10;
+              return (
+                <div key={t.taluka_id} className="mb-2">
+                  <div className="flex justify-between items-center flex-wrap gap-1">
+                    <span className="font-medium">{t.name}</span>
+                    <span className="text-xs text-gray-600">
+                      {t.count} / {t.total} ({t.percent.toFixed(1)}%) — Remaining: {remainingPercent.toFixed(1)}%
+                    </span>
+                  </div>
                   <div
-                    className="h-4 rounded"
-                    style={{ width: `${t.percent}%`, background: selectedStatusColor }}
-                  />
+                    className="bg-gray-200 rounded h-4 cursor-pointer w-full"
+                    onClick={() => {
+                      setSelectedTaluka(t);
+                      setModalLevel("taluka");
+                    }}
+                  >
+                    <div
+                      className="h-4 rounded"
+                      style={{ width: `${t.percent}%`, background: selectedStatusColor }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Modal>
       )}
@@ -538,29 +611,32 @@ const SchemeStatusBarChart = ({
           </div>
           
           <div className="space-y-4 h-96 overflow-scroll">
-            {filteredVillageStats.map((v) => (
-              <div key={v.village_id} className="mb-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">{v.name}</span>
-                  <span className="text-xs text-gray-600">
-                    {v.count} / {v.total} ({v.percent.toFixed(1)}%)
-                  </span>
-                </div>
-                <div
-                  className="bg-gray-200 rounded h-4 cursor-pointer w-full"
-                  onClick={() => {
-                    setSelectedVillage(v);
-                    setModalLevel("village");
-                    setPage(1);
-                  }}
-                >
+            {filteredVillageStats.map((v) => {
+              const remainingPercent = Math.round((100 - v.percent) * 10) / 10;
+              return (
+                <div key={v.village_id} className="mb-2">
+                  <div className="flex justify-between items-center flex-wrap gap-1">
+                    <span className="font-medium">{v.name}</span>
+                    <span className="text-xs text-gray-600">
+                      {v.count} / {v.total} ({v.percent.toFixed(1)}%) — Remaining: {remainingPercent.toFixed(1)}%
+                    </span>
+                  </div>
                   <div
-                    className="h-4 rounded"
-                    style={{ width: `${v.percent}%`, background: selectedStatusColor }}
-                  />
+                    className="bg-gray-200 rounded h-4 cursor-pointer w-full"
+                    onClick={() => {
+                      setSelectedVillage(v);
+                      setModalLevel("village");
+                      setPage(1);
+                    }}
+                  >
+                    <div
+                      className="h-4 rounded"
+                      style={{ width: `${v.percent}%`, background: selectedStatusColor }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {filteredVillageStats.length === 0 && villageSearchTerm && (
               <div className="text-center py-4 text-gray-500">
                 No villages found matching {villageSearchTerm}
@@ -603,28 +679,48 @@ const SchemeStatusBarChart = ({
                   <th className="border px-2 py-1">Claim ID</th>
                   <th className="border px-2 py-1">Name</th>
                   <th className="border px-2 py-1">Aadhaar</th>
-                  <th className="border px-2 py-1">Taluka</th>
-                  <th className="border px-2 py-1">Village</th>
+                  <th className="border px-2 py-1">Shera</th>
+                  <th className="border px-2 py-1">Remarks</th>
+                  <th className="border px-2 py-1">Audio</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedFarmers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-4">
+                    <td colSpan={7} className="text-center py-4">
                       No data found.
                     </td>
                   </tr>
                 ) : (
-                  paginatedFarmers.map((farmer, idx) => (
-                    <tr key={farmer.farmer_id || ""}>
-                      <td className="border px-2 py-1">{(page - 1) * PAGE_SIZE + idx + 1}</td>
-                      <td className="border px-2 py-1">{farmer.farmer_record?.split('|')[15] || ""}</td>
-                      <td className="border px-2 py-1">{farmer.farmer_record?.split('|')[0] || ""}</td>
-                      <td className="border px-2 py-1">{farmer.farmer_record?.split('|')[5] || ""}</td>
-                      <td className="border px-2 py-1">{selectedTaluka?.name || ""}</td>
-                      <td className="border px-2 py-1">{selectedVillage?.name || ""}</td>
-                    </tr>
-                  ))
+                  paginatedFarmers.map((farmer, idx) => {
+                    const record = farmer.farmer_record?.split("|") || [];
+                    const remarks = (record[18] ?? "").trim();
+                    // const shera = (record[19] ?? "").trim();
+                    const rawAudio = (farmer as unknown as Record<string, unknown>).uploaded_audio;
+                    const audioFromDb = Array.isArray(rawAudio) ? (rawAudio[0] as string) : (rawAudio as string | undefined);
+                    const rec19 = (record[19] ?? "").trim();
+                    const audioFromRecord = /\.(m4a|mp3|wav|ogg|aac|webm)$/i.test(rec19) ? rec19 : "";
+                    const audioFilename = audioFromDb || audioFromRecord;
+                    const audioUrl = audioFilename ? `/api/uploadsaudio/${encodeURIComponent(audioFilename)}` : null;
+                    const sheraText = audioFromRecord ? (record[20] ?? "").trim() : rec19;
+                    return (
+                      <tr key={farmer.farmer_id || ""}>
+                        <td className="border px-2 py-1">{(page - 1) * PAGE_SIZE + idx + 1}</td>
+                        <td className="border px-2 py-1">{record[15] || ""}</td>
+                        <td className="border px-2 py-1">{record[0] || ""}</td>
+                        <td className="border px-2 py-1">{record[5] || ""}</td>
+                        <td className="border px-2 py-1 max-w-[120px] truncate" title={sheraText}>{sheraText || "—"}</td>
+                        <td className="border px-2 py-1 max-w-[120px] truncate" title={remarks}>{remarks || "—"}</td>
+                        <td className="border px-2 py-1">
+                          {audioUrl ? (
+                            <AudioPlayButton url={audioUrl} />
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

@@ -52,6 +52,43 @@ type TalukaCount = {
 };
 type TalukaCounts = Record<string, TalukaCount>;
 
+/** Play/pause button for audio from /api/uploadsaudio */
+function AudioPlayButton({ url }: { url: string }) {
+    const audioRef = React.useRef<HTMLAudioElement>(null);
+    const [playing, setPlaying] = React.useState(false);
+    const toggle = () => {
+        const el = audioRef.current;
+        if (!el) return;
+        if (playing) el.pause();
+        else el.play().catch(() => {});
+        setPlaying(!playing);
+    };
+    return (
+        <>
+            <audio
+                ref={audioRef}
+                src={url}
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
+                onEnded={() => setPlaying(false)}
+                preload="metadata"
+            />
+            <button
+                type="button"
+                onClick={toggle}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors mt-1"
+                title={playing ? "Pause" : "Play"}
+            >
+                {playing ? (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                ) : (
+                    <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                )}
+            </button>
+        </>
+    );
+}
+
 interface TalukawiseserveProps {
     talukaCounts: TalukaCounts;
     datataluka: Taluka[];
@@ -120,6 +157,17 @@ const Talukawiseserve: React.FC<TalukawiseserveProps> = ({
         setCategoryId(category_id);
         setUserTalukaId(taluka_id);
     }, []);
+
+    // Lock body scroll when taluka/village modal is open so user doesn't have to scroll the page
+    useEffect(() => {
+        if (openTaluka) {
+            const prev = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            return () => {
+                document.body.style.overflow = prev;
+            };
+        }
+    }, [openTaluka]);
 
     const usersByTalukaVillage = React.useMemo(() => {
         return usersData.reduce<Record<string, string[]>>((acc, user) => {
@@ -560,10 +608,17 @@ const getFarmersForVillage = (
         return sortByColorAndPercent(arr);
     }, [talukaCounts, categoryId, userTalukaId, datataluka]);
 
-    // Helper to get all farmer details in a readable format
+    // Helper to get all farmer details in a readable format (last two: Remarks index 18, Shera/Audio index 19)
     const getFarmerDetails = (farmer: Farmer) => {
         const record = farmer.farmer_record?.split('|') || [];
-        return [
+        const remarks = (record[18] ?? "").trim();
+        const rec19 = (record[19] ?? "").trim();
+        const isAudioFile = /\.(m4a|mp3|wav|ogg|aac|webm)$/i.test(rec19);
+        const rawAudio = (farmer as unknown as Record<string, unknown>).uploaded_audio;
+        const audioFromDb = Array.isArray(rawAudio) ? (rawAudio[0] as string) : (rawAudio as string | undefined);
+        const audioFilename = audioFromDb || (isAudioFile ? rec19 : "");
+        // const sheraValue = isAudioFile ? (record[20] ?? "").trim() : rec19;
+        const details: Array<{ label: string; value?: string; img?: string; gis?: string; audio?: string }> = [
             { label: "IFR Name", value: record[0] || "" },
             { label: "Adivasi", value: record[1] || "" },
             { label: "Gat No", value: record[2] || "" },
@@ -575,21 +630,23 @@ const getFarmersForVillage = (
             { label: "Kisan ID", value: record[8] || "" },
             { label: "DOB", value: record[9] || "" },
             { label: "Gender", value: record[10] || "" },
-            // { label: "Profile Photo", value: record[11] || "" },
-            // { label: "Aadhaar Photo", value: record[12] || "" },
             { label: "Compartment Number", value: record[13] || "" },
             { label: "Schedule J", value: record[14] || "" },
             { label: "Claim ID", value: record[15] || "" },
             { label: "Created At", value: record[16] || "" },
             { label: "Updated At", value: record[17] || "" },
+            // { label: "Remarks", value: remarks || "—" },
+            { label: "Shera", value: remarks || "—" },
             { label: "Village", value: getVillageName(farmer.village_id) },
             { label: "Taluka", value: getTalukaName(farmer.taluka_id) },
             { label: "Status", value: farmer.status },
             { label: "Photo", img: farmer.geo_photo },
-            // { label: "profilephoto", profilephoto: record[11] || "" },
             { label: "GIS", gis: farmer.gis },
-            // Add more fields as needed
         ];
+        if (audioFilename) {
+            details.push({ label: "Audio", audio: audioFilename });
+        }
+        return details;
     };
 
     // Helper to download farmer details as PDF
@@ -601,7 +658,7 @@ const getFarmersForVillage = (
         doc.text('IFR Holder Details', 14, 18);
 
         const tableData = details
-            .filter(item => !item.img && !item.gis)
+            .filter(item => !item.img && !item.gis && !item.audio)
             .map(item => [item.label, item.value || ""]);
 
         autoTable(doc, {
@@ -718,10 +775,10 @@ const getFarmersForVillage = (
             </div>
             {/* Modal */}
             {openTaluka && (
-                <div className="fixed inset-0 bg-[#0303033f] bg-opacity-50 z-9999 flex items-center justify-center ">
-                    <div className={`bg-white rounded-lg shadow-lg p-6 overflow-y-auto mt-5 ${!selectedVillage
-                        ? 'w-full max-w-2xl max-h-[70vh]'
-                        : 'w-full max-w-6xl max-h-[90vh]'
+                <div className="fixed inset-0 min-h-screen bg-[#0303033f] bg-opacity-50 z-[9999] flex items-start justify-center pt-6 pb-6 overflow-y-auto overscroll-contain">
+                    <div className={`bg-white rounded-lg shadow-lg p-6 overflow-y-auto flex-shrink-0 ${!selectedVillage
+                        ? 'w-full max-w-2xl max-h-[85vh]'
+                        : 'w-full max-w-6xl max-h-[85vh]'
                         }`}>
                         <div className="flex justify-between items-center mb-4">
                             <div className='flex gap-5'>
@@ -1063,7 +1120,11 @@ const getFarmersForVillage = (
                                         <div key={item.label + idx} className="flex flex-col border rounded p-2 bg-gray-50">
 
                                             <span className="text-xs text-gray-500">{item.label}</span>
-                                            <span className="font-semibold text-gray-800">{item.value}</span>
+                                            {item.audio ? (
+                                                <AudioPlayButton url={`/api/uploadsaudio/${encodeURIComponent(item.audio)}`} />
+                                            ) : (
+                                                <span className="font-semibold text-gray-800">{item.value}</span>
+                                            )}
 
                                             {/* Image display logic */}
                                             {item.img && (

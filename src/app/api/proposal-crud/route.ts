@@ -4,6 +4,14 @@ import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 import fs from 'fs';
 import path from 'path';
 
+/** Generate a unique filename to avoid overwrites when uploading multiple files */
+function uniqueDocFilename(originalName: string, index: number): string {
+  const base = path.basename(originalName);
+  const ext = path.extname(base);
+  const nameWithoutExt = base.slice(0, -ext.length) || 'file';
+  return `${nameWithoutExt}-${Date.now()}-${index}${ext}`;
+}
+
 export async function GET() {
   let connection;
   try {
@@ -103,20 +111,27 @@ export async function POST(request: Request) {
         await fs.promises.writeFile(pdfFullPath2, buffer);
       }
 
-      // Handle docFiles
+      // Handle multiple docFiles — unique filenames and build proposal_document_id
       const docFiles = formData.getAll('docFiles') as File[];
+      let proposalDocumentIdValue = proposal_document_id || ''; // optional single id from client
       if (docFiles.length > 0) {
         if (!fs.existsSync(docFileDir)) {
           fs.mkdirSync(docFileDir, { recursive: true });
         }
 
-        for (const file of docFiles) {
+        const savedEntries: string[] = [];
+        for (let i = 0; i < docFiles.length; i++) {
+          const file = docFiles[i];
           if (file.size > 0) {
-            const baseName = path.basename(file.name);
-            const fullPath = path.join(docFileDir, baseName);
+            const uniqueName = uniqueDocFilename(file.name, i);
+            const fullPath = path.join(docFileDir, uniqueName);
             const buffer = Buffer.from(await file.arrayBuffer());
             await fs.promises.writeFile(fullPath, buffer);
+            savedEntries.push(`${i}}${uniqueName}`);
           }
+        }
+        if (savedEntries.length > 0) {
+          proposalDocumentIdValue = savedEntries.join('|');
         }
       }
 
@@ -126,7 +141,7 @@ export async function POST(request: Request) {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', NOW(), NOW())`,
         [
           proposal_category_id,
-          proposal_document_id,
+          proposalDocumentIdValue,
           pdfOrigName,
           remarks,
           land_details,
@@ -234,6 +249,7 @@ export async function POST(request: Request) {
 
       const newProposalDocumentId = proposal_document_id || '';
       const newFilesById: Record<string, string> = {};
+      let nextDocId = 0;
       if (newProposalDocumentId) {
         const newEntries = newProposalDocumentId.split('|');
         for (const entry of newEntries) {
@@ -243,24 +259,35 @@ export async function POST(request: Request) {
             const id = parts[0].trim();
             const fn = parts[1].trim();
             newFilesById[id] = fn;
+            const n = parseInt(id, 10);
+            if (!Number.isNaN(n) && n >= nextDocId) nextDocId = n + 1;
           }
         }
       }
 
-      // Upload new docFiles
+      // Upload new docFiles with unique names and merge into proposal_document_id
       const docFiles = formData.getAll('docFiles') as File[];
+      let finalProposalDocumentId = newProposalDocumentId;
       if (docFiles.length > 0) {
         if (!fs.existsSync(docFileDir)) {
           fs.mkdirSync(docFileDir, { recursive: true });
         }
 
-        for (const file of docFiles) {
+        const newEntries: string[] = [];
+        for (let i = 0; i < docFiles.length; i++) {
+          const file = docFiles[i];
           if (file.size > 0) {
-            const baseName = path.basename(file.name);
-            const fullPath = path.join(docFileDir, baseName);
+            const uniqueName = uniqueDocFilename(file.name, i);
+            const fullPath = path.join(docFileDir, uniqueName);
             const buffer = Buffer.from(await file.arrayBuffer());
             await fs.promises.writeFile(fullPath, buffer);
+            newEntries.push(`${nextDocId + i}}${uniqueName}`);
           }
+        }
+        if (newEntries.length > 0) {
+          finalProposalDocumentId = finalProposalDocumentId
+            ? `${finalProposalDocumentId}|${newEntries.join('|')}`
+            : newEntries.join('|');
         }
       }
 
@@ -296,7 +323,7 @@ export async function POST(request: Request) {
           WHERE proposal_id = ?`,
         [
           proposal_category_id,
-          proposal_document_id,
+          finalProposalDocumentId,
           pdfFileName,
           remarks,
           land_details,

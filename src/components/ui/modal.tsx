@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
@@ -52,24 +53,31 @@ export const Modal: React.FC<ModalProps> = ({
 
   const contentClasses = isFullscreen
     ? "w-5 h-full"
-    : "relative w-full max-w-2xl mx-auto rounded-3xl bg-white dark:bg-gray-900";
+    : "relative w-full max-w-2xl mx-auto rounded-3xl bg-white dark:bg-gray-900 max-h-[calc(100vh-2rem)] overflow-y-auto";
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center overflow-y-auto modal z-99999 ">
-      {!isFullscreen && (
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] overflow-y-auto">
+      {/* Centering wrapper - viewport height, modal always visible in center */}
+      <div className="min-h-[100dvh] flex items-center justify-center p-4">
+        {!isFullscreen && (
+          <div
+            className="fixed inset-0 bg-black/30 backdrop-blur-md backdrop-saturate-150 -z-[1]"
+            onClick={onClose}
+            aria-hidden
+          />
+        )}
         <div
-          className="fixed inset-0 h-full w-full bg-black/30 backdrop-blur-md backdrop-saturate-150"
-          onClick={onClose}
-        ></div>
-      )}
-      <div
-        ref={modalRef}
-        className={`${contentClasses}  ${className}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-       
-        <div>{children}</div>
+          ref={modalRef}
+          className={`${contentClasses} ${className} relative z-0`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div>{children}</div>
+        </div>
       </div>
     </div>
   );
+
+  return typeof document !== "undefined"
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 };

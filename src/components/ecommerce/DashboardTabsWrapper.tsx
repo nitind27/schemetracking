@@ -38,9 +38,7 @@ import html2canvas from 'html2canvas';
 import { motion } from 'framer-motion';
 import DistrictSummaryRibbon from './DistrictSummaryRibbon';
 import EnhancedKPICards from './EnhancedKPICards';
-import AdvancedAnalytics from './AdvancedAnalytics';
 
-import PerformanceScorecard from './PerformanceScorecard';
 import { toast } from 'react-hot-toast';
 import TodaySurveyComponent from "../common/TodaySurveyComponent";
 import MainTab from "../common/MainTab";
@@ -3434,19 +3432,6 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
 
         {/* Recently Updated Records */}
         {/* <RecentlyUpdatedRecords farmers={filteredFarmersData.farmers} /> */}
-
-        {/* Advanced Analytics */}
-        <AdvancedAnalytics
-          farmers={filteredFarmersData.farmers}
-          talukas={filteredFarmersData.taluka}
-          schemes={filteredFarmersData.schemes}
-        />
-
-        {/* Performance Scorecard */}
-        <PerformanceScorecard
-          talukas={filteredFarmersData.taluka}
-          farmers={filteredFarmersData.farmers}
-        />
 
       </motion.div>
     );

@@ -8,6 +8,8 @@ import DocumentAvailabilityChart from './DocumentAvailabilityChart';
 import SchemesBarChart from './SchemesBarChart';
 import Showschemstable from './Showschemstable';
 import DistrictMap from './DistrictMap';
+import AdvancedAnalytics from './AdvancedAnalytics';
+import PerformanceScorecard from './PerformanceScorecard';
 
 // Type definitions
 import { FarmdersType } from '../farmersdata/farmers';
@@ -109,14 +111,26 @@ const DashboardTalukatabview: React.FC<DashboardTalukatabviewProps> = ({ farmers
         {
             id: "taluka-survey",
             label: "Taluka Wise Survey",
-            content:
-                <DistrictMap
-                    data={filteredFarmersData.farmers}
-                    datavillage={filteredFarmersData.villages}
-                    datataluka={filteredFarmersData.taluka}
-                    dataschems={filteredFarmersData.schemes}
-                    documents={filteredFarmersData.documents}
-                />
+            content: (
+                <>
+                    <DistrictMap
+                        data={filteredFarmersData.farmers}
+                        datavillage={filteredFarmersData.villages}
+                        datataluka={filteredFarmersData.taluka}
+                        dataschems={filteredFarmersData.schemes}
+                        documents={filteredFarmersData.documents}
+                    />
+                    <AdvancedAnalytics
+                        farmers={filteredFarmersData.farmers}
+                        talukas={filteredFarmersData.taluka}
+                        schemes={filteredFarmersData.schemes}
+                    />
+                    <PerformanceScorecard
+                        talukas={filteredFarmersData.taluka}
+                        farmers={filteredFarmersData.farmers}
+                    />
+                </>
+            )
         },
         {
             id: "aadhaar-status",

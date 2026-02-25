@@ -1,6 +1,7 @@
 // components/ReusableModal.tsx
 'use client'
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 type FieldConfig = {
   name: string;
@@ -262,10 +263,16 @@ const CustomModel: React.FC<ModalProps> = ({
     );
   }
 
-  // Regular Modal (existing code)
-  return (
-    <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+  // Regular Modal (existing code) - portal + viewport-centered
+  const regularModalContent = (
+    <div className="fixed inset-0 z-[99999] overflow-y-auto">
+      <div className="min-h-[100dvh] flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm -z-[1]"
+          onClick={onClose}
+          aria-hidden
+        />
+        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[calc(100vh-2rem)] overflow-y-auto relative z-0">
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-xl font-semibold">{title}</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded">
@@ -361,9 +368,14 @@ const CustomModel: React.FC<ModalProps> = ({
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(regularModalContent, document.body)
+    : regularModalContent;
 };
 
 export default CustomModel;
