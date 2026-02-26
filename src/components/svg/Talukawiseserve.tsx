@@ -775,8 +775,8 @@ const getFarmersForVillage = (
             </div>
             {/* Modal */}
             {openTaluka && (
-                <div className="fixed inset-0 min-h-screen bg-[#0303033f] bg-opacity-50 z-[9999] flex items-start justify-center pt-6 pb-6 overflow-y-auto overscroll-contain">
-                    <div className={`bg-white rounded-lg shadow-lg p-6 overflow-y-auto flex-shrink-0 ${!selectedVillage
+                <div className="fixed inset-0 min-h-screen bg-[#0303033f] bg-opacity-50 z-[99999] flex items-center justify-center pt-6 pb-6 overflow-y-auto overscroll-contain">
+                    <div className={`bg-white rounded-lg shadow-lg p-6 justify-center items-center overflow-y-auto flex-shrink-0 ${!selectedVillage
                         ? 'w-full max-w-2xl max-h-[85vh]'
                         : 'w-full max-w-6xl max-h-[85vh]'
                         }`}>

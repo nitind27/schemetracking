@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
-
 import { Column } from "../tables/tabletype";
 import { FarmdersType } from './farmers';
 import { Village } from '../Village/village';
@@ -18,6 +17,83 @@ interface FarmersdataProps {
   dataschems: Schemesdatas[];
   documents: Documents[];
 }
+
+// Helper function to parse farmer_record string
+const parseFarmerRecord = (farmerRecord: string | null | undefined): {
+  name: string;
+  adivasi: string;
+  gatNo: string;
+  vanksetra: string;
+  nivasSeti: string;
+  aadhaarNo: string;
+  contactNo: string;
+  email: string;
+  kisanId: string;
+  dob: string;
+  gender: string;
+  profilePhoto: string;
+  aadhaarPhoto: string;
+  compartmentNumber: string;
+  scheduleJ: string;
+  claimId: string;
+  createdAt: string;
+  updatedAt: string;
+  remarks: string;
+  voiceAudio: string;
+  ifrMayat: string;
+} => {
+  if (!farmerRecord) {
+    return {
+      name: '',
+      adivasi: '',
+      gatNo: '',
+      vanksetra: '',
+      nivasSeti: '',
+      aadhaarNo: '',
+      contactNo: '',
+      email: '',
+      kisanId: '',
+      dob: '',
+      gender: '',
+      profilePhoto: '',
+      aadhaarPhoto: '',
+      compartmentNumber: '',
+      scheduleJ: '',
+      claimId: '',
+      createdAt: '',
+      updatedAt: '',
+      remarks: '',
+      voiceAudio: '',
+      ifrMayat: ''
+    };
+  }
+
+  const farmerRecordArray = farmerRecord.split('|');
+  
+  return {
+    name: (farmerRecordArray[0] || '').trim(),
+    adivasi: (farmerRecordArray[1] || '').trim(),
+    gatNo: (farmerRecordArray[2] || '').trim(),
+    vanksetra: (farmerRecordArray[3] || '').trim(),
+    nivasSeti: (farmerRecordArray[4] || '').trim(),
+    aadhaarNo: (farmerRecordArray[5] || '').trim(),
+    contactNo: (farmerRecordArray[6] || '').trim(),
+    email: (farmerRecordArray[7] || '').trim(),
+    kisanId: (farmerRecordArray[8] || '').trim(),
+    dob: (farmerRecordArray[9] || '').trim(),
+    gender: (farmerRecordArray[10] || '').trim(),
+    profilePhoto: (farmerRecordArray[11] || '').trim(),
+    aadhaarPhoto: (farmerRecordArray[12] || '').trim(),
+    compartmentNumber: (farmerRecordArray[13] || '').trim(),
+    scheduleJ: (farmerRecordArray[14] || '').trim(),
+    claimId: (farmerRecordArray[15] || '').trim(),
+    createdAt: (farmerRecordArray[16] || '').trim(),
+    updatedAt: (farmerRecordArray[17] || '').trim(),
+    remarks: (farmerRecordArray[18] || '').trim(),
+    voiceAudio: (farmerRecordArray[19] || '').trim(),
+    ifrMayat: (farmerRecordArray[20] || '').trim()
+  };
+};
 
 const Farmersdata: React.FC<FarmersdataProps> = ({
   data,
@@ -42,7 +118,6 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
     const categoryName = sessionStorage.getItem('category_name');
     const aadhaarwith = sessionStorage.getItem('aadharcount');
 
-
     setFilters({
       talukaId,
       villageId,
@@ -50,7 +125,6 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
       aadhaarwith
     });
 
-    // Also set UI filters
     setSelectedTaluka(talukaId || '');
     setSelectedVillage(villageId || '');
   }, []);
@@ -65,14 +139,11 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
 
   const villageOptions = useMemo(() => {
     if (!selectedTaluka) return [];
-  
-    // All villages in the selected taluka
+    
     const villagesInTaluka = datavillage.filter(village => village.taluka_id == selectedTaluka);
-  
-    // For each village, calculate counts
+    
     return villagesInTaluka.map(village => {
       const totalCount = data.filter(farmer => farmer.village_id === village.village_id.toString()).length;
-      // const aadhaarCount = data.filter(farmer => farmer.village_id === village.village_id.toString() && farmer.aadhaar_no !== '').length;
       return {
         label: `${village.marathi_name} (${totalCount})`,
         value: village.village_id.toString()
@@ -81,7 +152,6 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
   }, [datavillage, selectedTaluka, data]);
   
   const filteredFarmers = useMemo(() => {
-
     let result = data;
 
     if (
@@ -93,7 +163,6 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
       return result;
     }
 
-
     if (!selectedTaluka && !selectedVillage) {
       result = result.filter(
         (f) =>
@@ -103,53 +172,52 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
     }
     if (selectedTaluka && filters.aadhaarwith == '0') {
       result = result.filter(
-        (f) =>
-          f.taluka_id == selectedTaluka
+        (f) => f.taluka_id == selectedTaluka
       );
-
     }
-    // Apply UI filters (override session filters if changed)
+    
     if (selectedTaluka && filters.aadhaarwith != '1' && filters.aadhaarwith != '0') {
       result = result.filter(
-        (f) =>
-          f.taluka_id === selectedTaluka
+        (f) => f.taluka_id === selectedTaluka
       );
-
     }
 
     if (selectedTaluka && filters.aadhaarwith == '1') {
       result = result.filter(
         (f) =>
           f.taluka_id === selectedTaluka &&
-          (f.aadhaar_no != '')
+          parseFarmerRecord(f.farmer_record)?.aadhaarNo !== ''
       );
-
     }
     if (selectedVillage) {
       result = result.filter(
         (f) =>
           f.village_id === selectedVillage &&
-          (filters.aadhaarwith !== '1' || f.aadhaar_no !== '')
+          (filters.aadhaarwith !== '1' || parseFarmerRecord(f.farmer_record)?.aadhaarNo !== '')
       );
     }
 
     return result;
   }, [data, filters, selectedTaluka, selectedVillage]);
 
-
-
   const columns: Column<FarmdersType>[] = [
     {
       key: 'name',
       label: 'Name',
       accessor: 'name',
-      render: (item) => <span>{item.name}</span>
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.name}</span>;
+      }
     },
     {
       key: 'adivasi',
       label: 'Adivasi',
       accessor: 'adivasi',
-      render: (item) => <span>{item.adivasi}</span>
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.adivasi}</span>;
+      }
     },
     {
       key: 'village_id',
@@ -175,64 +243,98 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
       key: 'gat_no',
       label: 'Gat No',
       accessor: 'gat_no',
-      render: (item) => <span>{item.gat_no}</span>
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.gatNo}</span>;
+      }
     },
     {
       key: 'vanksetra',
       label: 'Vanksetra',
       accessor: 'vanksetra',
-      render: (item) => <span>{item.vanksetra}</span>
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.vanksetra}</span>;
+      }
     },
     {
       key: 'nivas_seti',
       label: 'Nivas Seti',
       accessor: 'nivas_seti',
-      render: (item) => <span>{item.nivas_seti}</span>
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.nivasSeti}</span>;
+      }
     },
     {
       key: 'aadhaar_no',
       label: 'Aadhaar No',
       accessor: 'aadhaar_no',
-      render: (item) => <span>{item.aadhaar_no}</span>
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.aadhaarNo}</span>;
+      }
     },
     {
       key: 'contact_no',
       label: 'Contact No',
       accessor: 'contact_no',
-      render: (item) => <span>{item.contact_no}</span>
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.contactNo}</span>;
+      }
     },
     {
       key: 'email',
       label: 'Email',
       accessor: 'email',
-      render: (item) => <span>{item.email}</span>
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.email}</span>;
+      }
     },
     {
       key: 'kisan_id',
       label: 'Kisan Id',
       accessor: 'kisan_id',
-      render: (item) => <span>{item.kisan_id}</span>
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.kisanId}</span>;
+      }
+    },
+    {
+      key: 'dob',
+      label: 'DOB',
+      accessor: 'dob',
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.dob}</span>;
+      }
+    },
+    {
+      key: 'gender',
+      label: 'Gender',
+      accessor: 'genger',
+      render: (item) => {
+        const parsed = parseFarmerRecord(item.farmer_record);
+        return <span>{parsed.gender}</span>;
+      }
     },
     {
       key: 'documents',
       label: 'Documents',
       accessor: 'documents',
       render: (item) => {
-        // Split the string into segments
         const segments = typeof item.documents === "string" ? item.documents.split('|') : [];
-        // Extract document IDs before the first "--" in each segment
         const docIds = segments.map(seg => seg.split('--')[0]).filter(Boolean);
-        // Match IDs with names from the documents prop
         const docNames = docIds
           .map(id => {
             const doc = documents.find(d => String(d.id) === id);
             return doc ? doc.document_name : null;
           })
           .filter(Boolean);
-        // Display as comma-separated names
         return <span>{docNames.join(', ')}</span>;
       }
-
     },
     {
       key: 'schemes',
@@ -244,11 +346,11 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
         </span>
       )
     },
-
+   
+   
     {
       key: 'location',
       label: 'Location',
-
       render: (item) => {
         const coordinates = item.gis
           ?.split('|')
@@ -263,7 +365,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
             }
             return null;
           })
-          .filter((coord) => coord !== null); // Remove invalid values
+          .filter((coord) => coord !== null);
 
         return (
           <>
@@ -274,7 +376,6 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
         );
       }
     }
-
   ];
 
   return (
@@ -282,15 +383,12 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
       <Simpletableshowdata
         key={JSON.stringify(filteredFarmers)}
         data={filteredFarmers}
-        inputfiled={
-          []
-        }
+        inputfiled={[]}
         columns={columns}
-        title="User Category"
+        title="IFR Holders"
         filterOptions={[
           {
             label: "Taluka",
-
             options: talukaOptions,
             value: selectedTaluka,
             onChange: (value) => {
@@ -305,10 +403,7 @@ const Farmersdata: React.FC<FarmersdataProps> = ({
             onChange: (value) => setSelectedVillage(value)
           }
         ]}
-        submitbutton={
-          []
-        }
-
+        submitbutton={[]}
       />
     </div>
   );

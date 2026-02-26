@@ -41,8 +41,9 @@ import EnhancedKPICards from './EnhancedKPICards';
 
 import { toast } from 'react-hot-toast';
 import TodaySurveyComponent from "../common/TodaySurveyComponent";
-import MainTab from "../common/MainTab";
+// import MainTab from "../common/MainTab";
 import NotificationManagement from "../common/NotificationManagement";
+import TabView from "../common/TabView";
 // import { useRouter } from 'next/navigation';
 
 interface Metrics {
@@ -3546,7 +3547,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       ) : isSection32Only && section32Tab ? (
         <>{section32Tab.content}</>
       ) : (
-        <MainTab tabs={tabs} defaultTab={defaultTabId} />
+        <TabView tabs={tabs} defaultTab={defaultTabId} />
       )}
 
       {/* Individual Taluka Detail Modal */}

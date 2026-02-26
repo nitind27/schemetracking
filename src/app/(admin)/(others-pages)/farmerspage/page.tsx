@@ -1,5 +1,3 @@
-// app/(admin)/(others-pages)/farmerspage/page.tsx
-
 import Breadcrumbs from '@/components/common/BreadcrumbItem';
 import Farmersdata from '@/components/farmersdata/Farmersdata';
 import { FarmdersType } from '@/components/farmersdata/farmers';
