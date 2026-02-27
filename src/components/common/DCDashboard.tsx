@@ -588,7 +588,8 @@ export default function DCDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+<div className="container mx-auto min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 px-4 sm:px-6 lg:px-1">
+
       <motion.div
         className="space-y-8 p-6"
         variants={containerVariants}

@@ -3483,7 +3483,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     ...(isDistrictCollector ? [{
       id: "dc-dashboard",
       label: "Section 3(2)",
-      content: <DCDashboard />
+      content: <div className="flex flex-col h-full"> <DCDashboard /> </div>
     }] : []),
     // DLC Dashboard tab - only show for DLC (category_id = 35)
     ...(isDLC ? [{

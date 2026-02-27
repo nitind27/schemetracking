@@ -2,8 +2,8 @@
 
 // import React, { useMemo } from "react";
 import { motion } from "framer-motion";
-import Link from "next/link";
-import PathHandler from "@/components/common/PathHandler";
+// import Link from "next/link";
+// import PathHandler from "@/components/common/PathHandler";
 import { FarmdersType } from "@/components/farmersdata/farmers";
 
 interface EnhancedKPICardsProps {
@@ -186,8 +186,8 @@ const EnhancedKPICards: React.FC<EnhancedKPICardsProps> = ({
           whileHover={{ scale: 1.02, y: -4 }}
           className="group"
         >
-          <Link href={card.href}>
-            <PathHandler>
+          <span>
+            {/* <PathHandler> */}
               <div
                 className={`bg-white rounded-xl border-2 ${card.borderColor} p-6 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer`}
               >
@@ -234,8 +234,8 @@ const EnhancedKPICards: React.FC<EnhancedKPICardsProps> = ({
                   )}
                 </div>
               </div>
-            </PathHandler>
-          </Link>
+            {/* </PathHandler> */}
+          </span>
         </motion.div>
       ))}
     </div>
