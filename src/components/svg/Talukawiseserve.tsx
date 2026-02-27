@@ -1077,7 +1077,7 @@ const getFarmersForVillage = (
             {/* --- Farmer Details Modal --- */}
             {
                 showFarmerModal && selectedFarmer && (
-                    <div className="fixed inset-0 bg-[#0303033f] z-[10000] flex items-center justify-center bg-opacity-40 ">
+                    <div className="fixed inset-0 bg-[#0303033f] z-[100000] flex items-center justify-center bg-opacity-40 ">
                         <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative animate-fade-in h-[550px] overflow-scroll">
                             <button
                                 className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl"

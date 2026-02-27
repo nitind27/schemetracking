@@ -171,16 +171,19 @@ const TodaySurveyComponent: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
               <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
             </svg>
             {/* Date picker - click opens native picker, does not toggle expand */}
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              max={format(new Date(), "yyyy-MM-dd")}
-              className="flex-shrink-0 w-[130px] sm:w-[140px] px-2 py-1.5 sm:px-3 sm:py-2 rounded-md border-2 border-gray-200 bg-white text-gray-800 text-xs sm:text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none cursor-pointer"
-              title="तारीख निवडा"
-            />
+          {/* Date picker - click opens native picker, does not toggle expand */}
+<input
+  type="date"
+  value={selectedDate}
+  onChange={(e) => setSelectedDate(e.target.value)}
+  onClick={(e) => {
+    e.stopPropagation(); // पैरेंट के टॉगल को रोकता है
+    e.currentTarget.showPicker(); // नेटिव डेट पिकर को फोर्स करता है
+  }}
+  max={format(new Date(), "yyyy-MM-dd")}
+  className="flex-shrink-0 w-[130px] sm:w-[140px] px-2 py-1.5 sm:px-3 sm:py-2 rounded-md border-2 border-gray-200 bg-white text-gray-800 text-xs sm:text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none cursor-pointer"
+  title="तारीख निवडा"
+/>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 min-w-0">
               <span className="text-sm sm:text-base font-medium text-gray-700 truncate">
                 {isToday ? (
