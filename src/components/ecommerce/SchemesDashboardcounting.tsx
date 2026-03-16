@@ -160,7 +160,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         setCurrentPage((prev) => Math.min(prev + 1, totalPages));
     };
 
-    // Excel download handler
+    // Excel download handler (modal - current filtered farmers)
     const handleDownloadExcel = () => {
         const excelData = filteredFarmers.map((farmer, idx) => ({
             "Sr.No": (currentPage - 1) * rowsPerPage + idx + 1,
@@ -180,6 +180,37 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         saveAs(blob, `${modalTitle.replace(/\s+/g, "_")}_Farmers.xlsx`);
     };
 
+    // All data Excel download (main table: schemes with counts)
+    const handleDownloadAllExcel = () => {
+        if (!matches?.length) return;
+        const excelData = matches.map((scheme, idx) => ({
+            "Sr.No": idx + 1,
+            "Scheme Name": scheme.scheme_name || "-",
+            "Category": scheme.category_name || "-",
+            "Sub Category": scheme.sub_category_name || "-",
+            "Scheme Year": scheme.scheme_year || "-",
+            "Benefited (Yes)": countBenefited(scheme.scheme_id.toString()),
+            "Not Benefited (No)": countNotBenefited(scheme.scheme_id.toString()),
+            "Applied": countApplied(scheme.scheme_id.toString()),
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        worksheet["!cols"] = [
+            { wch: 6 },
+            { wch: 36 },
+            { wch: 18 },
+            { wch: 18 },
+            { wch: 12 },
+            { wch: 14 },
+            { wch: 16 },
+            { wch: 10 },
+        ];
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Schemes_By_IFR");
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(blob, "Schemes_By_IFR_Holders_All_Data.xlsx");
+    };
+
     // Create filter options
     const talukaOptions = farmersData.taluka.map(taluka => ({
         label: taluka.name,
@@ -195,7 +226,7 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
 
     // Custom filter component
     const FilterComponent = () => (
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-4 flex-wrap items-end">
             <div className="flex flex-col md:flex-row gap-2">
                 <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700">Taluka</label>
@@ -242,7 +273,14 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
                     </button>
                 </div>
             </div>
-            
+            <button
+                type="button"
+                onClick={handleDownloadAllExcel}
+                disabled={matches.length === 0}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed h-[42px]"
+            >
+                डाउनलोड करा (Excel) - All Data
+            </button>
             <div className="text-sm text-gray-600 flex items-center">
                 Showing {filteredFarmersForCounts.length} IFR Holders
             </div>

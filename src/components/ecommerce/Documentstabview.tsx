@@ -152,7 +152,7 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const handlePreviousPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
     const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
-    // Excel download handler
+    // Excel download handler (modal - current farmers list)
     const handleDownloadExcel = () => {
         const excelData = modalFarmers.map((farmer, idx) => ({
             "Sr.No": idx + 1,
@@ -171,6 +171,31 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
         saveAs(blob, `${modalTitle.replace(/\s+/g, "_")}_Farmers.xlsx`);
     };
 
+    // All data Excel download (main table: document availability)
+    const handleDownloadAllExcel = () => {
+        if (!documentUsageList?.length) return;
+        const excelData = documentUsageList.map((usage, idx) => ({
+            "Sr.No": idx + 1,
+            "Document Name": usage.document.document_name || "-",
+            "Available": usage.countHas,
+            "Not Available": usage.countNotHas,
+            "Updation Needed": usage.countUpdationNeeded,
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        worksheet["!cols"] = [
+            { wch: 6 },
+            { wch: 28 },
+            { wch: 12 },
+            { wch: 14 },
+            { wch: 16 },
+        ];
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Document_Availability");
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(blob, "Document_Availability_All_Data.xlsx");
+    };
+
     // Create filter options
     const talukaOptions = farmersData.taluka.map(taluka => ({
         label: taluka.name,
@@ -186,7 +211,7 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     // Custom filter component
     const FilterComponent = () => (
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-4 flex-wrap items-end">
             <div className="flex flex-col md:flex-row gap-2">
                 <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700">Taluka</label>
@@ -233,7 +258,14 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
                     </button>
                 </div>
             </div>
-            
+            <button
+                type="button"
+                onClick={handleDownloadAllExcel}
+                disabled={documentUsageList.length === 0}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed h-[42px]"
+            >
+                डाउनलोड करा (Excel) - All Data
+            </button>
             <div className="text-sm text-gray-600 flex items-center">
                 Showing {filteredFarmers.length} IFR Holders
             </div>

@@ -40,6 +40,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [filteredschemes, setFilteredschemes] = useState<Schemesdatas[]>([]);
+    const [modalFarmer, setModalFarmer] = useState<FarmdersType | null>(null);
     const [datataluka, setdatataluka] = useState<Taluka[]>([]);
     const [datavillage, setdatavillages] = useState<Village[]>([]);
 
@@ -77,33 +78,42 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         setFilteredFarmers(filtered);
     }, [datafarmers, selectedTaluka, selectedVillage]);
 
-    const allfarmersname = filteredFarmers.filter(farmer => {
-        return farmer.schemes && farmer.schemes.trim() !== "";
-    });
+    const allfarmersname = filteredFarmers
 
-    const handleBenefitedClick = (schemeIds: number[]) => {
+    const handleBenefitedClick = (schemeIds: number[], farmer: FarmdersType) => {
         const benefitedSchemes = dataschems.filter(scheme =>
             schemeIds.includes(scheme.scheme_id)
         );
         setModalTitle(`Benefited Schemes`);
         setFilteredschemes(benefitedSchemes);
+        setModalFarmer(farmer);
         setIsModalOpen(true);
     };
 
-    const handleNotBenefitedClickschemes = (schemeIds: number[]) => {
+    const handleNotBenefitedClickschemes = (schemeIds: number[], farmer: FarmdersType) => {
         const notBenefitedSchemes = dataschems.filter(scheme =>
             schemeIds.includes(scheme.scheme_id)
         );
         setModalTitle('Non-Benefited Schemes');
         setFilteredschemes(notBenefitedSchemes);
+        setModalFarmer(farmer);
         setIsModalOpen(true);
     };
 
     const handleDownloadExcel = () => {
-        if (filteredschemes.length === 0) return;
-        const excelData = filteredschemes.map((scheme, idx) => {
+        const schemesToExport = filteredschemes;
+        if (!schemesToExport?.length) return;
+        const ifrName = modalFarmer ? (modalFarmer.farmer_record?.split('|')[0] || modalFarmer.name || '-') : '-';
+        const mobileNo = modalFarmer ? (modalFarmer.farmer_record?.split('|')[6] || modalFarmer.contact_no || '-') : '-';
+        const villageName = modalFarmer ? (datavillage.find(v => String(v.village_id) === String(modalFarmer.village_id))?.marathi_name || '-') : '-';
+        const talukaName = modalFarmer ? (datataluka.find(t => String(t.taluka_id) === String(modalFarmer.taluka_id))?.name || '-') : '-';
+        const excelData = schemesToExport.map((scheme, idx) => {
             return {
                 "Sr.No": idx + 1,
+                "IFR Holders Name": ifrName,
+                "Mobile No": mobileNo,
+                "Village": villageName,
+                "Taluka": talukaName,
                 "Scheme Name": scheme.scheme_name,
                 "Beneficiary Name": scheme.beneficiery_name,
                 "Applied At": scheme.applyed_at || '-',
@@ -113,8 +123,51 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Schemes");
         const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-        const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(blob, `${modalTitle.replace(/\s+/g, "_")}_Schemes.xlsx`);
+        const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const fileName = (modalTitle || "Schemes").replace(/\s+/g, "_") + "_Schemes.xlsx";
+        saveAs(blob, fileName);
+    };
+
+    const handleDownloadAllExcel = () => {
+        const farmersToExport = allfarmersname;
+        if (!farmersToExport?.length) return;
+        const excelData = farmersToExport.map((farmer, idx) => {
+            const schemeData = extractSchemeDataFromSchemesString(farmer.schemes);
+            const benefitedIds = [...new Set(schemeData.filter(s => s.status.toLowerCase() === 'benefit received').map(s => s.id).filter(id => dataschems.some(scheme => scheme.scheme_id === id)))];
+            const notBenefitedIds = [...new Set(schemeData.filter(s => s.status.toLowerCase() !== 'benefit received').map(s => s.id).filter(id => dataschems.some(scheme => scheme.scheme_id === id)))];
+            const benefitedNames = benefitedIds.map(id => dataschems.find(s => s.scheme_id === id)?.scheme_name).filter(Boolean) as string[];
+            const notBenefitedNames = notBenefitedIds.map(id => dataschems.find(s => s.scheme_id === id)?.scheme_name).filter(Boolean) as string[];
+            const villageName = datavillage.find(v => String(v.village_id) === String(farmer.village_id))?.marathi_name || '-';
+            const talukaName = datataluka.find(t => String(t.taluka_id) === String(farmer.taluka_id))?.name || '-';
+            return {
+                "Sr.No": idx + 1,
+                "IFR Holders Name": farmer.farmer_record?.split('|')[0] || farmer.name || '-',
+                "Mobile No": farmer.farmer_record?.split('|')[6] || farmer.contact_no || '-',
+                "Village": villageName,
+                "Taluka": talukaName,
+                "Benefited (Yes) Count": benefitedIds.length,
+                "Benefited Scheme Names": benefitedNames.length ? benefitedNames.join(", ") : "-",
+                "Not Benefited (No) Count": notBenefitedIds.length,
+                "Not Benefited Scheme Names": notBenefitedNames.length ? notBenefitedNames.join(", ") : "-",
+            };
+        });
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        worksheet["!cols"] = [
+            { wch: 6 },
+            { wch: 22 },
+            { wch: 14 },
+            { wch: 18 },
+            { wch: 14 },
+            { wch: 12 },
+            { wch: 40 },
+            { wch: 12 },
+            { wch: 40 },
+        ];
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "IFR_Holders");
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(blob, "IFR_Holders_All_Data.xlsx");
     };
 
     // Create filter options
@@ -132,7 +185,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
     // Custom filter component
     const FilterComponent = () => (
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-4 flex-wrap items-end">
             <div className="flex flex-col md:flex-row gap-2">
                 <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700">Taluka</label>
@@ -179,7 +232,14 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                     </button>
                 </div>
             </div>
-            
+            <button
+                type="button"
+                onClick={handleDownloadAllExcel}
+                disabled={allfarmersname.length === 0}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed h-[42px]"
+            >
+                डाउनलोड करा (Excel) - All Data
+            </button>
             <div className="text-sm text-gray-600 flex items-center">
                 Showing {allfarmersname.length} IFR Holders
             </div>
@@ -217,11 +277,14 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 const benefitedSchemeIds = schemeData
                     .filter(s => s.status.toLowerCase() === 'benefit received')
                     .map(s => s.id);
-                const count = benefitedSchemeIds.length;
+                const idsInData = [...new Set(benefitedSchemeIds.filter(id =>
+                    dataschems.some(scheme => scheme.scheme_id === id)
+                ))];
+                const count = idsInData.length;
 
                 return (
                     <button
-                        onClick={() => handleBenefitedClick(benefitedSchemeIds)}
+                        onClick={() => handleBenefitedClick(idsInData, farmer)}
                         className="text-blue-700 font-bold underline cursor-pointer"
                     >
                         {count}
@@ -237,11 +300,14 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 const notBenefitedSchemeIds = schemeData
                     .filter(s => s.status.toLowerCase() !== 'benefit received')
                     .map(s => s.id);
-                const count = notBenefitedSchemeIds.length;
+                const idsInData = [...new Set(notBenefitedSchemeIds.filter(id =>
+                    dataschems.some(scheme => scheme.scheme_id === id)
+                ))];
+                const count = idsInData.length;
 
                 return (
                     <button
-                        onClick={() => handleNotBenefitedClickschemes(notBenefitedSchemeIds)}
+                        onClick={() => handleNotBenefitedClickschemes(idsInData, farmer)}
                         className="text-red-700 font-bold underline cursor-pointer"
                     >
                         {count}
@@ -252,7 +318,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     ];
 
     const handleclosemodel = () => {
-        setFilteredschemes([]);
+        setModalFarmer(null);
         setIsModalOpen(false);
     };
 
@@ -282,28 +348,54 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
             {isModalOpen && (
                 <div className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-4 z-99999">
                     <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl max-h-[90vh] overflow-auto">
-                        <div className="flex justify-between items-center p-4 border-b">
-                            <h3 className="text-lg font-semibold">{modalTitle}</h3>
-                            <button
-                                onClick={() => handleclosemodel()}
-                                className="p-2 hover:bg-gray-100 rounded-full"
-                            >
-                                ✕
-                            </button>
+                        <div className="flex flex-col gap-2 p-4 border-b">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-semibold">{modalTitle}</h3>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleDownloadExcel}
+                                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                                    >
+                                        डाउनलोड करा (Excel)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleclosemodel()}
+                                        className="p-2 hover:bg-gray-100 rounded-full"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+                            {modalFarmer && (
+                                <div className="text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+                                    <span><strong>IFR Name:</strong> {modalFarmer.farmer_record?.split('|')[0] || modalFarmer.name || '-'}</span>
+                                    <span><strong>Mobile No:</strong> {modalFarmer.farmer_record?.split('|')[6] || modalFarmer.contact_no || '-'}</span>
+                                    <span><strong>Village:</strong> {datavillage.find(v => String(v.village_id) === String(modalFarmer.village_id))?.marathi_name || '-'}</span>
+                                    <span><strong>Taluka:</strong> {datataluka.find(t => String(t.taluka_id) === String(modalFarmer.taluka_id))?.name || '-'}</span>
+                                </div>
+                            )}
                         </div>
                         <div className="p-4">
-                            <button
-                                onClick={handleDownloadExcel}
-                                className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                            >
-                                डाउनलोड करा
-                            </button>
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 ">
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Sr.No
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                IFR Name
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Mobile No
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Village
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Taluka
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Schemes
@@ -321,6 +413,18 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                                             <tr key={scheme.scheme_id}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {index + 1}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {modalFarmer ? (modalFarmer.farmer_record?.split('|')[0] || modalFarmer.name || '-') : '-'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {modalFarmer ? (modalFarmer.farmer_record?.split('|')[6] || modalFarmer.contact_no || '-') : '-'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {modalFarmer ? (datavillage.find(v => String(v.village_id) === String(modalFarmer.village_id))?.marathi_name || '-') : '-'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {modalFarmer ? (datataluka.find(t => String(t.taluka_id) === String(modalFarmer.taluka_id))?.name || '-') : '-'}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {scheme.scheme_name}

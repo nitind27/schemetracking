@@ -57,7 +57,7 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
                             }`}
                         onClick={() => setActiveTab('farmers')}
                     >
-                        IFR Holders by Scheme
+                        IFR Holders by Scheme  
                     </button>
                 </div>
                 <div>
