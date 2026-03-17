@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UserCategory } from '../usercategory/userCategory';
 import { Column } from '../tables/tabletype';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
@@ -34,11 +34,6 @@ function extractSchemeDataFromSchemesString(schemesString?: string): { id: numbe
     return schemeData;
 }
 
-type TalukaSummaryRow = {
-    taluka_id: string;
-    taluka_name: string;
-    served: number;
-};
 
 const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
@@ -83,7 +78,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         }
 
         // "Served" filter = Surveyed farmers only (update_record not empty)
-        if (selectedTaluka && selectedServed === 'served') {
+        if (selectedServed === 'served') {
             filtered = filtered.filter(farmer => !!farmer.update_record && farmer.update_record.trim() !== '');
         }
         
@@ -97,28 +92,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         }
     }, [selectedTaluka, selectedServed, selectedVillage]);
 
-    const talukaSummaryRows: TalukaSummaryRow[] = useMemo(() => {
-        // Build Surveyed ("Served") counts for ALL talukas (update_record not empty)
-        const servedCounts = new Map<string, number>();
 
-        for (const farmer of datafarmers) {
-            const tid = String(farmer.taluka_id || '');
-            if (!tid) continue;
-            const isSurveyed = !!farmer.update_record && farmer.update_record.trim() !== '';
-            if (isSurveyed) {
-                servedCounts.set(tid, (servedCounts.get(tid) || 0) + 1);
-            }
-        }
-
-        return datataluka.map(t => {
-            const tid = String(t.taluka_id);
-            return {
-                taluka_id: tid,
-                taluka_name: t.name,
-                served: servedCounts.get(tid) || 0,
-            };
-        });
-    }, [datafarmers, datataluka]);
 
     const allfarmersname = filteredFarmers
 
@@ -303,11 +277,6 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         </div>
     );
 
-    const talukaSummaryColumns: Column<TalukaSummaryRow>[] = [
-        { key: 'taluka_name', label: 'Taluka', accessor: 'taluka_name' },
-        { key: 'served', label: 'Served Count', accessor: 'served' },
-    ];
-
     const columns: Column<FarmdersType>[] = [
         {
             key: 'scheme_name',
@@ -393,33 +362,18 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 
                 <FilterComponent />
                 
-                {!selectedTaluka && selectedServed === 'served' ? (
-                    <Simpletableshowdata
-                        data={talukaSummaryRows}
-                        inputfiled={
-                            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
-                                <div className="col-span-1"></div>
-                            </div>
-                        }
-                        columns={talukaSummaryColumns}
-                        title=""
-                        filterOptions={[]}
-                        searchKey="taluka_name"
-                    />
-                ) : (
-                    <Simpletableshowdata
-                        data={allfarmersname}
-                        inputfiled={
-                            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
-                                <div className="col-span-1"></div>
-                            </div>
-                        }
-                        columns={columns}
-                        title=""
-                        filterOptions={[]}
-                        searchKey="name"
-                    />
-                )}
+                <Simpletableshowdata
+                    data={allfarmersname}
+                    inputfiled={
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
+                            <div className="col-span-1"></div>
+                        </div>
+                    }
+                    columns={columns}
+                    title=""
+                    filterOptions={[]}
+                    searchKey="name"
+                />
             </div>
 
             {isModalOpen && (
