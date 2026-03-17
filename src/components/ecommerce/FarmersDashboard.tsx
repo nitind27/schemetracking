@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { UserCategory } from '../usercategory/userCategory';
 import { Column } from '../tables/tabletype';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
@@ -34,6 +34,12 @@ function extractSchemeDataFromSchemesString(schemesString?: string): { id: numbe
     return schemeData;
 }
 
+type TalukaSummaryRow = {
+    taluka_id: string;
+    taluka_name: string;
+    served: number;
+};
+
 const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     const [dataschems, setDataschems] = useState<Schemesdatas[]>([]);
     const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
@@ -47,6 +53,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
     // Add filter states
     const [selectedTaluka, setSelectedTaluka] = useState<string>('');
     const [selectedVillage, setSelectedVillage] = useState<string>('');
+    const [selectedServed, setSelectedServed] = useState<string>('');
     const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
 
     useEffect(() => {
@@ -74,9 +81,44 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
         if (selectedVillage) {
             filtered = filtered.filter(farmer => farmer.village_id === selectedVillage);
         }
+
+        // "Served" filter = Surveyed farmers only (update_record not empty)
+        if (selectedTaluka && selectedServed === 'served') {
+            filtered = filtered.filter(farmer => !!farmer.update_record && farmer.update_record.trim() !== '');
+        }
         
         setFilteredFarmers(filtered);
-    }, [datafarmers, selectedTaluka, selectedVillage]);
+    }, [datafarmers, selectedTaluka, selectedVillage, selectedServed]);
+
+    // If Taluka is "All" and Served filter is applied, Village filter doesn't make sense (we show taluka-wise summary)
+    useEffect(() => {
+        if (!selectedTaluka && selectedServed && selectedVillage) {
+            setSelectedVillage('');
+        }
+    }, [selectedTaluka, selectedServed, selectedVillage]);
+
+    const talukaSummaryRows: TalukaSummaryRow[] = useMemo(() => {
+        // Build Surveyed ("Served") counts for ALL talukas (update_record not empty)
+        const servedCounts = new Map<string, number>();
+
+        for (const farmer of datafarmers) {
+            const tid = String(farmer.taluka_id || '');
+            if (!tid) continue;
+            const isSurveyed = !!farmer.update_record && farmer.update_record.trim() !== '';
+            if (isSurveyed) {
+                servedCounts.set(tid, (servedCounts.get(tid) || 0) + 1);
+            }
+        }
+
+        return datataluka.map(t => {
+            const tid = String(t.taluka_id);
+            return {
+                taluka_id: tid,
+                taluka_name: t.name,
+                served: servedCounts.get(tid) || 0,
+            };
+        });
+    }, [datafarmers, datataluka]);
 
     const allfarmersname = filteredFarmers
 
@@ -195,6 +237,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                     onChange={(e) => {
                         setSelectedTaluka(e.target.value);
                         setSelectedVillage(''); // Reset village when taluka changes
+                        setSelectedServed(''); // Reset served when taluka changes
                     }}
                 >
                     <option value="">All Taluka</option>
@@ -211,6 +254,7 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                     className="border rounded px-3 py-2 min-w-[150px]"
                     value={selectedVillage}
                     onChange={(e) => setSelectedVillage(e.target.value)}
+                    disabled={!selectedTaluka && selectedServed === 'served'}
                 >
                     <option value="">All Village</option>
                     {villageOptions.map((opt) => (
@@ -220,11 +264,24 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                     ))}
                 </select>
                 </div>
+
+                <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700">Served</label>
+                    <select
+                        className="border rounded px-3 py-2 min-w-[170px]"
+                        value={selectedServed}
+                        onChange={(e) => setSelectedServed(e.target.value)}
+                    >
+                        <option value="">All</option>
+                        <option value="served">Served</option>
+                    </select>
+                </div>
                 <div className="flex flex-col gap-2 mt-7">
                 <button
                     onClick={() => {
                         setSelectedTaluka('');
                         setSelectedVillage('');
+                        setSelectedServed('');
                     }}
                     className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
                 >
@@ -245,6 +302,11 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
             </div>
         </div>
     );
+
+    const talukaSummaryColumns: Column<TalukaSummaryRow>[] = [
+        { key: 'taluka_name', label: 'Taluka', accessor: 'taluka_name' },
+        { key: 'served', label: 'Served Count', accessor: 'served' },
+    ];
 
     const columns: Column<FarmdersType>[] = [
         {
@@ -331,18 +393,33 @@ const FarmersDashboard = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 
                 <FilterComponent />
                 
-                <Simpletableshowdata
-                    data={allfarmersname}
-                    inputfiled={
-                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
-                            <div className="col-span-1"></div>
-                        </div>
-                    }
-                    columns={columns}
-                    title=""
-                    filterOptions={[]}
-                    searchKey="name"
-                />
+                {!selectedTaluka && selectedServed === 'served' ? (
+                    <Simpletableshowdata
+                        data={talukaSummaryRows}
+                        inputfiled={
+                            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
+                                <div className="col-span-1"></div>
+                            </div>
+                        }
+                        columns={talukaSummaryColumns}
+                        title=""
+                        filterOptions={[]}
+                        searchKey="taluka_name"
+                    />
+                ) : (
+                    <Simpletableshowdata
+                        data={allfarmersname}
+                        inputfiled={
+                            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-1">
+                                <div className="col-span-1"></div>
+                            </div>
+                        }
+                        columns={columns}
+                        title=""
+                        filterOptions={[]}
+                        searchKey="name"
+                    />
+                )}
             </div>
 
             {isModalOpen && (
