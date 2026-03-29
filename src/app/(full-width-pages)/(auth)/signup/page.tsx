@@ -2,9 +2,10 @@ import SignUpForm from "@/components/auth/SignUpForm";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Scheme Monitoring & Tracking System",
+  title: "VanSampada",
   description:
-    "Scheme Monitoring & Tracking System",
+    "VanSampada",
+
 };
 
 export default function SignUp() {

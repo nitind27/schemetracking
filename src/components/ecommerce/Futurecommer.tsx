@@ -1,22 +1,53 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
-
-import { Column } from "../tables/tabletype";
-
+import { useState, useMemo } from 'react';
 import React from 'react';
-
-// import { Scheme_year } from '../Yearmaster/yearmaster';
-import { Futureworktype } from './Cfrtype/futurework';
-// import { Simpletableshowdata } from '../tables/Simpletableshowdata';
-import { Tabviewtable } from '../tables/Tabviewtable';
+import { basicdetailsofvillagetype, Futureworktype } from './Cfrtype/futurework';
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
-// Inline Modal (same style as Presetntwork)
+import dynamic from "next/dynamic";
+import { ApexOptions } from "apexcharts";
+import DataTable from "react-data-table-component";
+import WorkTypePieCharts from "./WorkTypePieCharts";
+
+const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
+
+// Inline donut chart for work status
+function FutureStatusChart({ series, labels, colors, total }: { series: number[]; labels: string[]; colors: string[]; total: number }) {
+    const options: ApexOptions = {
+        chart: { fontFamily: "Outfit, sans-serif", type: "donut", toolbar: { show: false } },
+        colors, labels,
+        legend: { show: true, position: "bottom", horizontalAlign: "center", fontFamily: "Outfit", fontSize: "12px" },
+        dataLabels: {
+            enabled: true,
+            formatter: (val: string) => parseFloat(val).toFixed(1) + "%",
+            style: { fontSize: "11px", fontWeight: "bold", colors: ["#fff"] },
+        },
+        tooltip: { y: { formatter: (v: number) => v + " works" } },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: "65%",
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true, showAlways: true, label: "Total Works",
+                            fontSize: "12px", fontWeight: "bold", color: "#666",
+                            formatter: () => total.toString(),
+                        },
+                    },
+                },
+            },
+        },
+    };
+    return <ReactApexChart options={options} series={series} type="donut" height={220} />;
+}
+
+// Inline Modal
 function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; }) {
     if (!open) return null;
     return (
-        <div className="fixed inset-0 bg-black/40 bg-opacity-40 flex z-99999 items-center justify-center">
+        <div className="fixed inset-0 bg-black/40 flex z-99999 items-center justify-center">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-3 p-6 relative">
                 <button className="absolute top-2 right-3 text-2xl text-gray-500 hover:text-red-500 font-bold" onClick={onClose}>&times;</button>
                 <h3 className="mb-4 text-lg font-bold text-center">{title}</h3>
@@ -26,22 +57,43 @@ function Modal({ open, onClose, title, children }: { open: boolean; onClose: () 
     );
 }
 
-
 interface Props {
     serverData: Futureworktype[];
+    basicVillageData: basicdetailsofvillagetype[];
 }
 
-type SelectOption = { label: string; value: string };
 
-const Futurecommer: React.FC<Props> = ({ serverData }) => {
+
+const Futurecommer: React.FC<Props> = ({ serverData, basicVillageData }) => {
     const [data] = useState<Futureworktype[]>(serverData || []);
+    const [data1] = useState<basicdetailsofvillagetype[]>(basicVillageData || []);
     const [selectedWork, setSelectedWork] = useState<Futureworktype | null>(null);
-    const [filters, setFilters] = useState<Record<string, string>>({});
-    
-    // Store all available options from API
-    const [allTalukaOptions, setAllTalukaOptions] = useState<SelectOption[]>([]);
-    const [allVillageOptions, setAllVillageOptions] = useState<SelectOption[]>([]);
-    const [allGpOptions, setAllGpOptions] = useState<SelectOption[]>([]);
+    const [selectedGroup, setSelectedGroup] = useState<{ taluka_name: string; gp_name: string; village_name: string; works: Futureworktype[]; count: number } | null>(null);
+    // Table state
+    const [tableFilters, setTableFilters] = useState<Record<string, string>>({});
+    const [tableSearch, setTableSearch] = useState("");
+    const [tablePage, setTablePage] = useState(1);
+    const [tablePerPage, setTablePerPage] = useState(10);
+
+    // Group works by taluka + village + gp
+    const groupedData = useMemo(() => {
+        const groups = new Map<string, { key: string; taluka_name: string; gp_name: string; village_name: string; works: Futureworktype[]; count: number; work_status: string }>();
+        data.forEach(work => {
+            const key = `${work.taluka_name || ''}_${work.village_name || ''}_${work.gp_name || ''}`;
+            if (groups.has(key)) {
+                const g = groups.get(key)!;
+                g.works.push(work);
+                g.count = g.works.length;
+            } else {
+                groups.set(key, { key, taluka_name: work.taluka_name || '', gp_name: work.gp_name || '', village_name: work.village_name || '', works: [work], count: 1, work_status: work.work_status || '' });
+            }
+        });
+        groups.forEach(g => {
+            const statuses = [...new Set(g.works.map(w => w.work_status).filter(Boolean))];
+            g.work_status = statuses.join(', ');
+        });
+        return Array.from(groups.values());
+    }, [data]);
 
     // Helper function to ensure proper string encoding
     const safeString = (value: unknown): string => {
@@ -51,12 +103,15 @@ const Futurecommer: React.FC<Props> = ({ serverData }) => {
 
     // Date formatting function
     function formatDate(dateString: string | undefined | null): string {
-        if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return 'N/A';
+        if (!dateString) return '-';
+        const trimmed = dateString.trim();
+        if (/^0+[-/]0+[-/]0+/.test(trimmed)) return '-';
+        const date = new Date(trimmed);
+        if (isNaN(date.getTime())) return '-';
+        const year = date.getFullYear();
+        if (year < 1900) return '-';
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
         return `${day}-${month}-${year}`;
     }
 
@@ -99,165 +154,133 @@ const Futurecommer: React.FC<Props> = ({ serverData }) => {
         )
     );
 
-    // Fetch all options from API on component mount
-    useEffect(() => {
-        const base = process.env.NEXT_PUBLIC_API_URL || "";
+    // Recent works sorted by created_at desc
+    const recentWorks = useMemo(() => {
+        return [...data]
+            .sort((a, b) => {
+                const da = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const db = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return db - da;
+            })
+            .slice(0, 10);
+    }, [data]);
 
-        const fetchAll = async () => {
-            try {
-                const [tRes, vRes, gRes] = await Promise.all([
-                    fetch(`${base}/api/taluka`, { cache: 'no-store' }),
-                    fetch(`${base}/api/villages`, { cache: 'no-store' }),
-                    fetch(`${base}/api/grampanchyat`, { cache: 'no-store' }),
-                ]);
+    // Work status counts
+    const completedCount = data.filter(i => i.work_status === "Completed").length;
+    const inProgressCount = data.filter(i => i.work_status === "In Progress").length;
+    const pendingCount = data.filter(i => i.work_status === "Pending").length;
+    const total = data.length;
+    const completedPct = total > 0 ? (completedCount / total) * 100 : 0;
+    const inProgressPct = total > 0 ? (inProgressCount / total) * 100 : 0;
+    const pendingPct = total > 0 ? (pendingCount / total) * 100 : 0;
+    const statusSeries = [completedCount, inProgressCount, pendingCount];
+    const statusLabels = ["Completed", "In Progress", "Pending"];
+    const statusColors = ["#4CAF50", "#FF9800", "#F44336"];
 
-                const [talukas, villages, gps] = await Promise.all([
-                    tRes.json(),
-                    vRes.json(),
-                    gRes.json(),
-                ]);
+    // Cascading filter options from grouped data
+    const cascadingFilterOptions = useMemo(() => {
+        const talukaOptions = Array.from(new Set(groupedData.map(i => i.taluka_name).filter(Boolean))).sort().map(v => ({ label: v!, value: v! }));
+        let gpData = groupedData;
+        if (tableFilters["Taluka"]) gpData = groupedData.filter(i => i.taluka_name === tableFilters["Taluka"]);
+        const gpOptions = Array.from(new Set(gpData.map(i => i.gp_name).filter(Boolean))).sort().map(v => ({ label: v!, value: v! }));
+        let villageData = groupedData;
+        if (tableFilters["Taluka"]) villageData = villageData.filter(i => i.taluka_name === tableFilters["Taluka"]);
+        if (tableFilters["Grampanchayat"]) villageData = villageData.filter(i => i.gp_name === tableFilters["Grampanchayat"]);
+        const villageOptions = Array.from(new Set(villageData.map(i => i.village_name).filter(Boolean))).sort().map(v => ({ label: v!, value: v! }));
+        return { talukaOptions, gpOptions, villageOptions };
+    }, [groupedData, tableFilters]);
 
-                // Set all taluka options
-                setAllTalukaOptions(
-                    (Array.isArray(talukas) ? talukas : []).map((t) => ({
-                        label: t.name ?? String(t.taluka_name ?? ""),
-                        value: t.name ?? String(t.taluka_name ?? ""),
-                    }))
-                );
+    const hasTableFilters = Object.values(tableFilters).some(f => f) || !!tableSearch;
 
-                // Set all village options
-                setAllVillageOptions(
-                    (Array.isArray(villages) ? villages : []).map((v) => {
-                        const name = v.marathi_name ?? v.name ?? "";
-                        return { label: String(name), value: String(name) };
-                    })
-                );
+    // Recent 10 grouped locations by most recent created_at
+    const recentGroupedData = useMemo(() => {
+        return [...groupedData]
+            .sort((a, b) => {
+                const da = Math.max(...a.works.map(w => w.created_at ? new Date(w.created_at).getTime() : 0));
+                const db = Math.max(...b.works.map(w => w.created_at ? new Date(w.created_at).getTime() : 0));
+                return db - da;
+            })
+            .slice(0, 10);
+    }, [groupedData]);
 
-                // Set all grampanchayat options
-                setAllGpOptions(
-                    (Array.isArray(gps) ? gps : []).map((g) => ({
-                        label: g.gpname ?? String(g.gp_name ?? ""),
-                        value: g.gpname ?? String(g.gp_name ?? ""),
-                    }))
-                );
-            } catch (e) {
-                console.error(e);
-            }
-        };
+    const filteredTableData = useMemo(() => {
+        if (!hasTableFilters) return recentGroupedData;
+        let d = [...groupedData];
+        if (tableFilters["Taluka"]) d = d.filter(r => r.taluka_name === tableFilters["Taluka"]);
+        if (tableFilters["Grampanchayat"]) d = d.filter(r => r.gp_name === tableFilters["Grampanchayat"]);
+        if (tableFilters["Village"]) d = d.filter(r => r.village_name === tableFilters["Village"]);
+        if (tableFilters["WorkStatus"]) d = d.filter(r => r.works.some(w => w.work_status === tableFilters["WorkStatus"]));
+        if (tableSearch) d = d.filter(r =>
+            (r.village_name || "").toLowerCase().includes(tableSearch.toLowerCase()) ||
+            (r.taluka_name || "").toLowerCase().includes(tableSearch.toLowerCase()) ||
+            (r.gp_name || "").toLowerCase().includes(tableSearch.toLowerCase())
+        );
+        return d;
+    }, [groupedData, tableFilters, tableSearch, hasTableFilters, recentGroupedData]);
 
-        fetchAll();
-    }, []);
+    const tableSubHeader = (
+        <div className="flex flex-wrap gap-2 items-end w-full py-2">
+            <select className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500"
+                value={tableFilters["Taluka"] || ""}
+                onChange={e => { setTableFilters({ "Taluka": e.target.value, "Grampanchayat": "", "Village": "", "WorkStatus": tableFilters["WorkStatus"] || "" }); setTablePage(1); }}>
+                <option value="">तालुका निवडा</option>
+                {cascadingFilterOptions.talukaOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500"
+                value={tableFilters["Grampanchayat"] || ""}
+                onChange={e => { setTableFilters(p => ({ ...p, "Grampanchayat": e.target.value, "Village": "" })); setTablePage(1); }}>
+                <option value="">ग्रामपंचायत निवडा</option>
+                {cascadingFilterOptions.gpOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500"
+                value={tableFilters["Village"] || ""}
+                onChange={e => { setTableFilters(p => ({ ...p, "Village": e.target.value })); setTablePage(1); }}>
+                <option value="">गाव निवडा</option>
+                {cascadingFilterOptions.villageOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500"
+                value={tableFilters["WorkStatus"] || ""}
+                onChange={e => { setTableFilters(p => ({ ...p, "WorkStatus": e.target.value })); setTablePage(1); }}>
+                <option value="">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+            </select>
+            <input type="text" placeholder="Search..."
+                className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+                value={tableSearch}
+                onChange={e => { setTableSearch(e.target.value); setTablePage(1); }} />
+            <button onClick={() => { setTableFilters({}); setTableSearch(""); setTablePage(1); }}
+                className="px-3 py-1.5 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm whitespace-nowrap">
+                Clear All
+            </button>
+        </div>
+    );
 
-    // Generate cascading filter options
-    const filterOptions = useMemo(() => {
-        // Show all taluka options
-        const talukaOptions = allTalukaOptions;
+    type GroupedFutureType = { key: string; taluka_name: string; gp_name: string; village_name: string; works: Futureworktype[]; count: number; work_status: string };
 
-        // Filter grampanchayat options based on selected taluka
-        let gpOptions = allGpOptions;
-        if (filters["taluka_name"]) {
-            // Filter GP options based on data - show only GPs that exist in selected taluka's data
-            const gpData = data.filter(item => item.taluka_name === filters["taluka_name"]);
-            const availableGps = Array.from(
-                new Set(gpData.map(item => item.gp_name).filter(Boolean))
-            );
-            gpOptions = allGpOptions.filter(gp => 
-                availableGps.includes(gp.value)
-            );
-        }
-
-        // Filter village options based on selected taluka and grampanchayat
-        let villageOptions = allVillageOptions;
-        if (filters["taluka_name"] || filters["gp_name"]) {
-            let villageData = data;
-            if (filters["taluka_name"]) {
-                villageData = villageData.filter(item => item.taluka_name === filters["taluka_name"]);
-            }
-            if (filters["gp_name"]) {
-                villageData = villageData.filter(item => item.gp_name === filters["gp_name"]);
-            }
-            const availableVillages = Array.from(
-                new Set(villageData.map(item => item.village_name).filter(Boolean))
-            );
-            villageOptions = allVillageOptions.filter(village => 
-                availableVillages.includes(village.value)
-            );
-        }
-
-        return [
-            {
-                label: "Taluka",
-                fieldName: "taluka_name",
-                options: talukaOptions,
-                value: filters["taluka_name"] || "",
-                onChange: (value: string) => {
-                    setFilters({
-                        "taluka_name": value,
-                        "gp_name": "", // Reset grampanchayat when taluka changes
-                        "village_name": "" // Reset village when taluka changes
-                    });
-                }
-            },
-            {
-                label: "Grampanchayat",
-                fieldName: "gp_name",
-                options: gpOptions,
-                value: filters["gp_name"] || "",
-                onChange: (value: string) => {
-                    setFilters(prev => ({
-                        ...prev,
-                        "gp_name": value,
-                        "village_name": "" // Reset village when grampanchayat changes
-                    }));
-                }
-            },
-            {
-                label: "Village",
-                fieldName: "village_name",
-                options: villageOptions,
-                value: filters["village_name"] || "",
-                onChange: (value: string) => {
-                    setFilters(prev => ({ ...prev, "village_name": value }));
-                }
-            }
-        ];
-    }, [data, filters, allTalukaOptions, allVillageOptions, allGpOptions]);
-
-    const columns: Column<Futureworktype>[] = [
+    const tableColumns = useMemo(() => [
         {
-            key: 'taluka_name',
-            label: 'Taluka',
-            accessor: 'taluka_name',
-            render: (row) => <span>{row.taluka_name || 'N/A'}</span>
+            name: "SR No.",
+            cell: (_row: GroupedFutureType, index: number) => tablePerPage * (tablePage - 1) + index + 1,
+            width: "70px",
         },
-        
+        { name: "Taluka", selector: (r: GroupedFutureType) => r.taluka_name || '', cell: (r: GroupedFutureType) => <span className="font-medium">{r.taluka_name || 'N/A'}</span>, sortable: true },
+        { name: "Grampanchayat", selector: (r: GroupedFutureType) => r.gp_name || '', cell: (r: GroupedFutureType) => <span className="font-medium">{r.gp_name || 'N/A'}</span>, sortable: true },
+        { name: "Village", selector: (r: GroupedFutureType) => r.village_name || '', cell: (r: GroupedFutureType) => <span className="font-medium">{r.village_name || 'N/A'}</span>, sortable: true },
         {
-            key: 'gp_name',
-            label: 'Grampanchayat',
-            accessor: 'gp_name',
-            render: (row) => <span>{row.gp_name || 'N/A'}</span>
-        },
-        {
-            key: 'village_name',
-            label: 'Village',
-            accessor: 'village_name',
-            render: (row) => <span>{row.village_name || 'N/A'}</span>
-        },
-        {
-            key: 'work_name',
-            label: 'Work Name',
-            accessor: 'work_name',
-            render: (row) => (
+            name: "Work Count",
+            cell: (r: GroupedFutureType) => (
                 <span
-                    className="cursor-pointer underline text-blue-700"
-                    onClick={() => setSelectedWork(row)}
+                    className="cursor-pointer underline text-blue-700 font-semibold bg-blue-50 px-3 py-1 rounded-full hover:bg-blue-100 transition-colors"
+                    onClick={() => setSelectedGroup({ taluka_name: r.taluka_name, gp_name: r.gp_name, village_name: r.village_name, works: r.works, count: r.count })}
                 >
-                    {row.work_name}
+                    {r.count} {r.count === 1 ? 'Work' : 'Works'}
                 </span>
-            )
+            ),
+            sortable: false,
         },
-        
-    ];
+    ], [tablePerPage, tablePage]);
 
     // Export to Excel function with proper UTF-8 encoding for Marathi
     const exportToExcel = () => {
@@ -496,82 +519,196 @@ const Futurecommer: React.FC<Props> = ({ serverData }) => {
     };
 
     return (
-        <div className="">
-            <div className="mb-4 flex justify-end gap-3 flex-wrap">
-                <button
-                    onClick={exportToExcel}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                    >
-                        <path
-                            fillRule="evenodd"
-                            d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                        />
-                    </svg>
-                    Export to Excel
-                </button>
-                <button
-                    onClick={exportToCSV}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                    >
-                        <path
-                            fillRule="evenodd"
-                            d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                        />
-                    </svg>
-                    Export to CSV
-                </button>
-                <button
-                    onClick={exportToPDF}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-md"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                    >
-                        <path
-                            fillRule="evenodd"
-                            d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z"
-                            clipRule="evenodd"
-                        />
-                    </svg>
-                    Export to PDF
-                </button>
+        <div className="space-y-6">
+
+            {/* 3 Cards - same layout as Presetntwork */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                {/* Card 1: Recent Works marquee */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-sm h-[400px] flex flex-col">
+                    <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+                        <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">Recent Works</h3>
+                        <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Last {recentWorks.length}</span>
+                    </div>
+                    <div className="flex-1 overflow-hidden relative">
+                        {recentWorks.length === 0 ? (
+                            <div className="flex items-center justify-center h-full text-gray-400 text-sm">No recent works</div>
+                        ) : (
+                            <div className="h-full overflow-hidden">
+                                <style>{`
+                                    @keyframes futureScrollUp {
+                                        0% { transform: translateY(0); }
+                                        100% { transform: translateY(-50%); }
+                                    }
+                                    .future-scroll-marquee { animation: futureScrollUp 18s linear infinite; }
+                                    .future-scroll-marquee:hover { animation-play-state: paused; }
+                                `}</style>
+                                <div className="future-scroll-marquee">
+                                    {[...recentWorks, ...recentWorks].map((work, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="flex items-start gap-3 p-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-200 transition-colors cursor-pointer mb-2"
+                                            onClick={() => setSelectedWork(work)}
+                                        >
+                                            <div className={`mt-0.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                                                work.work_status === "Completed" ? "bg-green-500" :
+                                                work.work_status === "In Progress" ? "bg-yellow-500" : "bg-red-400"
+                                            }`} />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-xs font-semibold text-gray-800 truncate">{work.work_name || "N/A"}</p>
+                                                <p className="text-xs text-gray-500 truncate">{work.village_name} · {work.taluka_name}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-purple-100 text-purple-700">
+                                                        {work.work_status || "N/A"}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400">{formatDate(work.created_at)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Card 2: Work Status donut */}
+                <div className="bg-[#f3fff3] rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-[400px] flex flex-col">
+                    <div className="mb-4 flex-shrink-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">Work Status</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                <span className="text-gray-600">Completed: <span className="font-semibold text-gray-900">{completedPct.toFixed(1)}%</span></span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                                <span className="text-gray-600">In Progress: <span className="font-semibold text-gray-900">{inProgressPct.toFixed(1)}%</span></span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                <span className="text-gray-600">Pending: <span className="font-semibold text-gray-900">{pendingPct.toFixed(1)}%</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
+                        <FutureStatusChart series={statusSeries} labels={statusLabels} colors={statusColors} total={data.length} />
+                    </div>
+                </div>
+
+                {/* Card 3: NRM Work + Plantation Work tabbed - same as present works */}
+                <WorkTypePieCharts
+                    serverData={data as unknown as import('./Cfrtype/futurework').presentworktype[]}
+                    basicVillageData={data1}
+                />
             </div>
-            <Tabviewtable
-                data={data}
-                inputfiled={[]}
-                columns={columns}
-                title="Future Work"
-                filterOptions={filterOptions}
-                searchKey="work_name"
-                tabFilter={{
-                    field: 'work_status',
-                    fallbackFields: ['status'],
-                    normalize: true,
-                    tabs: [
-                        { label: 'All', value: '' },
-                        { label: 'Pending', value: 'pending' },
-                        { label: 'In Progress', value: 'inprogress' },
-                        { label: 'Complete', value: 'complete' },
-                    ],
-                }}
-            />
+
+            {/* Export buttons */}
+            <div className="mb-4 flex justify-end gap-3 flex-wrap">
+                <button onClick={exportToExcel} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md">Export to Excel</button>
+                <button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md">Export to CSV</button>
+                <button onClick={exportToPDF} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-md">Export to PDF</button>
+            </div>
+
+            <div className="p-4 rounded-lg w-full border bg-white shadow-sm">
+                <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
+                    <h2 className="text-xl font-semibold text-gray-800">CFR क्षेत्रातील प्रस्तावित कामांची माहिती</h2>
+                    {!hasTableFilters && (
+                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">Showing last 10 recent works</span>
+                    )}
+                </div>
+                <DataTable
+                    columns={tableColumns}
+                    data={filteredTableData}
+                    pagination
+                    highlightOnHover
+                    responsive
+                    striped
+                    persistTableHead
+                    subHeader
+                    subHeaderComponent={tableSubHeader}
+                    paginationPerPage={tablePerPage}
+                    paginationDefaultPage={tablePage}
+                    onChangePage={p => setTablePage(p)}
+                    onChangeRowsPerPage={(n) => { setTablePerPage(n); setTablePage(1); }}
+                    customStyles={{
+                        rows: { style: { minHeight: "48px" } },
+                        headCells: { style: { fontWeight: "600", fontSize: "14px", border: "1px solid #ddd", backgroundColor: "#f8f9fa" } },
+                        cells: { style: { border: "1px solid #ddd" } },
+                        subHeader: { style: { backgroundColor: "#f8f9fa", borderBottom: "1px solid #ddd" } },
+                    }}
+                    noDataComponent={
+                        <div className="text-center py-8">
+                            <p className="text-gray-500">कोणताही डेटा सापडला नाही</p>
+                            {hasTableFilters && (
+                                <button onClick={() => { setTableFilters({}); setTableSearch(""); }} className="mt-3 px-4 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
+                                    फिल्टर साफ करा
+                                </button>
+                            )}
+                        </div>
+                    }
+                />
+            </div>
+
+            {/* Grouped Works Modal */}
+            <Modal
+                open={!!selectedGroup}
+                onClose={() => setSelectedGroup(null)}
+                title={`Works in ${selectedGroup?.village_name || ''} (${selectedGroup?.count || 0} Works)`}
+            >
+                {selectedGroup && (
+                    <div className="space-y-4">
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div><span className="font-semibold">Taluka:</span> {selectedGroup.taluka_name || 'N/A'}</div>
+                                <div><span className="font-semibold">Grampanchayat:</span> {selectedGroup.gp_name || 'N/A'}</div>
+                                <div><span className="font-semibold">Village:</span> {selectedGroup.village_name || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full border-collapse border border-gray-300">
+                                <thead>
+                                    <tr className="bg-blue-600 text-white">
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Sr No</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Work Name</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Status</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Total Area</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Est. Amount</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Created</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {selectedGroup.works.map((work, index) => (
+                                        <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                            <td className="border border-gray-300 px-4 py-2">{index + 1}</td>
+                                            <td className="border border-gray-300 px-4 py-2 font-medium">{work.work_name || 'N/A'}</td>
+                                            <td className="border border-gray-300 px-4 py-2">
+                                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${work.work_status === 'Completed' ? 'bg-green-100 text-green-800' : work.work_status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                                                    {work.work_status || 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td className="border border-gray-300 px-4 py-2">{work.total_area || 'N/A'}</td>
+                                            <td className="border border-gray-300 px-4 py-2">{work.estimated_amount || 'N/A'}</td>
+                                            <td className="border border-gray-300 px-4 py-2 whitespace-nowrap">{formatDate(work.created_at)}</td>
+                                            <td className="border border-gray-300 px-4 py-2">
+                                                <button
+                                                    className="text-blue-600 hover:text-blue-800 underline text-sm font-medium"
+                                                    onClick={() => { setSelectedGroup(null); setSelectedWork(work); }}
+                                                >
+                                                    View Details
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
             <Modal open={!!selectedWork} onClose={() => setSelectedWork(null)} title={`Work Name: ${selectedWork?.work_name ?? ''}`}>
                 {renderWorkModal()}
             </Modal>

@@ -8,11 +8,11 @@ import Ifrholderwisevillages from "@/components/ecommerce/Ifrholderwisevillages"
 // import { DownloadButtons } from "@/components/ecommerce/DownloadButtons";
 
 export const metadata: Metadata = {
-    title: "Scheme Monitoring & Tracking System",
-    description:
-        "Scheme Monitoring & Tracking System",
-};
+  title: "VanSampada",
+  description:
+    "VanSampada",
 
+};
 
 async function fetchFarmersData() {
 

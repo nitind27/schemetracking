@@ -16,9 +16,9 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Scheme Monitoring & Tracking System",
+  title: "VanSampada",
   description:
-    "Scheme Monitoring & Tracking System",
+    "VanSampada",
 
 };
 

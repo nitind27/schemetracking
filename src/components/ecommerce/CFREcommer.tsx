@@ -109,7 +109,7 @@ export const CFREcommer = () => {
         ? <div>Loading...</div>
         : error
         ? <div className="text-red-500">{error}</div>
-        : <Futurecommer serverData={futureData} />
+        : <Futurecommer serverData={futureData} basicVillageData={basicData} />
     },
   ];
 

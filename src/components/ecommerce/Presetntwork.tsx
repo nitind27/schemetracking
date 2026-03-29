@@ -90,12 +90,17 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 		return Array.from(groups.values());
 	}, [data]);
 	function formatDate(dateString: string | undefined | null): string {
-		if (!dateString) return 'N/A';
-		const date = new Date(dateString);
-		if (isNaN(date.getTime())) return 'N/A';
-		const day = String(date.getDate()).padStart(2, '0');
-		const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+		if (!dateString) return '-';
+		const trimmed = dateString.trim();
+		// treat zero date as blank
+		if (/^0+[-/]0+[-/]0+/.test(trimmed)) return '-';
+		const date = new Date(trimmed);
+		if (isNaN(date.getTime())) return '-';
 		const year = date.getFullYear();
+		// MySQL 0000-00-00 parses to 1899 in JS — treat as invalid
+		if (year < 1900) return '-';
+		const day = String(date.getDate()).padStart(2, '0');
+		const month = String(date.getMonth() + 1).padStart(2, '0');
 		return `${day}-${month}-${year}`;
 	}
 
@@ -132,22 +137,12 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 		{ key: "taluka_name", label: "Taluka" },
 		{ key: "gp_name", label: "Grampanchayat" },
 		{ key: "village_name", label: "Village" },
-
 		{ key: "total_area", label: "Total Area" },
 		{ key: "estimated_amount", label: "Estimated Amount" },
 		{ key: "department_name", label: "Department Name" },
 		{ key: "implementing_method", label: "Implementing Method" },
 		{ key: "type", label: "Type" },
 		{ key: "work_status", label: "Work Status" },
-		{
-			key: "work_photo", label: "Work Photo", render: row => row.work_photo ?
-				<img
-					src={`${process.env.NEXT_PUBLIC_API_URL || ''}/${row.work_photo}`}
-					alt={row.work_name}
-					className="h-24 w-auto rounded border mb-2"
-					onError={e => (e.currentTarget.style.display = 'none')}
-				/> : 'No Image'
-		},
 		{ key: "start_date", label: "Work Start Date", render: row => formatDate(row.start_date) },
 		{ key: "end_date", label: "Work End Date", render: row => formatDate(row.end_date) },
 		{ key: "worker_number", label: "Work Number" },
@@ -156,45 +151,60 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 
 	const renderWorkModal = () => (
 		!selectedWork ? null : (
-			<div className="space-y-3">
-				{/* Map Button - Show if coordinates are available */}
+			<div className="space-y-4">
+				{/* Work Photo */}
+				<div className="w-full rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center" style={{ minHeight: 180 }}>
+					{selectedWork.work_photo ? (
+						<img
+							src={`${process.env.NEXT_PUBLIC_API_URL || ''}/${selectedWork.work_photo}`}
+							alt={selectedWork.work_name || 'Work Photo'}
+							className="w-full max-h-64 object-cover"
+							onError={e => {
+								e.currentTarget.style.display = 'none';
+								const parent = e.currentTarget.parentElement;
+								if (parent) {
+									parent.innerHTML = `<div class="flex flex-col items-center justify-center gap-2 py-10 text-gray-400">
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+										<span class="text-sm">Image not available</span>
+									</div>`;
+								}
+							}}
+						/>
+					) : (
+						<div className="flex flex-col items-center justify-center gap-2 py-10 text-gray-400">
+							<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+							</svg>
+							<span className="text-sm">No image available</span>
+						</div>
+					)}
+				</div>
+
+				{/* Map Button */}
 				{hasValidCoordinates(selectedWork) && (
-					<div className="mb-4 flex justify-center">
+					<div className="flex justify-center">
 						<button
 							onClick={() => openGoogleMaps(selectedWork.latitude, selectedWork.longitude)}
-							className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg font-medium"
+							className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-md font-medium text-sm"
 						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								className="h-5 w-5"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								strokeWidth={2}
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-								/>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-								/>
+							<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+								<path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+								<path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
 							</svg>
-							Open Location in Google Maps
+							Open in Google Maps
 						</button>
 					</div>
 				)}
-				{/* <div className="font-semibold text-blue-800 text-lg mb-3">{selectedWork.work_status}</div> */}
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+
+				{/* Details Grid */}
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm bg-gray-50 rounded-xl p-4">
 					{modalFields.map(({ key, label, render }) => {
 						const value = render ? render(selectedWork) : selectedWork[key];
-						if (value === undefined || value === null || value === "") return null;
+						if (value === undefined || value === null || value === "" || value === "-") return null;
 						return (
-							<div key={String(key)}>
-								<span className="font-semibold">{label}:</span> <span>{value}</span>
+							<div key={String(key)} className="flex gap-1 py-1 border-b border-gray-100 last:border-0">
+								<span className="font-semibold text-gray-600 whitespace-nowrap">{label}:</span>
+								<span className="text-gray-800">{value as React.ReactNode}</span>
 							</div>
 						);
 					})}
@@ -438,142 +448,92 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 		setCurrentPage(1);
 	};
 
-	// SubHeader component with cascading filters
+	// SubHeader component with cascading filters - single inline row
 	const SubHeaderComponent = (
-		<div className="space-y-4 w-full">
-			<div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-				{/* Filter Controls */}
-				<div className="flex flex-col sm:flex-row gap-3 flex-wrap">
-					{/* Taluka Filter */}
-					<div className="flex flex-col gap-1">
-						<label className="text-sm font-medium text-gray-700 text-left">तालुका</label>
-						<select
-							className="border rounded px-3 py-2 min-w-[180px] bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-							value={filters["Taluka"] || ""}
-							onChange={(e) => {
-								setFilters({
-									"Taluka": e.target.value,
-									"Grampanchayat": "",
-									"Village": "",
-									"Type": filters["Type"] || "",
-									"WorkStatus": filters["WorkStatus"] || ""
-								});
-								setCurrentPage(1);
-							}}
-						>
-							<option value="">तालुका निवडा</option>
-							{cascadingFilterOptions.talukaOptions.map((opt) => (
-								<option key={opt.value} value={opt.value}>{opt.label}</option>
-							))}
-						</select>
-					</div>
+		<div className="flex flex-wrap gap-2 items-end w-full py-2">
+			<select
+				className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+				value={filters["Taluka"] || ""}
+				onChange={(e) => {
+					setFilters({ "Taluka": e.target.value, "Grampanchayat": "", "Village": "", "Type": filters["Type"] || "", "WorkStatus": filters["WorkStatus"] || "" });
+					setCurrentPage(1);
+				}}
+			>
+				<option value="">तालुका निवडा</option>
+				{cascadingFilterOptions.talukaOptions.map((opt) => (
+					<option key={opt.value} value={opt.value}>{opt.label}</option>
+				))}
+			</select>
 
-					{/* Grampanchayat Filter */}
-					<div className="flex flex-col gap-1">
-						<label className="text-sm font-medium text-gray-700 text-left">ग्रामपंचायत</label>
-						<select
-							className="border rounded px-3 py-2 min-w-[180px] bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-							value={filters["Grampanchayat"] || ""}
-							onChange={(e) => {
-								setFilters(prev => ({
-									...prev,
-									"Grampanchayat": e.target.value,
-									"Village": ""
-								}));
-								setCurrentPage(1);
-							}}
-						>
-							<option value="">ग्रामपंचायत निवडा</option>
-							{cascadingFilterOptions.gpOptions.map((opt) => (
-								<option key={opt.value} value={opt.value}>{opt.label}</option>
-							))}
-						</select>
-					</div>
+			<select
+				className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+				value={filters["Grampanchayat"] || ""}
+				onChange={(e) => {
+					setFilters(prev => ({ ...prev, "Grampanchayat": e.target.value, "Village": "" }));
+					setCurrentPage(1);
+				}}
+			>
+				<option value="">ग्रामपंचायत निवडा</option>
+				{cascadingFilterOptions.gpOptions.map((opt) => (
+					<option key={opt.value} value={opt.value}>{opt.label}</option>
+				))}
+			</select>
 
-					{/* Village Filter */}
-					<div className="flex flex-col gap-1">
-						<label className="text-sm font-medium text-gray-700 text-left">गाव</label>
-						<select
-							className="border rounded px-3 py-2 min-w-[180px] bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-							value={filters["Village"] || ""}
-							onChange={(e) => {
-								setFilters(prev => ({ ...prev, "Village": e.target.value }));
-								setCurrentPage(1);
-							}}
-						>
-							<option value="">गाव निवडा</option>
-							{cascadingFilterOptions.villageOptions.map((opt) => (
-								<option key={opt.value} value={opt.value}>{opt.label}</option>
-							))}
-						</select>
-					</div>
+			<select
+				className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+				value={filters["Village"] || ""}
+				onChange={(e) => {
+					setFilters(prev => ({ ...prev, "Village": e.target.value }));
+					setCurrentPage(1);
+				}}
+			>
+				<option value="">गाव निवडा</option>
+				{cascadingFilterOptions.villageOptions.map((opt) => (
+					<option key={opt.value} value={opt.value}>{opt.label}</option>
+				))}
+			</select>
 
-					{/* Type Filter */}
-					<div className="flex flex-col gap-1">
-						<label className="text-sm font-medium text-gray-700 text-left">Type</label>
-						<select
-							className="border rounded px-3 py-2 min-w-[150px] bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-							value={filters["Type"] || ""}
-							onChange={(e) => {
-								setFilters(prev => ({ ...prev, "Type": e.target.value }));
-								setCurrentPage(1);
-							}}
-						>
-							<option value="">All Types</option>
-							<option value="Plantation">Plantation</option>
-							<option value="NRM">NRM</option>
-						</select>
-					</div>
+			<select
+				className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+				value={filters["Type"] || ""}
+				onChange={(e) => {
+					setFilters(prev => ({ ...prev, "Type": e.target.value }));
+					setCurrentPage(1);
+				}}
+			>
+				<option value="">All Types</option>
+				<option value="Plantation">Plantation</option>
+				<option value="NRM">NRM</option>
+			</select>
 
-					{/* Work Status Filter */}
-					<div className="flex flex-col gap-1">
-						<label className="text-sm font-medium text-gray-700 text-left">Work Status</label>
-						<select
-							className="border rounded px-3 py-2 min-w-[150px] bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-							value={filters["WorkStatus"] || ""}
-							onChange={(e) => {
-								setFilters(prev => ({ ...prev, "WorkStatus": e.target.value }));
-								setCurrentPage(1);
-							}}
-						>
-							<option value="">All Status</option>
-							<option value="Pending">Pending</option>
-							<option value="In Progress">In Progress</option>
-							<option value="Completed">Completed</option>
-						</select>
-					</div>
-				</div>
+			<select
+				className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+				value={filters["WorkStatus"] || ""}
+				onChange={(e) => {
+					setFilters(prev => ({ ...prev, "WorkStatus": e.target.value }));
+					setCurrentPage(1);
+				}}
+			>
+				<option value="">All Status</option>
+				<option value="Pending">Pending</option>
+				<option value="In Progress">In Progress</option>
+				<option value="Completed">Completed</option>
+			</select>
 
+			<input
+				type="text"
+				placeholder="Search..."
+				className="border rounded px-2 py-1.5 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[160px]"
+				value={search}
+				onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+			/>
 
-			</div>
-			{/* Search and Actions */}
-			<div className="flex flex-col sm:flex-row gap-3 items-center">
-				<div className="flex flex-col gap-1">
-					<label className="text-sm font-medium text-gray-700 text-left">Search</label>
-					<input
-						type="text"
-						placeholder="Search..."
-						className="rounded border border-gray-200 bg-white px-3 py-2 hover:shadow-sm transition-shadow focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px]"
-						value={search}
-						onChange={(e) => {
-							setSearch(e.target.value);
-							setCurrentPage(1);
-						}}
-					/>
-				</div>
-				<button
-					onClick={clearAllFilters}
-					className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors duration-200 text-sm mt-5"
-				>
-					Clear Filters
-				</button>
-			</div>
-			{/* Results Summary */}
-			<div className="flex justify-between items-center text-sm text-gray-600">
-				<span>
-					Showing {filteredGroupedData.length} of {groupedData.length} locations
-				</span>
-			</div>
+			<button
+				onClick={clearAllFilters}
+				className="px-3 py-1.5 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-sm whitespace-nowrap"
+			>
+				Clear All
+			</button>
 		</div>
 	);
 
@@ -823,82 +783,104 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 		document.body.removeChild(link);
 	};
 
+	// Last 10 recent works sorted by created_at desc
+	const recentWorks = useMemo(() => {
+		return [...data]
+			.sort((a, b) => {
+				const da = a.created_at ? new Date(a.created_at).getTime() : 0;
+				const db = b.created_at ? new Date(b.created_at).getTime() : 0;
+				return db - da;
+			})
+			.slice(0, 10);
+	}, [data]);
+
+	// Last 10 grouped locations by most recent created_at
+	const recentGroupedData = useMemo(() => {
+		return [...groupedData]
+			.sort((a, b) => {
+				const da = Math.max(...a.works.map(w => w.created_at ? new Date(w.created_at).getTime() : 0));
+				const db = Math.max(...b.works.map(w => w.created_at ? new Date(w.created_at).getTime() : 0));
+				return db - da;
+			})
+			.slice(0, 10);
+	}, [groupedData]);
+
+	const hasActiveFilters = Object.values(filters).some(f => f) || !!search;
+
 	return (
 		<div className="space-y-6">
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+				{/* Recent Works Card - first */}
+				<div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-sm h-[400px] flex flex-col">
+					<div className="flex items-center gap-2 mb-3 flex-shrink-0">
+						<span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+						<h3 className="text-sm sm:text-base font-semibold text-gray-900">Recent Works</h3>
+						<span className="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Last {recentWorks.length}</span>
+					</div>
+					<div className="flex-1 overflow-hidden relative">
+						{recentWorks.length === 0 ? (
+							<div className="flex items-center justify-center h-full text-gray-400 text-sm">No recent works</div>
+						) : (
+							<div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 pr-1 space-y-2 animate-none">
+								<style>{`
+									@keyframes scrollUp {
+										0% { transform: translateY(0); }
+										100% { transform: translateY(-50%); }
+									}
+									.scroll-marquee { animation: scrollUp 18s linear infinite; }
+									.scroll-marquee:hover { animation-play-state: paused; }
+								`}</style>
+								<div className="scroll-marquee">
+									{[...recentWorks, ...recentWorks].map((work, idx) => (
+										<div
+											key={idx}
+											className="flex items-start gap-3 p-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-200 transition-colors cursor-pointer mb-2"
+											onClick={() => setSelectedWork(work)}
+										>
+											<div className={`mt-0.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+												work.work_status === "Completed" ? "bg-green-500" :
+												work.work_status === "In Progress" ? "bg-yellow-500" : "bg-red-400"
+											}`} />
+											<div className="min-w-0 flex-1">
+												<p className="text-xs font-semibold text-gray-800 truncate">{work.work_name || "N/A"}</p>
+												<p className="text-xs text-gray-500 truncate">{work.village_name} · {work.taluka_name}</p>
+												<div className="flex items-center gap-2 mt-1">
+													<span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+														work.type === "Plantation" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+													}`}>{work.type || "N/A"}</span>
+													<span className="text-[10px] text-gray-400">{formatDate(work.created_at)}</span>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
 				<WorkStatusPieChart serverData={data} />
-				<WorkTypePieCharts
-					serverData={data}
-					basicVillageData={data1}
-				/>
+				<WorkTypePieCharts serverData={data} basicVillageData={data1} />
 			</div>
 
-			{/* Data Table */}
+			{/* Single Table - default last 10 recent, filter pe filtered data */}
 			<div className="">
 				<div className="mb-4 flex justify-end gap-3 flex-wrap">
-					<button
-						onClick={exportToExcel}
-						className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-5 w-5"
-							viewBox="0 0 20 20"
-							fill="currentColor"
-						>
-							<path
-								fillRule="evenodd"
-								d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-								clipRule="evenodd"
-							/>
-						</svg>
-						Export to Excel
-					</button>
-					<button
-						onClick={exportToCSV}
-						className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-5 w-5"
-							viewBox="0 0 20 20"
-							fill="currentColor"
-						>
-							<path
-								fillRule="evenodd"
-								d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-								clipRule="evenodd"
-							/>
-						</svg>
-						Export to CSV
-					</button>
-					<button
-						onClick={exportToPDF}
-						className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-md"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-5 w-5"
-							viewBox="0 0 20 20"
-							fill="currentColor"
-						>
-							<path
-								fillRule="evenodd"
-								d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z"
-								clipRule="evenodd"
-							/>
-						</svg>
-						Export to PDF
-					</button>
+					<button onClick={exportToExcel} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md">Export to Excel</button>
+					<button onClick={exportToCSV} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md">Export to CSV</button>
+					<button onClick={exportToPDF} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-md">Export to PDF</button>
 				</div>
 				<div className="p-4 rounded-lg w-full border bg-white shadow-sm">
-					<div className="mb-4">
+					<div className="mb-4 flex items-center justify-between flex-wrap gap-2">
 						<h2 className="text-xl font-semibold text-gray-800">CFR क्षेत्रातील झालेल्या / सुरू असलेल्या कामांची माहिती</h2>
+						{!hasActiveFilters && (
+							<span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">Showing last 10 recent works</span>
+						)}
 					</div>
 
 					<DataTable
 						columns={reactColumns}
-						data={filteredGroupedData}
+						data={hasActiveFilters ? filteredGroupedData : recentGroupedData}
 						pagination
 						highlightOnHover
 						responsive
@@ -914,49 +896,20 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 							setCurrentPage(1);
 						}}
 						customStyles={{
-							rows: {
-								style: {
-									minHeight: "48px",
-								},
-							},
+							rows: { style: { minHeight: "48px" } },
 							headCells: {
-								style: {
-									fontWeight: "600",
-									fontSize: "14px",
-									border: "1px solid #ddd",
-									backgroundColor: "#f8f9fa",
-								},
+								style: { fontWeight: "600", fontSize: "14px", border: "1px solid #ddd", backgroundColor: "#f8f9fa" },
 							},
-							cells: {
-								style: {
-									border: "1px solid #ddd",
-								},
-							},
-							subHeader: {
-								style: {
-									backgroundColor: "#f8f9fa",
-									borderBottom: "1px solid #ddd",
-								},
-							},
+							cells: { style: { border: "1px solid #ddd" } },
+							subHeader: { style: { backgroundColor: "#f8f9fa", borderBottom: "1px solid #ddd" } },
 						}}
 						noDataComponent={
 							<div className="text-center py-8">
-								{Object.values(filters).some(filter => filter) || search ? (
-									<>
-										<p className="text-gray-500 text-lg">कोणताही डेटा सापडला नाही</p>
-										<p className="text-gray-400 text-sm mt-2">आपण निवडलेल्या फिल्टरनुसार कोणताही डेटा नाही</p>
-										<button
-											onClick={clearAllFilters}
-											className="mt-4 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200"
-										>
-											फिल्टर साफ करा
-										</button>
-									</>
-								) : (
-									<>
-										<p className="text-gray-500 text-lg">कोणताही डेटा उपलब्ध नाही</p>
-										<p className="text-gray-400 text-sm mt-2">कृपया फिल्टर वापरून डेटा शोधा</p>
-									</>
+								<p className="text-gray-500 text-lg">कोणताही डेटा सापडला नाही</p>
+								{hasActiveFilters && (
+									<button onClick={clearAllFilters} className="mt-4 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200">
+										फिल्टर साफ करा
+									</button>
 								)}
 							</div>
 						}
