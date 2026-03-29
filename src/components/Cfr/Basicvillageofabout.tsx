@@ -190,6 +190,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
       render: (data) =>
         data.cfrmp_pdf ? (
           <a
+            // href={`https://drive.google.com/file/d/${data.cfrmp_pdf}`}
             href={`https://drive.google.com/file/d/${data.cfrmp_pdf}`}
             target="_blank"
             rel="noopener noreferrer"
