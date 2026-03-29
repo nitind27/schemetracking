@@ -230,7 +230,7 @@ export function EnhancedVillageTable({
             {/* Results Summary */}
             <div className="flex justify-between items-center text-sm text-gray-600">
                 <span>
-                    Showing {filteredData.length} of {data.length} villages
+                    {/* Showing {filteredData.length} of {data.length} villages */}
                 </span>
 
             </div>

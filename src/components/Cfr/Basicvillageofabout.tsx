@@ -175,10 +175,13 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
       accessor: 'kmlfile',
       render: (data) =>
         data.kmlfile ? (
+          <>
+          {data.kmlfile}
           <KMLMapdata
             kmlFile={`/kml/${data.kmlfile}`}
             title="Open KML in new tab"
-          />
+            />
+            </>
         ) : (
           <span className="text-gray-400 text-sm">No KML</span>
         )
