@@ -156,7 +156,7 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 				<div className="w-full rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center" style={{ minHeight: 180 }}>
 					{selectedWork.work_photo ? (
 						<img
-							src={`${process.env.NEXT_PUBLIC_API_URL || ''}/${selectedWork.work_photo}`}
+							src={`${process.env.NEXT_PUBLIC_API_URL || ''}/api/uploadspresentwork/${selectedWork.work_photo}`}
 							alt={selectedWork.work_name || 'Work Photo'}
 							className="w-full max-h-64 object-cover"
 							onError={e => {
