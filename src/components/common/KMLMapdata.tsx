@@ -136,7 +136,7 @@ const KMLMapdata: React.FC<KMLMapButtonProps> = ({
             zoomDelta: 0.5,
         });
 
-        const MAPBOX_TOKEN = '${process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1Ijoid2VjbG9ja3MiLCJhIjoiY2xvanA3Y2lhMXk4ajJrcGxlOXkzenczZSJ9.2QbRG8Wkw6bUFNH6UBs7_g'}';
+        const MAPBOX_TOKEN = '${process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''}';
 
         // Satellite layer
         L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=' + MAPBOX_TOKEN, {
