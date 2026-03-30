@@ -16,9 +16,170 @@ function Modal({ open, onClose, title, children, size = "max-w-4xl" }: { open: b
 		<div className="fixed inset-0 bg-black/40 bg-opacity-40 flex z-99999 items-center justify-center">
 			<div className={`bg-white rounded-lg shadow-xl ${size} w-full mx-3 p-6 relative`}>
 				<button className="absolute top-2 right-3 text-2xl text-gray-500 hover:text-red-500 font-bold" onClick={onClose}>&times;</button>
-				<h3 className="mb-4 text-lg font-bold text-center">{title}</h3>
+				<h3 className="mb-4 text-lg font-bold text-start">{title}</h3>
 				<div className="overflow-auto max-h-[70vh]">{children}</div>
 			</div>
+		</div>
+	);
+}
+
+// --- Image Gallery Modal ---
+function ImageGalleryModal({ open, onClose, images, workName }: { open: boolean; onClose: () => void; images: string[]; workName: string; }) {
+	const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+
+	if (!open) return null;
+
+	return (
+		<div className="fixed inset-0 bg-black/70 flex z-[999999] items-center justify-center">
+			<div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-3 p-5 relative max-h-[90vh] overflow-y-auto">
+				<button className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-red-500 font-bold z-10" onClick={onClose}>&times;</button>
+				<h3 className="mb-4 text-base font-bold text-gray-800 pr-8">{workName}</h3>
+				<WorkImageSlider images={images} apiBase={apiBase} workName={workName} />
+			</div>
+		</div>
+	);
+}
+
+// Helper: parse comma-separated images from work_photo
+function parseImages(work_photo: string | undefined | null): string[] {
+	if (!work_photo) return [];
+	return work_photo.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+// --- Reusable inline image slider (used inside modals) ---
+function WorkImageSlider({ images, apiBase, workName, extraContent }: {
+	images: string[];
+	apiBase: string;
+	workName?: string;
+	extraContent?: React.ReactNode;
+}) {
+	const [current, setCurrent] = useState(0);
+	const [fullscreen, setFullscreen] = useState(false);
+	const [errored, setErrored] = useState<Record<number, boolean>>({});
+
+	const prev = () => setCurrent(c => (c - 1 + images.length) % images.length);
+	const next = () => setCurrent(c => (c + 1) % images.length);
+
+	// Reset state when images list changes (different work opened)
+	React.useEffect(() => {
+		setCurrent(0);
+		setErrored({});
+	}, [images]);
+
+	React.useEffect(() => {
+		if (!fullscreen) return;
+		const handler = (e: KeyboardEvent) => {
+			if (e.key === 'ArrowLeft') prev();
+			else if (e.key === 'ArrowRight') next();
+			else if (e.key === 'Escape') setFullscreen(false);
+		};
+		window.addEventListener('keydown', handler);
+		return () => window.removeEventListener('keydown', handler);
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [fullscreen, images.length]);
+
+	const imgUrl = (src: string) => `${apiBase}/api/uploadspresentwork/${src.trim()}`;
+
+	return (
+		<div className="space-y-4">
+			{/* Image viewer */}
+			<div className="relative bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center" style={{ minHeight: 220 }}>
+				{images.length > 0 ? (
+					<>
+						{errored[current] ? (
+							<div className="flex flex-col items-center justify-center gap-2 py-10 text-gray-400 w-full">
+								<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+								</svg>
+								<span className="text-sm">Image not available</span>
+							</div>
+						) : (
+							<img
+								src={imgUrl(images[current])}
+								alt={`${workName || 'Work'} image ${current + 1}`}
+								className="w-full max-h-72 object-contain cursor-zoom-in"
+								onClick={() => setFullscreen(true)}
+								onError={() => setErrored(prev => ({ ...prev, [current]: true }))}
+							/>
+						)}
+						{images.length > 1 && (
+							<>
+								<button
+									onClick={prev}
+									className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow-md transition-all z-10"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+								</button>
+								<button
+									onClick={next}
+									className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow-md transition-all z-10"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+								</button>
+							</>
+						)}
+						<span className="absolute bottom-2 right-3 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">{current + 1} / {images.length}</span>
+						{!errored[current] && <span className="absolute bottom-2 left-3 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full">Click to fullscreen</span>}
+					</>
+				) : (
+					<div className="flex flex-col items-center justify-center gap-2 py-10 text-gray-400">
+						<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+						</svg>
+						<span className="text-sm">No image available</span>
+					</div>
+				)}
+			</div>
+
+			{/* Thumbnail strip */}
+			{images.length > 1 && (
+				<div className="flex gap-2 overflow-x-auto pb-1">
+					{images.map((img, idx) => (
+						<button
+							key={idx}
+							onClick={() => setCurrent(idx)}
+							className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${idx === current ? 'border-blue-500 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}
+						>
+							{errored[idx] ? (
+								<div className="w-full h-full bg-gray-200 flex items-center justify-center">
+									<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+								</div>
+							) : (
+								<img src={imgUrl(img)} alt={`thumb ${idx + 1}`} className="w-full h-full object-cover" onError={() => setErrored(p => ({ ...p, [idx]: true }))} />
+							)}
+						</button>
+					))}
+				</div>
+			)}
+
+			{/* Extra content (map button, details grid, etc.) */}
+			{extraContent}
+
+			{/* Fullscreen overlay */}
+			{fullscreen && (
+				<div className="fixed inset-0 bg-black z-[9999999] flex items-center justify-center" onClick={() => setFullscreen(false)}>
+					<button className="absolute top-4 right-5 text-white text-3xl font-bold z-10 hover:text-gray-300" onClick={() => setFullscreen(false)}>&times;</button>
+					{images.length > 1 && (
+						<>
+							<button onClick={e => { e.stopPropagation(); prev(); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white rounded-full w-11 h-11 flex items-center justify-center transition-all z-10">
+								<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+							</button>
+							<button onClick={e => { e.stopPropagation(); next(); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white rounded-full w-11 h-11 flex items-center justify-center transition-all z-10">
+								<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+							</button>
+						</>
+					)}
+					{errored[current] ? (
+						<div className="flex flex-col items-center gap-3 text-white">
+							<svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+							<span>Image not available</span>
+						</div>
+					) : (
+						<img src={imgUrl(images[current])} alt={`fullscreen ${current + 1}`} className="max-h-screen max-w-full object-contain" onClick={e => e.stopPropagation()} />
+					)}
+					<span className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-white/20 text-white text-sm px-3 py-1 rounded-full">{current + 1} / {images.length}</span>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -45,6 +206,7 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 	const [data1] = useState<basicdetailsofvillagetype[]>(basicVillageData || []);
 	const [selectedWork, setSelectedWork] = useState<presentworktype | null>(null); // <-- NEW
 	const [selectedGroup, setSelectedGroup] = useState<GroupedWorkType | null>(null); // For grouped works modal
+	const [galleryWork, setGalleryWork] = useState<presentworktype | null>(null); // For image gallery modal
 
 	// Cascading filter states
 	const [filters, setFilters] = useState<Record<string, string>>({});
@@ -134,84 +296,74 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 	};
 
 	const modalFields: ModalField[] = [
-		{ key: "taluka_name", label: "Taluka" },
-		{ key: "gp_name", label: "Grampanchayat" },
-		{ key: "village_name", label: "Village" },
+		// { key: "taluka_name", label: "Taluka" },
+		// { key: "gp_name", label: "Grampanchayat" },
+		// { key: "village_name", label: "Village" },
 		{ key: "total_area", label: "Total Area" },
+		// { key: "unit", label: "Total Area" },
 		{ key: "estimated_amount", label: "Estimated Amount" },
 		{ key: "department_name", label: "Department Name" },
-		{ key: "implementing_method", label: "Implementing Method" },
+		// { key: "implementing_method", label: "Implementing Method" },
 		{ key: "type", label: "Type" },
 		{ key: "work_status", label: "Work Status" },
 		{ key: "start_date", label: "Work Start Date", render: row => formatDate(row.start_date) },
 		{ key: "end_date", label: "Work End Date", render: row => formatDate(row.end_date) },
-		{ key: "worker_number", label: "Work Number" },
+		{ key: "worker_number", label: "Person Days" },
 		{ key: "username", label: "User Name" },
 	];
 
-	const renderWorkModal = () => (
-		!selectedWork ? null : (
-			<div className="space-y-4">
-				{/* Work Photo */}
-				<div className="w-full rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center" style={{ minHeight: 180 }}>
-					{selectedWork.work_photo ? (
-						<img
-							src={`${process.env.NEXT_PUBLIC_API_URL || ''}/api/uploadspresentwork/${selectedWork.work_photo}`}
-							alt={selectedWork.work_name || 'Work Photo'}
-							className="w-full max-h-64 object-cover"
-							onError={e => {
-								e.currentTarget.style.display = 'none';
-								const parent = e.currentTarget.parentElement;
-								if (parent) {
-									parent.innerHTML = `<div class="flex flex-col items-center justify-center gap-2 py-10 text-gray-400">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-										<span class="text-sm">Image not available</span>
-									</div>`;
-								}
-							}}
-						/>
-					) : (
-						<div className="flex flex-col items-center justify-center gap-2 py-10 text-gray-400">
-							<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-							</svg>
-							<span className="text-sm">No image available</span>
-						</div>
-					)}
-				</div>
-
-				{/* Map Button */}
-				{hasValidCoordinates(selectedWork) && (
-					<div className="flex justify-center">
-						<button
-							onClick={() => openGoogleMaps(selectedWork.latitude, selectedWork.longitude)}
-							className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-md font-medium text-sm"
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-								<path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-								<path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-							</svg>
-							Open in Google Maps
-						</button>
-					</div>
-				)}
-
-				{/* Details Grid */}
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm bg-gray-50 rounded-xl p-4">
-					{modalFields.map(({ key, label, render }) => {
-						const value = render ? render(selectedWork) : selectedWork[key];
-						if (value === undefined || value === null || value === "" || value === "-") return null;
-						return (
-							<div key={String(key)} className="flex gap-1 py-1 border-b border-gray-100 last:border-0">
-								<span className="font-semibold text-gray-600 whitespace-nowrap">{label}:</span>
-								<span className="text-gray-800">{value as React.ReactNode}</span>
+	const renderWorkModal = () => {
+		if (!selectedWork) return null;
+		const imgs = parseImages(selectedWork.work_photo);
+		return (
+			<WorkImageSlider
+				images={imgs}
+				apiBase={process.env.NEXT_PUBLIC_API_URL || ''}
+				workName={selectedWork.work_name}
+				extraContent={
+					<>
+						{/* Map Button */}
+						{hasValidCoordinates(selectedWork) && (
+							<div className="flex justify-center">
+								<button
+									onClick={() => openGoogleMaps(selectedWork.latitude, selectedWork.longitude)}
+									className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-md font-medium text-sm"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+										<path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+										<path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+									</svg>
+									Open in Google Maps
+								</button>
 							</div>
-						);
-					})}
-				</div>
-			</div>
-		)
-	);
+						)}
+						{/* Details Grid */}
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm bg-gray-50 rounded-xl p-4">
+							{modalFields.map(({ key, label, render }) => {
+								let value: React.ReactNode;
+								if (render) {
+									value = render(selectedWork);
+								} else if (key === "total_area") {
+									const area = selectedWork.total_area;
+									const unit = selectedWork.unit;
+									value = area !== undefined && area !== null && area !== "" ? `${area} ${unit ?? ""}`.trim() : "";
+								} else {
+									value = selectedWork[key];
+								}
+								if (value === undefined || value === null || value === "" || value === "-") return null;
+								return (
+									<div key={String(key)} className="flex gap-1 py-1 border-b border-gray-100 last:border-0">
+										<span className="font-semibold text-gray-600 whitespace-nowrap">{label}:</span>
+										<span className="text-gray-800">{value}</span>
+									</div>
+								);
+							})}
+						</div>
+					</>
+				}
+			/>
+		);
+	};
 
 	// DataTable columns for grouped data
 	const reactColumns = useMemo(() => [
@@ -275,6 +427,7 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 								<th className="border border-gray-300 px-4 py-2 text-left">Status</th>
 								<th className="border border-gray-300 px-4 py-2 text-left">Start Date</th>
 								<th className="border border-gray-300 px-4 py-2 text-left">End Date</th>
+								<th className="border border-gray-300 px-4 py-2 text-left">Images</th>
 								<th className="border border-gray-300 px-4 py-2 text-left">Map</th>
 								<th className="border border-gray-300 px-4 py-2 text-left">Action</th>
 							</tr>
@@ -301,6 +454,26 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 									</td>
 									<td className="border border-gray-300 px-4 py-2">{formatDate(work.start_date)}</td>
 									<td className="border border-gray-300 px-4 py-2">{formatDate(work.end_date)}</td>
+									<td className="border border-gray-300 px-4 py-2 text-center">
+										{(() => {
+											const imgs = parseImages(work.work_photo);
+											if (imgs.length === 0) return <span className="text-gray-400 text-xs">N/A</span>;
+											return (
+												<button
+													onClick={() => setGalleryWork(work)}
+													className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-purple-100 hover:bg-purple-200 text-purple-600 transition-colors relative"
+													title={`View ${imgs.length} image${imgs.length > 1 ? 's' : ''}`}
+												>
+													<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+														<path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+													</svg>
+													{imgs.length > 1 && (
+														<span className="absolute -top-1 -right-1 bg-purple-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{imgs.length}</span>
+													)}
+												</button>
+											);
+										})()}
+									</td>
 									<td className="border border-gray-300 px-4 py-2 text-center">
 										{hasValidCoordinates(work) ? (
 											<button
@@ -930,6 +1103,14 @@ const Presetntwork: React.FC<Props> = ({ serverData, basicVillageData }) => {
 			<Modal open={!!selectedWork} onClose={() => setSelectedWork(null)} title={`Work Name: ${selectedWork?.work_name ?? ''}`}>
 				{renderWorkModal()}
 			</Modal>
+
+			{/* Image Gallery Modal */}
+			<ImageGalleryModal
+				open={!!galleryWork}
+				onClose={() => setGalleryWork(null)}
+				images={parseImages(galleryWork?.work_photo)}
+				workName={galleryWork?.work_name || ''}
+			/>
 		</div>
 	);
 };

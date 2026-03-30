@@ -75,7 +75,7 @@ export async function POST(request: Request) {
                 work_name, total_area, estimated_cost, department_name, implementing_method,
                 work_status, work_photo, start_date, end_date,
                 worker_number, user_id, status, taluka_id, village_id, gp_id, work_year, unit, type, latitude, longitude
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 work_name, total_area, estimated_cost, department_name, implementing_method,
                 work_status, photoPath, start_date, end_date, worker_number, user_id, 'Active', taluka_id, village_id, gp_id, work_year, unit, type, latitude, longitude

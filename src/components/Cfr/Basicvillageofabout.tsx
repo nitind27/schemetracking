@@ -176,7 +176,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
       render: (data) =>
         data.kmlfile ? (
           <>
-          {data.kmlfile}
+          {/* {data.kmlfile} */}
           <KMLMapdata
             kmlFile={`/kml/${data.kmlfile}`}
             title="Open KML in new tab"
@@ -383,12 +383,15 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                               <td className="border border-gray-300 px-2 py-1 text-center">{idx + 1}</td>
                               <td className="border border-gray-300 px-2 py-1 text-center">
                                 {r.photo ? (
+                                  <>
+                                  
                                   <img
                                     src={`https://vishalnawle.in/vishalnavle/flutter_api_fra/village_member_profile/${r.photo}`}
                                     alt={r.name || 'सभासद फोटो'}
                                     className="w-10 h-10 object-cover rounded-full mx-auto cursor-pointer hover:opacity-80 transition-opacity duration-200"
                                     onClick={() => handleImageClick(`https://vishalnawle.in/vishalnavle/flutter_api_fra/village_member_profile/${r.photo}`, r.name || 'सभासद फोटो')}
-                                  />
+                                    />
+                                    </>
                                 ) : (
                                   <span className="text-gray-400 text-xs">फोटो नाही</span>
                                 )}

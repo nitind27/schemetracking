@@ -5,43 +5,43 @@ import React from 'react';
 import { basicdetailsofvillagetype, Futureworktype } from './Cfrtype/futurework';
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
-import dynamic from "next/dynamic";
-import { ApexOptions } from "apexcharts";
+// import dynamic from "next/dynamic";
+// import { ApexOptions } from "apexcharts";
 import DataTable from "react-data-table-component";
 import WorkTypePieCharts from "./WorkTypePieCharts";
 
-const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
+// const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
-// Inline donut chart for work status
-function FutureStatusChart({ series, labels, colors, total }: { series: number[]; labels: string[]; colors: string[]; total: number }) {
-    const options: ApexOptions = {
-        chart: { fontFamily: "Outfit, sans-serif", type: "donut", toolbar: { show: false } },
-        colors, labels,
-        legend: { show: true, position: "bottom", horizontalAlign: "center", fontFamily: "Outfit", fontSize: "12px" },
-        dataLabels: {
-            enabled: true,
-            formatter: (val: string) => parseFloat(val).toFixed(1) + "%",
-            style: { fontSize: "11px", fontWeight: "bold", colors: ["#fff"] },
-        },
-        tooltip: { y: { formatter: (v: number) => v + " works" } },
-        plotOptions: {
-            pie: {
-                donut: {
-                    size: "65%",
-                    labels: {
-                        show: true,
-                        total: {
-                            show: true, showAlways: true, label: "Total Works",
-                            fontSize: "12px", fontWeight: "bold", color: "#666",
-                            formatter: () => total.toString(),
-                        },
-                    },
-                },
-            },
-        },
-    };
-    return <ReactApexChart options={options} series={series} type="donut" height={220} />;
-}
+// // Inline donut chart for work status
+// function FutureStatusChart({ series, labels, colors, total }: { series: number[]; labels: string[]; colors: string[]; total: number }) {
+//     const options: ApexOptions = {
+//         chart: { fontFamily: "Outfit, sans-serif", type: "donut", toolbar: { show: false } },
+//         colors, labels,
+//         legend: { show: true, position: "bottom", horizontalAlign: "center", fontFamily: "Outfit", fontSize: "12px" },
+//         dataLabels: {
+//             enabled: true,
+//             formatter: (val: string) => parseFloat(val).toFixed(1) + "%",
+//             style: { fontSize: "11px", fontWeight: "bold", colors: ["#fff"] },
+//         },
+//         tooltip: { y: { formatter: (v: number) => v + " works" } },
+//         plotOptions: {
+//             pie: {
+//                 donut: {
+//                     size: "65%",
+//                     labels: {
+//                         show: true,
+//                         total: {
+//                             show: true, showAlways: true, label: "Total Works",
+//                             fontSize: "12px", fontWeight: "bold", color: "#666",
+//                             formatter: () => total.toString(),
+//                         },
+//                     },
+//                 },
+//             },
+//         },
+//     };
+//     return <ReactApexChart options={options} series={series} type="donut" height={220} />;
+// }
 
 // Inline Modal
 function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; }) {
@@ -57,6 +57,233 @@ function Modal({ open, onClose, title, children }: { open: boolean; onClose: () 
     );
 }
 
+// Helper: parse comma-separated images
+function parseImages(work_photo: string | undefined | null): string[] {
+    if (!work_photo) return [];
+    return work_photo.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+// Inline image slider (used inside modals, no portal)
+function InlineImageSlider({ images, imgUrl, workName }: { images: string[]; imgUrl: (s: string) => string; workName?: string; }) {
+    const [current, setCurrent] = useState(0);
+    const [fullscreen, setFullscreen] = useState(false);
+    const [errored, setErrored] = useState<Record<number, boolean>>({});
+
+    React.useEffect(() => { setCurrent(0); setErrored({}); }, [images]);
+
+    React.useEffect(() => {
+        if (!fullscreen) return;
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft') setCurrent(c => (c - 1 + images.length) % images.length);
+            else if (e.key === 'ArrowRight') setCurrent(c => (c + 1) % images.length);
+            else if (e.key === 'Escape') setFullscreen(false);
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [fullscreen, images.length]);
+
+    if (images.length === 0) {
+        return (
+            <div className="w-full rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center gap-2 py-10 text-gray-400" style={{ minHeight: 180 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span className="text-sm">No image available</span>
+            </div>
+        );
+    }
+
+    const prev = () => setCurrent(c => (c - 1 + images.length) % images.length);
+    const next = () => setCurrent(c => (c + 1) % images.length);
+
+    return (
+        <div className="space-y-3">
+            {/* Main viewer */}
+            <div className="relative bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center" style={{ minHeight: 220 }}>
+                {errored[current] ? (
+                    <div className="flex flex-col items-center gap-2 py-10 text-gray-400 w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <span className="text-sm">Image not available</span>
+                    </div>
+                ) : (
+                    <img
+                        src={imgUrl(images[current])}
+                        alt={`${workName || 'Work'} image ${current + 1}`}
+                        className="w-full max-h-72 object-contain cursor-zoom-in"
+                        onClick={() => setFullscreen(true)}
+                        onError={() => setErrored(p => ({ ...p, [current]: true }))}
+                    />
+                )}
+                {images.length > 1 && (
+                    <>
+                        <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow-md z-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow-md z-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                    </>
+                )}
+                <span className="absolute bottom-2 right-3 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">{current + 1} / {images.length}</span>
+                {!errored[current] && <span className="absolute bottom-2 left-3 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full">Click to fullscreen</span>}
+            </div>
+
+            {/* Thumbnails */}
+            {images.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                    {images.map((img, idx) => (
+                        <button key={idx} onClick={() => setCurrent(idx)}
+                            className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${idx === current ? 'border-blue-500 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                            {errored[idx] ? (
+                                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                </div>
+                            ) : (
+                                <img src={imgUrl(img)} alt={`thumb ${idx + 1}`} className="w-full h-full object-cover" onError={() => setErrored(p => ({ ...p, [idx]: true }))} />
+                            )}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Fullscreen overlay */}
+            {fullscreen && (
+                <div className="fixed inset-0 bg-black z-[9999999] flex items-center justify-center" onClick={() => setFullscreen(false)}>
+                    <button className="absolute top-4 right-5 text-white text-3xl font-bold z-10 hover:text-gray-300" onClick={() => setFullscreen(false)}>&times;</button>
+                    {images.length > 1 && (
+                        <>
+                            <button onClick={e => { e.stopPropagation(); prev(); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white rounded-full w-11 h-11 flex items-center justify-center z-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                            </button>
+                            <button onClick={e => { e.stopPropagation(); next(); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white rounded-full w-11 h-11 flex items-center justify-center z-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                            </button>
+                        </>
+                    )}
+                    {errored[current] ? (
+                        <div className="flex flex-col items-center gap-3 text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            <span>Image not available</span>
+                        </div>
+                    ) : (
+                        <img src={imgUrl(images[current])} alt={`fullscreen ${current + 1}`} className="max-h-screen max-w-full object-contain" onClick={e => e.stopPropagation()} />
+                    )}
+                    <span className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-white/20 text-white text-sm px-3 py-1 rounded-full">{current + 1} / {images.length}</span>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Image Gallery Modal
+function ImageGalleryModal({ open, onClose, images, workName }: { open: boolean; onClose: () => void; images: string[]; workName: string; }) {
+    const [current, setCurrent] = useState(0);
+    const [fullscreen, setFullscreen] = useState(false);
+    const [errored, setErrored] = useState<Record<number, boolean>>({});
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+
+    React.useEffect(() => { if (open) { setCurrent(0); setErrored({}); } }, [open]);
+
+    React.useEffect(() => {
+        if (!open) return;
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft') setCurrent(c => (c - 1 + images.length) % images.length);
+            else if (e.key === 'ArrowRight') setCurrent(c => (c + 1) % images.length);
+            else if (e.key === 'Escape') { if (fullscreen) setFullscreen(false); else onClose(); }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [open, images.length, fullscreen, onClose]);
+
+    if (!open) return null;
+
+    const imgUrl = (src: string) => `${apiBase}/api/uploadspresentwork/${src.trim()}`;
+    const prev = () => setCurrent(c => (c - 1 + images.length) % images.length);
+    const next = () => setCurrent(c => (c + 1) % images.length);
+
+    return (
+        <>
+            <div className="fixed inset-0 bg-black/70 flex z-[999999] items-center justify-center">
+                <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-3 p-5 relative max-h-[90vh] overflow-y-auto">
+                    <button className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-red-500 font-bold z-10" onClick={onClose}>&times;</button>
+                    <h3 className="mb-4 text-base font-bold text-gray-800 pr-8">{workName}</h3>
+
+                    {/* Main viewer */}
+                    <div className="relative bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center" style={{ minHeight: 280 }}>
+                        {errored[current] ? (
+                            <div className="flex flex-col items-center gap-2 py-10 text-gray-400 w-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                <span className="text-sm">Image not available</span>
+                            </div>
+                        ) : (
+                            <img
+                                src={imgUrl(images[current])}
+                                alt={`${workName} image ${current + 1}`}
+                                className="w-full max-h-72 object-contain cursor-zoom-in"
+                                onClick={() => setFullscreen(true)}
+                                onError={() => setErrored(p => ({ ...p, [current]: true }))}
+                            />
+                        )}
+                        {images.length > 1 && (
+                            <>
+                                <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow-md z-10">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                                </button>
+                                <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow-md z-10">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                                </button>
+                            </>
+                        )}
+                        <span className="absolute bottom-2 right-3 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">{current + 1} / {images.length}</span>
+                        {!errored[current] && <span className="absolute bottom-2 left-3 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full">Click to fullscreen</span>}
+                    </div>
+
+                    {/* Thumbnails */}
+                    {images.length > 1 && (
+                        <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+                            {images.map((img, idx) => (
+                                <button key={idx} onClick={() => setCurrent(idx)}
+                                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${idx === current ? 'border-blue-500 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                                    {errored[idx] ? (
+                                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        </div>
+                                    ) : (
+                                        <img src={imgUrl(img)} alt={`thumb ${idx + 1}`} className="w-full h-full object-cover" onError={() => setErrored(p => ({ ...p, [idx]: true }))} />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Fullscreen */}
+            {fullscreen && (
+                <div className="fixed inset-0 bg-black z-[9999999] flex items-center justify-center" onClick={() => setFullscreen(false)}>
+                    <button className="absolute top-4 right-5 text-white text-3xl font-bold z-10 hover:text-gray-300" onClick={() => setFullscreen(false)}>&times;</button>
+                    {images.length > 1 && (
+                        <>
+                            <button onClick={e => { e.stopPropagation(); prev(); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white rounded-full w-11 h-11 flex items-center justify-center z-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                            </button>
+                            <button onClick={e => { e.stopPropagation(); next(); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white rounded-full w-11 h-11 flex items-center justify-center z-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                            </button>
+                        </>
+                    )}
+                    {errored[current] ? (
+                        <div className="flex flex-col items-center gap-3 text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            <span>Image not available</span>
+                        </div>
+                    ) : (
+                        <img src={imgUrl(images[current])} alt={`fullscreen ${current + 1}`} className="max-h-screen max-w-full object-contain" onClick={e => e.stopPropagation()} />
+                    )}
+                    <span className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-white/20 text-white text-sm px-3 py-1 rounded-full">{current + 1} / {images.length}</span>
+                </div>
+            )}
+        </>
+    );
+}
 interface Props {
     serverData: Futureworktype[];
     basicVillageData: basicdetailsofvillagetype[];
@@ -69,6 +296,7 @@ const Futurecommer: React.FC<Props> = ({ serverData, basicVillageData }) => {
     const [data1] = useState<basicdetailsofvillagetype[]>(basicVillageData || []);
     const [selectedWork, setSelectedWork] = useState<Futureworktype | null>(null);
     const [selectedGroup, setSelectedGroup] = useState<{ taluka_name: string; gp_name: string; village_name: string; works: Futureworktype[]; count: number } | null>(null);
+    const [galleryWork, setGalleryWork] = useState<Futureworktype | null>(null);
     // Table state
     const [tableFilters, setTableFilters] = useState<Record<string, string>>({});
     const [tableSearch, setTableSearch] = useState("");
@@ -136,23 +364,29 @@ const Futurecommer: React.FC<Props> = ({ serverData, basicVillageData }) => {
       
     ];
 
-    const renderWorkModal = () => (
-        !selectedWork ? null : (
-            <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+    const renderWorkModal = () => {
+        if (!selectedWork) return null;
+        const imgs = parseImages(selectedWork.work_photo);
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+        const imgUrl = (src: string) => `${apiBase}/api/uploadspresentwork/${src.trim()}`;
+        return (
+            <div className="space-y-4">
+                <InlineImageSlider images={imgs} imgUrl={imgUrl} workName={selectedWork.work_name} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm bg-gray-50 rounded-xl p-4">
                     {modalFields.map(({ key, label, render }) => {
                         const value = render ? render(selectedWork) : selectedWork[key];
                         if (value === undefined || value === null || value === "") return null;
                         return (
-                            <div key={String(key)}>
-                                <span className="font-semibold">{label}:</span> <span>{String(value)}</span>
+                            <div key={String(key)} className="flex gap-1 py-1 border-b border-gray-100 last:border-0">
+                                <span className="font-semibold text-gray-600 whitespace-nowrap">{label}:</span>
+                                <span className="text-gray-800">{String(value)}</span>
                             </div>
                         );
                     })}
                 </div>
             </div>
-        )
-    );
+        );
+    };
 
     // Recent works sorted by created_at desc
     const recentWorks = useMemo(() => {
@@ -166,16 +400,16 @@ const Futurecommer: React.FC<Props> = ({ serverData, basicVillageData }) => {
     }, [data]);
 
     // Work status counts
-    const completedCount = data.filter(i => i.work_status === "Completed").length;
-    const inProgressCount = data.filter(i => i.work_status === "In Progress").length;
-    const pendingCount = data.filter(i => i.work_status === "Pending").length;
-    const total = data.length;
-    const completedPct = total > 0 ? (completedCount / total) * 100 : 0;
-    const inProgressPct = total > 0 ? (inProgressCount / total) * 100 : 0;
-    const pendingPct = total > 0 ? (pendingCount / total) * 100 : 0;
-    const statusSeries = [completedCount, inProgressCount, pendingCount];
-    const statusLabels = ["Completed", "In Progress", "Pending"];
-    const statusColors = ["#4CAF50", "#FF9800", "#F44336"];
+    // const completedCount = data.filter(i => i.work_status === "Completed").length;
+    // const inProgressCount = data.filter(i => i.work_status === "In Progress").length;
+    // const pendingCount = data.filter(i => i.work_status === "Pending").length;
+    // const total = data.length;
+    // const completedPct = total > 0 ? (completedCount / total) * 100 : 0;
+    // const inProgressPct = total > 0 ? (inProgressCount / total) * 100 : 0;
+    // const pendingPct = total > 0 ? (pendingCount / total) * 100 : 0;
+    // const statusSeries = [completedCount, inProgressCount, pendingCount];
+    // const statusLabels = ["Completed", "In Progress", "Pending"];
+    // const statusColors = ["#4CAF50", "#FF9800", "#F44336"];
 
     // Cascading filter options from grouped data
     const cascadingFilterOptions = useMemo(() => {
@@ -521,8 +755,8 @@ const Futurecommer: React.FC<Props> = ({ serverData, basicVillageData }) => {
     return (
         <div className="space-y-6">
 
-            {/* 3 Cards - same layout as Presetntwork */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* 2 Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                 {/* Card 1: Recent Works marquee */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-sm h-[400px] flex flex-col">
@@ -570,30 +804,6 @@ const Futurecommer: React.FC<Props> = ({ serverData, basicVillageData }) => {
                                 </div>
                             </div>
                         )}
-                    </div>
-                </div>
-
-                {/* Card 2: Work Status donut */}
-                <div className="bg-[#f3fff3] rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm h-[400px] flex flex-col">
-                    <div className="mb-4 flex-shrink-0">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">Work Status</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                <span className="text-gray-600">Completed: <span className="font-semibold text-gray-900">{completedPct.toFixed(1)}%</span></span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                                <span className="text-gray-600">In Progress: <span className="font-semibold text-gray-900">{inProgressPct.toFixed(1)}%</span></span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                <span className="text-gray-600">Pending: <span className="font-semibold text-gray-900">{pendingPct.toFixed(1)}%</span></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex-1 flex items-center justify-center">
-                        <FutureStatusChart series={statusSeries} labels={statusLabels} colors={statusColors} total={data.length} />
                     </div>
                 </div>
 
@@ -676,6 +886,7 @@ const Futurecommer: React.FC<Props> = ({ serverData, basicVillageData }) => {
                                         <th className="border border-gray-300 px-4 py-2 text-left">Total Area</th>
                                         <th className="border border-gray-300 px-4 py-2 text-left">Est. Amount</th>
                                         <th className="border border-gray-300 px-4 py-2 text-left">Created</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Images</th>
                                         <th className="border border-gray-300 px-4 py-2 text-left">Action</th>
                                     </tr>
                                 </thead>
@@ -692,6 +903,26 @@ const Futurecommer: React.FC<Props> = ({ serverData, basicVillageData }) => {
                                             <td className="border border-gray-300 px-4 py-2">{work.total_area || 'N/A'}</td>
                                             <td className="border border-gray-300 px-4 py-2">{work.estimated_amount || 'N/A'}</td>
                                             <td className="border border-gray-300 px-4 py-2 whitespace-nowrap">{formatDate(work.created_at)}</td>
+                                            <td className="border border-gray-300 px-4 py-2 text-center">
+                                                {(() => {
+                                                    const imgs = parseImages(work.work_photo);
+                                                    if (imgs.length === 0) return <span className="text-gray-400 text-xs">N/A</span>;
+                                                    return (
+                                                        <button
+                                                            onClick={() => setGalleryWork(work)}
+                                                            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-purple-100 hover:bg-purple-200 text-purple-600 transition-colors relative"
+                                                            title={`View ${imgs.length} image${imgs.length > 1 ? 's' : ''}`}
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                            </svg>
+                                                            {imgs.length > 1 && (
+                                                                <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">{imgs.length}</span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })()}
+                                            </td>
                                             <td className="border border-gray-300 px-4 py-2">
                                                 <button
                                                     className="text-blue-600 hover:text-blue-800 underline text-sm font-medium"
@@ -712,6 +943,14 @@ const Futurecommer: React.FC<Props> = ({ serverData, basicVillageData }) => {
             <Modal open={!!selectedWork} onClose={() => setSelectedWork(null)} title={`Work Name: ${selectedWork?.work_name ?? ''}`}>
                 {renderWorkModal()}
             </Modal>
+
+            {/* Image Gallery Modal */}
+            <ImageGalleryModal
+                open={!!galleryWork}
+                onClose={() => setGalleryWork(null)}
+                images={parseImages(galleryWork?.work_photo)}
+                workName={galleryWork?.work_name || ''}
+            />
         </div>
     );
 };

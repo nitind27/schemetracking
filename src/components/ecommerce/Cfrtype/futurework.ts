@@ -12,6 +12,7 @@ export interface Futureworktype {
     created_at: string;
     updated_at: string;
     type?: string;
+    work_photo?: string; // comma-separated image filenames
     // NEW OPTIONAL FIELDS for dropdowns & proper referencing:
     taluka_name?: string;
     gp_name?: string;
@@ -36,6 +37,7 @@ export interface presentworktype {
     user_id: string;
     status: string;
     created_at: string;
+    unit: string;
     updated_at: string;
     type: string;
     gis_location?: string; // KML file path or URL
