@@ -1,6 +1,6 @@
 // app/api/uploadsvillagecertificate/[filename]/route.ts
 import { NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
+import { readFile, mkdir } from 'fs/promises';
 import path from 'path';
 
 type Params = {
@@ -17,13 +17,11 @@ export async function GET(
 
     // Security: Prevent directory traversal
     const safeFilename = path.basename(resolvedParams.filename);
-    const filePath = path.join(
-      process.cwd(),
-      'tmp',
-      'uploads',
-      'villagecertificate',
-      safeFilename
-    );
+    const dirPath = path.join(process.cwd(), 'tmp', 'uploads', 'villagecertificate');
+    const filePath = path.join(dirPath, safeFilename);
+
+    // Ensure directory exists
+    await mkdir(dirPath, { recursive: true });
 
     // Read file from filesystem
     const fileBuffer = await readFile(filePath);
@@ -45,7 +43,8 @@ export async function GET(
       }
     });
   } catch (error) {
-    console.error('File read error:', error);
+    const isNotFound = (error as NodeJS.ErrnoException).code === 'ENOENT';
+    if (!isNotFound) console.error('File read error:', error);
     return NextResponse.json(
       { error: 'File not found' },
       { status: 404 }
