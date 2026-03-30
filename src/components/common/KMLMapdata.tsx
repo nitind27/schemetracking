@@ -136,7 +136,6 @@ const KMLMapdata: React.FC<KMLMapButtonProps> = ({
             zoomDelta: 0.5,
         });
         const MAPBOX_TOKEN = '${process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''}';
-
         // Satellite layer
         L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=' + MAPBOX_TOKEN, {
             maxZoom: 22,
