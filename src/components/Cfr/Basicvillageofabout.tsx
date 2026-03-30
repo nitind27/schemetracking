@@ -67,7 +67,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
 
   // Normalize sabhasad data to an array
   // Normalize sabhasad data to an array
-   // Normalize sabhasad data to an array
+  // Normalize sabhasad data to an array
   // Normalize sabhasad data to an array
   const sabhasadList = React.useMemo<Sabhasad[]>(() => {
     const raw = selectedVillage?.sabhasad_array as unknown;
@@ -176,12 +176,14 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
       render: (data) =>
         data.kmlfile ? (
           <>
-          {/* {data.kmlfile} */}
-          <KMLMapdata
-            kmlFile={`/kml/${data.kmlfile}`}
-            title="Open KML in new tab"
+            {/* {data.kmlfile} */}
+
+            <KMLMapdata
+              kmlFile={`/api/uploadsvillagekml/${data.kmlfile}`}
+              title="Open KML in new tab"
             />
-            </>
+
+          </>
         ) : (
           <span className="text-gray-400 text-sm">No KML</span>
         )
@@ -215,11 +217,11 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
       <div className='mb-4'>
         <CFRStatusSummary />
       </div>
-      
+
       <EnhancedVillageTable
         data={sortedData}
         columns={columns}
-      
+
         searchKey="village_name"
         onVillageClick={handleVillageClick}
       />
@@ -261,8 +263,8 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
               </div>
 
               {/* Right: Images */}
-                         {/* Right: Images */}
-                         <div className="space-y-3">
+              {/* Right: Images */}
+              <div className="space-y-3">
                 {/* Two inline cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* CFR Map */}
@@ -399,7 +401,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                               <td className="border border-gray-300 px-2 py-1 text-center">{r.name ?? ''}</td>
                               <td className="border border-gray-300 px-2 py-1 text-center">{r.Position ?? r.position ?? ''}</td>
                               <td className="border border-gray-300 px-2 py-1 text-center">{r.contact_number ?? ''}</td>
-                              
+
                             </tr>
                           ))}
                         </tbody>
@@ -411,7 +413,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
             </div>
 
             {/* Tharav Document Card */}
-         
+
 
             {/* GIS Map Card */}
             <div className="bg-white rounded-lg shadow border border-gray-200 mt-4 max-w-full mx-full w-full">
@@ -452,7 +454,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
                     .filter((coord): coord is { lat: number; lng: number } => coord !== null);
 
                   return coordinates && coordinates.length > 0 ? (
-                    <Ifrgis coordinates={coordinates}  />
+                    <Ifrgis coordinates={coordinates} />
                   ) : (
                     <div className="text-sm text-gray-500">GIS data not available</div>
                   );

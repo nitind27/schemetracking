@@ -155,7 +155,6 @@ const KMLMap: React.FC<KMLMapProps> = ({
         setIsLoading(false);
         return;
       }
-
       // Fix icon URLs with proper type checking
       if ('_getIconUrl' in L.Icon.Default.prototype) {
         delete L.Icon.Default.prototype._getIconUrl;
