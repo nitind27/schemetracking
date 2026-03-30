@@ -14,6 +14,7 @@ const KMLMapdata: React.FC<KMLMapButtonProps> = ({
 	className = '',
 }) => {
 	const isDisabled = !kmlFile;
+	const isBadData = !!kmlFile && !kmlFile.toLowerCase().includes('.kml') && !kmlFile.toLowerCase().includes('.kmz');
 
 	const resolveApiUrl = useCallback((file: string) => {
 		let p = file.trim();
