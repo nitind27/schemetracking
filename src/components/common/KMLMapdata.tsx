@@ -135,7 +135,6 @@ const KMLMapdata: React.FC<KMLMapButtonProps> = ({
             zoomSnap: 0.5,
             zoomDelta: 0.5,
         });
-
         const MAPBOX_TOKEN = '${process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''}';
 
         // Satellite layer
