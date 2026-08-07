@@ -1,9 +1,12 @@
 import pool from '@/lib/db';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import { NextResponse } from 'next/server';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 // Get all documents
 export async function GET() {
+    const __killed = await assertApiAlive('/api/documents');
+    if (__killed) return __killed;
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       'SELECT * FROM documents WHERE status = "Active" ORDER BY sr_no ASC'
@@ -17,6 +20,8 @@ export async function GET() {
 
 // Create new document category
 export async function POST(request: Request) {
+    const __killed = await assertApiAlive('/api/documents');
+    if (__killed) return __killed;
   const { document_name, sr_no } = await request.json();
 
   if (!document_name) {
@@ -37,6 +42,8 @@ export async function POST(request: Request) {
 
 // Update document category
 export async function PUT(request: Request) {
+    const __killed = await assertApiAlive('/api/documents');
+    if (__killed) return __killed;
   const { id, document_name, sr_no } = await request.json();
   if (!id || !document_name) {
     return NextResponse.json({ error: 'Both ID and document name are required' }, { status: 400 });
@@ -56,6 +63,8 @@ export async function PUT(request: Request) {
 
 // Delete document category (soft delete - set status to Inactive)
 export async function DELETE(request: Request) {
+    const __killed = await assertApiAlive('/api/documents');
+    if (__killed) return __killed;
   const { id } = await request.json();
 
   if (!id) {
@@ -73,6 +82,8 @@ export async function DELETE(request: Request) {
 
 
 export async function PATCH(request: Request) {
+    const __killed = await assertApiAlive('/api/documents');
+    if (__killed) return __killed;
   const { id, status } = await request.json();
 
   if (!id || !status) {

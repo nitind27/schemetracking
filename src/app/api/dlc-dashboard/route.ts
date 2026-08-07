@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 
 // GET DLC Dashboard data - only proposals pending at DLC
 export async function GET() {
+    const __killed = await assertApiAlive('/api/dlc-dashboard');
+    if (__killed) return __killed;
   try {
     console.log('DLC Dashboard API called');
     

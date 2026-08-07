@@ -1,5 +1,6 @@
 // app/api/users/route.ts
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 
 
@@ -49,6 +50,8 @@ async function executeWithRetry<T>(
 }
 
 export async function GET() {
+    const __killed = await assertApiAlive('/api/users');
+    if (__killed) return __killed;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let connection: any;
   try {

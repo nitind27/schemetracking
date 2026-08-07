@@ -1,9 +1,12 @@
 // app/api/taluka/route.ts
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 
 export async function GET() {
+    const __killed = await assertApiAlive('/api/taluka');
+    if (__killed) return __killed;
     let connection;
     try {
         connection = await pool.getConnection();

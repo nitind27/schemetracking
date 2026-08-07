@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 import fs from 'fs';
@@ -13,6 +14,8 @@ function uniqueDocFilename(originalName: string, index: number): string {
 }
 
 export async function GET() {
+    const __killed = await assertApiAlive('/api/proposal-crud');
+    if (__killed) return __killed;
   let connection;
   try {
     connection = await pool.getConnection();
@@ -57,6 +60,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    const __killed = await assertApiAlive('/api/proposal-crud');
+    if (__killed) return __killed;
   let connection;
   try {
     const formData = await request.formData();
@@ -375,6 +380,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+    const __killed = await assertApiAlive('/api/proposal-crud');
+    if (__killed) return __killed;
   let connection;
   try {
     const { searchParams } = new URL(request.url);

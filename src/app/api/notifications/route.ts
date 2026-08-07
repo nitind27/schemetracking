@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { writeFile, mkdir, unlink } from 'fs/promises';
@@ -11,6 +12,8 @@ interface InsertResult extends ResultSetHeader {
 
 // GET - Fetch all notifications with optional filters
 export async function GET(req: Request) {
+    const __killed = await assertApiAlive('/api/notifications');
+    if (__killed) return __killed;
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') || 'all';
@@ -45,6 +48,8 @@ export async function GET(req: Request) {
 
 // POST - Create new notification
 export async function POST(req: Request) {
+    const __killed = await assertApiAlive('/api/notifications');
+    if (__killed) return __killed;
   try {
     const formData = await req.formData();
     const title = formData.get('title') as string;
@@ -181,6 +186,8 @@ export async function POST(req: Request) {
 
 // PUT - Update notification
 export async function PUT(req: Request) {
+    const __killed = await assertApiAlive('/api/notifications');
+    if (__killed) return __killed;
   try {
     const formData = await req.formData();
     const id = formData.get('id') as string;
@@ -328,6 +335,8 @@ export async function PUT(req: Request) {
 
 // DELETE - Delete notification
 export async function DELETE(req: Request) {
+    const __killed = await assertApiAlive('/api/notifications');
+    if (__killed) return __killed;
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');

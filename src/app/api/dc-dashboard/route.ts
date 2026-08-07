@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 
@@ -38,6 +39,8 @@ interface DCStats {
 
 // GET - Fetch DC Dashboard data
 export async function GET() {
+    const __killed = await assertApiAlive('/api/dc-dashboard');
+    if (__killed) return __killed;
   try {
     // Fetch all proposals with additional details
     // Join with users table to get user_category_id and verify with user_category table

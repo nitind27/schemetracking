@@ -1,5 +1,6 @@
 // app/api/farmers/route.ts
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 import fs from 'fs';
@@ -7,6 +8,8 @@ import path from 'path';
 
 // GET handler (existing)
 export async function GET() {
+    const __killed = await assertApiAlive('/api/farmernewapi');
+    if (__killed) return __killed;
     let connection;
     try {
         connection = await pool.getConnection();
@@ -27,6 +30,8 @@ export async function GET() {
 
 
 export async function POST(request: Request) {
+    const __killed = await assertApiAlive('/api/farmernewapi');
+    if (__killed) return __killed;
     const formData = await request.formData();
     const farmerId = formData.get('farmer_id') as string;
     const files = formData.getAll('files') as File[];

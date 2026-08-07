@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 
@@ -40,6 +41,8 @@ interface Category48Stats {
 
 // GET - Fetch Category 4 and 8 Dashboard data
 export async function GET(request: Request) {
+    const __killed = await assertApiAlive('/api/category-4-8-dashboard');
+    if (__killed) return __killed;
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('user_id'); // user_id from sessionStorage

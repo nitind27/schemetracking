@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 // import { error } from 'console';
 
 // GET all active future work records
 export async function GET() {
+    const __killed = await assertApiAlive('/api/futurework');
+    if (__killed) return __killed;
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
             // 'SELECT * FROM future_work WHERE status = "Active"'
@@ -31,6 +34,8 @@ export async function GET() {
 
 // POST insert new future work record (form-data)
 export async function POST(request: Request) {
+    const __killed = await assertApiAlive('/api/futurework');
+    if (__killed) return __killed;
     try {
         const formData = await request.formData();
 
@@ -64,6 +69,8 @@ export async function POST(request: Request) {
 
 // PUT update future work record (form-data)
 export async function PUT(request: Request) {
+    const __killed = await assertApiAlive('/api/futurework');
+    if (__killed) return __killed;
     try {
         const formData = await request.formData();
 
@@ -117,6 +124,8 @@ export async function PUT(request: Request) {
 
 // DELETE soft delete (set status = 'Inactive') future work record (form-data)
 export async function DELETE(request: Request) {
+    const __killed = await assertApiAlive('/api/futurework');
+    if (__killed) return __killed;
     try {
         const formData = await request.formData();
         const future_work_id = parseInt(formData.get('future_work_id') as string, 10);

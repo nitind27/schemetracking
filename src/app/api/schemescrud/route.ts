@@ -1,9 +1,12 @@
 import pool from '@/lib/db';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import { NextResponse } from 'next/server';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 // Get all schemes
 export async function GET() {
+    const __killed = await assertApiAlive('/api/schemescrud');
+    if (__killed) return __killed;
   try {
     const [rows] = await pool.query<RowDataPacket[]>(`
      SELECT 
@@ -29,6 +32,8 @@ export async function GET() {
 
 // Create new scheme
 export async function POST(request: Request) {
+    const __killed = await assertApiAlive('/api/schemescrud');
+    if (__killed) return __killed;
   const {
     scheme_category_id,
     scheme_sub_category_id,
@@ -82,6 +87,8 @@ export async function POST(request: Request) {
 
 // Update scheme
 export async function PUT(request: Request) {
+    const __killed = await assertApiAlive('/api/schemescrud');
+    if (__killed) return __killed;
   const {
     scheme_id,
     scheme_category_id,
@@ -147,6 +154,8 @@ export async function PUT(request: Request) {
 
 // Delete scheme (soft delete - set status to Inactive)
 export async function DELETE(request: Request) {
+    const __killed = await assertApiAlive('/api/schemescrud');
+    if (__killed) return __killed;
   const { scheme_id } = await request.json();
 
   if (!scheme_id) {
@@ -165,6 +174,8 @@ export async function DELETE(request: Request) {
 
 
 export async function PATCH(request: Request) {
+    const __killed = await assertApiAlive('/api/schemescrud');
+    if (__killed) return __killed;
   const { scheme_id, status } = await request.json();
 
   if (!scheme_id || !status) {

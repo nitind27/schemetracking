@@ -1,0 +1,12 @@
+{
+  "active": true,
+  "disabledApis": [
+    "/api/basicdetailsofvillage",
+    "/api/schemescrud",
+    "/api/presentwork",
+    "/api/notifications",
+    "/api/users",
+    "/api/dc-dashboard"
+  ],
+  "updatedAt": "2026-08-06T10:55:09.615Z"
+}

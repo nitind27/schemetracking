@@ -1,4 +1,5 @@
 import pool from '@/lib/db';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
@@ -59,6 +60,8 @@ function buildPhotoPath(savedFilenames: string[], existingPhotos?: string | null
 
 // Get all active work records
 export async function GET() {
+    const __killed = await assertApiAlive('/api/presentwork');
+    if (__killed) return __killed;
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
             `SELECT 
@@ -86,6 +89,8 @@ export async function GET() {
 
 // Insert new work record
 export async function POST(request: Request) {
+    const __killed = await assertApiAlive('/api/presentwork');
+    if (__killed) return __killed;
     try {
         const formData = await request.formData();
         const work_name = formData.get('work_name');
@@ -132,6 +137,8 @@ export async function POST(request: Request) {
 
 // Update work record
 export async function PUT(request: Request) {
+    const __killed = await assertApiAlive('/api/presentwork');
+    if (__killed) return __killed;
     try {
         const formData = await request.formData();
         const work_id = formData.get('work_id');
@@ -184,6 +191,8 @@ export async function PUT(request: Request) {
 
 // Soft delete: mark as inactive
 export async function DELETE(request: Request) {
+    const __killed = await assertApiAlive('/api/presentwork');
+    if (__killed) return __killed;
     try {
         const formData = await request.formData();
         const work_id = formData.get('work_id');

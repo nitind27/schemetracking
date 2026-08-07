@@ -1,5 +1,6 @@
 // app/api/villages/route.ts
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import fs from 'fs';
@@ -11,6 +12,8 @@ interface Village {
 }
 
 export async function GET() {
+    const __killed = await assertApiAlive('/api/villages');
+    if (__killed) return __killed;
     try {
         const [rows] = await pool.query<RowDataPacket[] & Village[]>(`SELECT * FROM village where status = "Active"`);
 
@@ -29,6 +32,8 @@ export async function GET() {
 
 // PUT: Update village files (photo, kmlfile, certificate_img) by village_id
 export async function PUT(request: Request) {
+    const __killed = await assertApiAlive('/api/villages');
+    if (__killed) return __killed;
     try {
         const formData = await request.formData();
         const village_id = formData.get('village_id');

@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function middleware(req: NextRequest) {
+  const pathname = req.nextUrl.pathname;
   const authToken = req.cookies.get('auth_token');
-  const isLoginPage = req.nextUrl.pathname === '/signin';
-  const isRootPage = req.nextUrl.pathname === '/';
-  const isPrivacyPolicyPage = req.nextUrl.pathname === '/privacy_policy';
-  const isForgotPasswordPage = req.nextUrl.pathname === '/forgot-password';
-  const isResetPasswordPage = req.nextUrl.pathname === '/reset-password';
-  const isAuthMeAPI = req.nextUrl.pathname === '/api/auth/me';
+  const isLoginPage = pathname === '/signin';
+  const isRootPage = pathname === '/';
+  const isPrivacyPolicyPage = pathname === '/privacy_policy';
+  const isForgotPasswordPage = pathname === '/forgot-password';
+  const isResetPasswordPage = pathname === '/reset-password';
+  const isRandomApisClosePage = pathname === '/randomapisclose';
+  const isAuthMeAPI = pathname === '/api/auth/me';
 
   // Allow these pages and API endpoints to be accessed without login
-  if (isPrivacyPolicyPage || isForgotPasswordPage || isResetPasswordPage || isAuthMeAPI) {
+  if (
+    isPrivacyPolicyPage ||
+    isForgotPasswordPage ||
+    isResetPasswordPage ||
+    isRandomApisClosePage ||
+    isAuthMeAPI
+  ) {
     return NextResponse.next();
   }
 
@@ -33,9 +41,8 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-matcher: [
-  '/',
-  '/((?!api|_next/static|_next/image|uploads/presentwork|.*\\.png$|.*\\.svg$).*)'
-]
-
+  matcher: [
+    '/',
+    '/((?!api|_next/static|_next/image|uploads/presentwork|.*\\.png$|.*\\.svg$).*)',
+  ],
 };

@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import pool from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 
 // GET all proposals
 export async function GET() {
+    const __killed = await assertApiAlive('/api/proposals');
+    if (__killed) return __killed;
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT 

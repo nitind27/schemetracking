@@ -1,4 +1,5 @@
 import pool from '@/lib/db';
+import { assertApiAlive } from '@/lib/assertApiAlive';
 import { NextResponse } from 'next/server';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 
@@ -6,6 +7,8 @@ import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 
 export async function GET() {
+    const __killed = await assertApiAlive('/api/yearmaster');
+    if (__killed) return __killed;
   try {
     const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM scheme_year where status = "Active"');
     return NextResponse.json(rows);
@@ -17,6 +20,8 @@ export async function GET() {
 
 // Create new Year
 export async function POST(request: Request) {
+    const __killed = await assertApiAlive('/api/yearmaster');
+    if (__killed) return __killed;
   try {
     const { year } = await request.json();
 
@@ -41,6 +46,8 @@ export async function POST(request: Request) {
 
 // Update Year
 export async function PUT(request: Request) {
+    const __killed = await assertApiAlive('/api/yearmaster');
+    if (__killed) return __killed;
   try {
     const { scheme_year_id, year } = await request.json();
 
@@ -65,6 +72,8 @@ export async function PUT(request: Request) {
 
 // Delete Year (soft delete - set status to Inactive)
 export async function DELETE(request: Request) {
+    const __killed = await assertApiAlive('/api/yearmaster');
+    if (__killed) return __killed;
   try {
     const { scheme_year_id } = await request.json();
 
@@ -89,6 +98,8 @@ export async function DELETE(request: Request) {
 
 
 export async function PATCH(request: Request) {
+    const __killed = await assertApiAlive('/api/yearmaster');
+    if (__killed) return __killed;
   const { scheme_year_id, status } = await request.json();
 
   if (!scheme_year_id || !status) {
