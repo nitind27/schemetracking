@@ -8,6 +8,7 @@ import { Taluka } from '../Taluka/Taluka';
 import { Village } from '../Village/village';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { parseFarmerDocuments } from '../farmersdata/parseFarmerDocuments';
 
 interface AllFarmersData {
     farmers: FarmdersType[];
@@ -24,24 +25,6 @@ interface DocumentUsage {
 }
 
 type ModalType = 'has' | 'not' | 'updation';
-
-const parseFarmerDocuments = (docString: string | undefined): Record<string, { check: string, updation: string, available: string }> => {
-    const result: Record<string, { check: string, updation: string, available: string }> = {};
-    if (!docString) return result;
-    docString.split('|').forEach(segment => {
-        const [id, status] = segment.split('--');
-        if (!id || !status) return;
-        const [updation, check, available] = status.split('-');
-        if (check && updation && available) {
-            result[id.trim()] = {
-                check: check.trim(),
-                updation: updation.trim(),
-                available: available.trim()
-            };
-        }
-    });
-    return result;
-};
 
 const rowsPerPage = 10;
 
@@ -107,10 +90,11 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 if (docEntry) {
                     if (docEntry.available === 'Yes') {
                         countHas++;
-                    } else {
+                    }
+                    if (docEntry.notAvailable === 'Yes') {
                         countNotHas++;
                     }
-                    if (docEntry.updation === 'Yes') {
+                    if (docEntry.updateNeeded === 'Yes') {
                         countUpdationNeeded++;
                     }
                 } else {
@@ -137,8 +121,8 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
             const docMap = parseFarmerDocuments(farmer.documents);
             const entry = docMap[String(docId)];
             if (type === 'has') return entry && entry.available === 'Yes';
-            if (type === 'not') return !entry || entry.available !== 'Yes';
-            if (type === 'updation') return entry && entry.updation === 'Yes';
+            if (type === 'not') return !entry || entry.notAvailable === 'Yes';
+            if (type === 'updation') return entry && entry.updateNeeded === 'Yes';
             return false;
         });
         setModalFarmers(filteredFarmersForModal);

@@ -1200,7 +1200,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         // Create table HTML with the data
         const tableHTML = `
           <div style="padding: 20px; font-family: Arial, sans-serif; background: white; width: 100%; box-sizing: border-box;">
-            <h2 style="color: #dc2626; margin-bottom: 20px; text-align: center; font-size: 18px;">Death IFR Holder Records</h2>
+            <h2 style="color: #dc2626; margin-bottom: 20px; text-align: center; font-size: 18px;">मयत वनहक्क धारक नोंदी</h2>
             <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed;">
               <thead>
                 <tr style="background-color: #dc2626; color: white;">
@@ -1314,7 +1314,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
         // Fallback to basic PDF if html2canvas fails
         const doc = new jsPDF('landscape');
         doc.setFontSize(16);
-        doc.text('Death IFR Holder Records', 14, 18);
+        doc.text('मयत वनहक्क धारक नोंदी', 14, 18);
         doc.setFontSize(12);
         doc.text(`Export failed. Total Records: ${filteredFarmers.length}`, 14, 30);
         doc.text('Please use Excel export for complete data.', 14, 40);
@@ -1328,7 +1328,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Death IFR Holder Records
+            मयत वनहक्क धारक नोंदी
           </h2>
           <div className="flex items-center gap-4">
             <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded-full">
@@ -1486,7 +1486,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 text-lg font-medium">No Death IFR holder records found</p>
+                  <p className="text-gray-500 text-lg font-medium">मयत वनहक्क धारक नोंदी आढळल्या नाहीत</p>
                   <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or check data</p>
                 </div>
               </div>
@@ -3498,7 +3498,7 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     },
     {
       id: "death-ifr-holder",
-      label: "Death IFR holder",
+      label: "मयत वनहक्क धारक",
       content: (
         <div className="flex flex-col h-full">
           <DeathIFRHolderDashboard farmersData={farmersData} />

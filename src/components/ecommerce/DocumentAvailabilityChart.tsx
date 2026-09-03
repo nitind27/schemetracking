@@ -24,6 +24,7 @@ import { Documents } from "../Documentsdata/documents";
 import { Taluka } from "../Taluka/Taluka";
 import { Village } from "../Village/village";
 import { Schemesubcategorytype } from "../Schemesubcategory/Schemesubcategory";
+import { parseFarmerDocuments } from "../farmersdata/parseFarmerDocuments";
 
 type ActivePayloadItem = {
   payload: {
@@ -61,24 +62,6 @@ type DocumentBar = {
 const PAGE_SIZE = 50;
 const PAGE_SIZE_FARMERS = 10;
 
-const parseFarmerDocuments = (docString: string | undefined): Record<string, { check: string, updation: string, available: string }> => {
-  const result: Record<string, { check: string, updation: string, available: string }> = {};
-  if (!docString) return result;
-  docString.split('|').forEach(segment => {
-    const [id, status] = segment.split('--');
-    if (!id || !status) return;
-    const [updation, check, available] = status.split('-');
-    if (check && updation && available) {
-      result[id.trim()] = {
-        updation: updation.trim(),
-        available: available.trim(),
-        check: check.trim(),
-      };
-    }
-  });
-  return result;
-};
-
 const farmerHasAvailableDocument = (farmer: FarmdersType, docId: number) => {
   const docMap = parseFarmerDocuments(farmer.documents);
   return docMap[String(docId)] && docMap[String(docId)].available === 'Yes';
@@ -101,9 +84,10 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
 
     farmersdata.forEach((farmer) => {
       const docMap = parseFarmerDocuments(farmer.documents);
-      if (docMap[String(doc.id)] && docMap[String(doc.id)].available === 'Yes') {
+      const docEntry = docMap[String(doc.id)];
+      if (docEntry?.available === 'Yes') {
         hasCount++;
-      } else {
+      } else if (!docEntry || docEntry.notAvailable === 'Yes') {
         notCount++;
       }
     });
@@ -125,9 +109,10 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
 
     surveyedFarmers.forEach((farmer) => {
       const docMap = parseFarmerDocuments(farmer.documents);
-      if (docMap[String(doc.id)] && docMap[String(doc.id)].available === 'Yes') {
+      const docEntry = docMap[String(doc.id)];
+      if (docEntry?.available === 'Yes') {
         hasCount++;
-      } else {
+      } else if (!docEntry || docEntry.notAvailable === 'Yes') {
         notCount++;
       }
     });
