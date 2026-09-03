@@ -1,27 +1,37 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useTransition, useCallback } from 'react';
 
 interface TabViewProps {
   tabs: {
     id: string;
     label: string;
-    content: React.ReactNode;
+    content: React.ReactNode | (() => React.ReactNode);
   }[];
   defaultTab?: string;
 }
 
 const Tabviewflex: React.FC<TabViewProps> = ({ tabs, defaultTab }) => {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
+  const [isPending, startTransition] = useTransition();
+
+  const handleTabChange = useCallback((id: string) => {
+    startTransition(() => {
+      setActiveTab(id);
+    });
+  }, []);
+
+  const active = tabs.find((tab) => tab.id === activeTab);
+  const content =
+    typeof active?.content === 'function' ? active.content() : active?.content;
 
   return (
     <div className="w-full">
-      {/* Tab Buttons */}
       <div className="flex flex-wrap gap-4 mb-3">
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={`flex-1 min-w-[150px] py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
               activeTab === tab.id
                 ? 'bg-blue-600 text-white shadow-lg'
@@ -34,9 +44,8 @@ const Tabviewflex: React.FC<TabViewProps> = ({ tabs, defaultTab }) => {
         ))}
       </div>
 
-      {/* Tab Content */}
-      <div className="w-full">
-        {tabs.find(tab => tab.id === activeTab)?.content}
+      <div className={`w-full ${isPending ? 'opacity-60 pointer-events-none' : ''}`}>
+        {content}
       </div>
     </div>
   );

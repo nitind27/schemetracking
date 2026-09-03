@@ -108,12 +108,26 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         setCurrentPage(1);
     }, [filteredFarmers]);
 
-    const alldata = filteredFarmersForCounts.filter(farmer => farmer.schemes?.trim() !== "");
+    const matches = dataschems;
 
-    // Filter schemes if farmers have schemes string (dummy filter)
-    const matches = dataschems.filter(scheme =>
-        alldata.some(farmer => farmer.schemes && scheme)
-    );
+    const schemeCountMap = React.useMemo(() => {
+        const map = new Map<string, { benefited: number; applied: number; notBenefited: number }>();
+        dataschems.forEach((scheme) => {
+            map.set(String(scheme.scheme_id), { benefited: 0, applied: 0, notBenefited: 0 });
+        });
+        for (let i = 0; i < filteredFarmersForCounts.length; i++) {
+            const statuses = parseFarmerSchemeStatuses(filteredFarmersForCounts[i].schemes);
+            for (let s = 0; s < dataschems.length; s++) {
+                const id = String(dataschems[s].scheme_id);
+                const bucket = map.get(id)!;
+                const status = statuses[id];
+                if (status === 'Benefited') bucket.benefited += 1;
+                else if (status === 'Applied') bucket.applied += 1;
+                else bucket.notBenefited += 1;
+            }
+        }
+        return map;
+    }, [filteredFarmersForCounts, dataschems]);
 
     const handleBenefitedClick = (schemeId: string) => {
         const benefitedFarmers = filteredFarmersForCounts.filter(farmer => {
@@ -189,9 +203,9 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
             "Category": scheme.category_name || "-",
             "Sub Category": scheme.sub_category_name || "-",
             "Scheme Year": scheme.scheme_year || "-",
-            "Benefited (Yes)": countBenefited(scheme.scheme_id.toString()),
-            "Not Benefited (No)": countNotBenefited(scheme.scheme_id.toString()),
-            "Applied": countApplied(scheme.scheme_id.toString()),
+            "Benefited (Yes)": schemeCountMap.get(scheme.scheme_id.toString())?.benefited ?? 0,
+            "Not Benefited (No)": schemeCountMap.get(scheme.scheme_id.toString())?.notBenefited ?? 0,
+            "Applied": schemeCountMap.get(scheme.scheme_id.toString())?.applied ?? 0,
         }));
         const worksheet = XLSX.utils.json_to_sheet(excelData);
         worksheet["!cols"] = [
@@ -287,28 +301,10 @@ const SchemesDashboardcounting = ({ farmersData }: { farmersData: AllFarmersData
         </div>
     );
 
-    /* Count functions for each scheme and status - Updated to use filtered farmers */
-    const countBenefited = (schemeId: string) => {
-        return filteredFarmersForCounts.reduce((count, farmer) => {
-            const statuses = parseFarmerSchemeStatuses(farmer.schemes);
-            return statuses[schemeId] === 'Benefited' ? count + 1 : count;
-        }, 0);
-    };
-
-    const countApplied = (schemeId: string) => {
-        return filteredFarmersForCounts.reduce((count, farmer) => {
-            const statuses = parseFarmerSchemeStatuses(farmer.schemes);
-            return statuses[schemeId] === 'Applied' ? count + 1 : count;
-        }, 0);
-    };
-
-    const countNotBenefited = (schemeId: string) => {
-        return filteredFarmersForCounts.reduce((count, farmer) => {
-            const statuses = parseFarmerSchemeStatuses(farmer.schemes);
-            if (!statuses[schemeId] || statuses[schemeId] === 'NotApplied') return count + 1;
-            return count;
-        }, 0);
-    };
+    /* Precomputed scheme counts — avoid re-parsing all farmers per cell render */
+    const countBenefited = (schemeId: string) => schemeCountMap.get(schemeId)?.benefited ?? 0;
+    const countApplied = (schemeId: string) => schemeCountMap.get(schemeId)?.applied ?? 0;
+    const countNotBenefited = (schemeId: string) => schemeCountMap.get(schemeId)?.notBenefited ?? 0;
 
     const columns: Column<Schemesdatas>[] = [
         {

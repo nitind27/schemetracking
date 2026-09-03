@@ -23,21 +23,11 @@ import { Documents } from "../Documentsdata/documents";
 import { Taluka } from "../Taluka/Taluka";
 import { Village } from "../Village/village";
 import { Schemesubcategorytype } from "../Schemesubcategory/Schemesubcategory";
+import {
+  hasAadhaarFromRecord,
+  isSurveyedFarmer,
+} from "../farmersdata/parseFarmerDocuments";
 import Tabviewflex from "../common/Tabviewflex";
-
-// type ActivePayloadItem = {
-//   payload: {
-//     [key: string]: unknown;
-//   };
-// };
-
-// type CategoricalChartState = {
-//   activeTooltipIndex?: number;
-//   activeLabel?: string;
-//   activePayload?: ActivePayloadItem[];
-//   chartX?: number;
-//   chartY?: number;
-// };
 
 interface AllFarmersData {
   users: UserCategory[];
@@ -77,209 +67,123 @@ type SurveyedAadhaarChartData = {
 
 const PAGE_SIZE = 50;
 
+function buildTicks(maxValue: number, minFloor = 1000): number[] {
+  const ticks: number[] = [];
+  if (maxValue <= 1000 && minFloor === 0) {
+    const interval = maxValue <= 500 ? 100 : 200;
+    for (let i = 0; i <= maxValue + interval; i += interval) ticks.push(i);
+    return ticks;
+  }
+  if (minFloor === 0) {
+    for (let i = 0; i <= maxValue + 1000; i += 1000) ticks.push(i);
+    return ticks;
+  }
+  for (let i = 1000; i <= maxValue + 1000; i += 1000) ticks.push(i);
+  return ticks;
+}
+
 const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const { taluka, farmers, villages } = farmersData;
 
-  // --- Aadhaar Chart Data ---
   const talukaId = sessionStorage.getItem('taluka_id');
   const userName = sessionStorage.getItem('userName');
   const categoryId = sessionStorage.getItem('category_id');
   const isPESACoordinator = categoryId === "37";
-  const farmersdata = (userName === "BDO" || isPESACoordinator) ? farmers.filter((data) => data.taluka_id == talukaId) : farmers;
+  const isScopedUser = userName === "BDO" || isPESACoordinator;
 
-  let chartData: ChartData[];
+  const farmersdata = useMemo(
+    () => (isScopedUser ? farmers.filter((data) => data.taluka_id == talukaId) : farmers),
+    [farmers, isScopedUser, talukaId]
+  );
 
-  if (userName === "BDO" || isPESACoordinator) {
-    chartData = taluka
-      .filter((data) => data.taluka_id == Number(talukaId))
-      .map((t) => {
-        const farmersInTaluka = farmers.filter(
-          (f) => f.taluka_id?.toString() == talukaId
-        );
+  const scopedTalukas = useMemo(
+    () => (isScopedUser ? taluka.filter((data) => data.taluka_id == Number(talukaId)) : taluka),
+    [taluka, isScopedUser, talukaId]
+  );
 
-        const total = farmersInTaluka.length;
-        const withAadhaar = farmersInTaluka.filter(
-          (f) => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
-        ).length;
-        const withoutAadhaar = total - withAadhaar;
+  const villageNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    villages.forEach((v) => map.set(Number(v.village_id), v.marathi_name || v.name || ""));
+    return map;
+  }, [villages]);
 
-        return {
-          taluka: t.name,
-          total,
-          withAadhaar,
-          withoutAadhaar,
-          taluka_id: t.taluka_id,
-        };
-      });
-  } else {
-    chartData = taluka.map((t) => {
-      const farmersInTaluka = farmers.filter(
-        (f) => f.taluka_id?.toString() === t.taluka_id.toString()
-      );
+  const { chartData, surveyChartData, surveyedAadhaarChartData } = useMemo(() => {
+    const aadhaarStats = new Map<number, { total: number; withAadhaar: number }>();
+    const surveyStats = new Map<number, { total: number; withAadhaar: number }>();
+    const surveyedAadhaarStats = new Map<number, { total: number; withAadhaar: number }>();
 
-      const total = farmersInTaluka.length;
-      const withAadhaar = farmersInTaluka.filter(
-        (f) => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
-      ).length;
-      const withoutAadhaar = total - withAadhaar;
+    scopedTalukas.forEach((t) => {
+      aadhaarStats.set(t.taluka_id, { total: 0, withAadhaar: 0 });
+      surveyStats.set(t.taluka_id, { total: 0, withAadhaar: 0 });
+      surveyedAadhaarStats.set(t.taluka_id, { total: 0, withAadhaar: 0 });
+    });
 
+    for (let i = 0; i < farmersdata.length; i++) {
+      const farmer = farmersdata[i];
+      const tid = Number(farmer.taluka_id);
+      const aBucket = aadhaarStats.get(tid);
+      if (!aBucket) continue;
+
+      const withAadhaar = hasAadhaarFromRecord(farmer.farmer_record);
+      aBucket.total += 1;
+      if (withAadhaar) aBucket.withAadhaar += 1;
+
+      if (isSurveyedFarmer(farmer)) {
+        const sBucket = surveyStats.get(tid)!;
+        const saBucket = surveyedAadhaarStats.get(tid)!;
+        sBucket.total += 1;
+        saBucket.total += 1;
+        if (withAadhaar) {
+          sBucket.withAadhaar += 1;
+          saBucket.withAadhaar += 1;
+        }
+      }
+    }
+
+    const chartData: ChartData[] = scopedTalukas.map((t) => {
+      const s = aadhaarStats.get(t.taluka_id)!;
       return {
         taluka: t.name,
-        total,
-        withAadhaar,
-        withoutAadhaar,
+        total: s.total,
+        withAadhaar: s.withAadhaar,
+        withoutAadhaar: s.total - s.withAadhaar,
         taluka_id: t.taluka_id,
       };
     });
-  }
+
+    const surveyChartData: SurveyChartData[] = scopedTalukas.map((t) => {
+      const s = surveyStats.get(t.taluka_id)!;
+      return {
+        taluka: t.name,
+        total: s.total,
+        surveyed: s.withAadhaar,
+        yetToBeSurveyed: s.total - s.withAadhaar,
+        taluka_id: t.taluka_id,
+      };
+    });
+
+    const surveyedAadhaarChartData: SurveyedAadhaarChartData[] = scopedTalukas.map((t) => {
+      const s = surveyedAadhaarStats.get(t.taluka_id)!;
+      return {
+        taluka: t.name,
+        totalSurveyed: s.total,
+        surveyedWithAadhaar: s.withAadhaar,
+        surveyedWithoutAadhaar: s.total - s.withAadhaar,
+        taluka_id: t.taluka_id,
+      };
+    });
+
+    return { chartData, surveyChartData, surveyedAadhaarChartData };
+  }, [farmersdata, scopedTalukas]);
 
   const maxValue = Math.max(...chartData.map((item) => item.total), 1000);
-  const ticks: number[] = [];
-  for (let i = 1000; i <= maxValue + 1000; i += 1000) {
-    ticks.push(i);
-  }
-
-  // --- Survey Chart Data (Now showing only surveyed farmers with Aadhaar status) ---
-  let surveyChartData: SurveyChartData[];
-
-  if (userName === "BDO") {
-    surveyChartData = taluka
-      .filter((data) => data.taluka_id == Number(talukaId))
-      .map((t) => {
-        const farmersInTaluka = farmers.filter(
-          (f) => f.taluka_id?.toString() == talukaId
-        );
-
-        // Get only surveyed farmers
-        const surveyedFarmers = farmersInTaluka.filter(
-          (f) => f.update_record && f.update_record.trim() !== ""
-        );
-
-        const total = surveyedFarmers.length; // Total surveyed
-        const surveyed = surveyedFarmers.filter(
-          (f) => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
-        ).length; // With Aadhaar
-        const yetToBeSurveyed = total - surveyed; // Without Aadhaar
-
-        return {
-          taluka: t.name,
-          total,
-          surveyed,
-          yetToBeSurveyed,
-          taluka_id: t.taluka_id,
-        };
-      });
-  } else {
-    surveyChartData = taluka.map((t) => {
-      const farmersInTaluka = farmers.filter(
-        (f) => f.taluka_id?.toString() === t.taluka_id.toString()
-      );
-
-      // Get only surveyed farmers
-      const surveyedFarmers = farmersInTaluka.filter(
-        (f) => f.update_record && f.update_record.trim() !== ""
-      );
-
-      const total = surveyedFarmers.length; // Total surveyed
-      const surveyed = surveyedFarmers.filter(
-        (f) => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
-      ).length; // With Aadhaar
-      const yetToBeSurveyed = total - surveyed; // Without Aadhaar
-
-      return {
-        taluka: t.name,
-        total,
-        surveyed,
-        yetToBeSurveyed,
-        taluka_id: t.taluka_id,
-      };
-    });
-  }
+  const ticks = buildTicks(maxValue);
 
   const surveyMaxValue = Math.max(...surveyChartData.map((item) => item.total), 0);
-  const surveyTicks = [];
-  if (surveyMaxValue <= 1000) {
-    // For smaller values, use 100 or 200 intervals starting from 0
-    const interval = surveyMaxValue <= 500 ? 100 : 200;
-    for (let i = 0; i <= surveyMaxValue + interval; i += interval) {
-      surveyTicks.push(i);
-    }
-  } else {
-    // For larger values, use 1000 intervals
-    for (let i = 0; i <= surveyMaxValue + 1000; i += 1000) {
-      surveyTicks.push(i);
-    }
-  }
-
-  // --- Surveyed Farmers Aadhaar Status Chart Data ---
-  let surveyedAadhaarChartData: SurveyedAadhaarChartData[];
-
-  if (userName === "BDO") {
-    surveyedAadhaarChartData = taluka
-      .filter((data) => data.taluka_id == Number(talukaId))
-      .map((t) => {
-        const farmersInTaluka = farmers.filter(
-          (f) => f.taluka_id?.toString() == talukaId
-        );
-
-        // Get only surveyed farmers
-        const surveyedFarmers = farmersInTaluka.filter(
-          (f) => f.update_record && f.update_record.trim() !== ""
-        );
-
-        const totalSurveyed = surveyedFarmers.length;
-        const surveyedWithAadhaar = surveyedFarmers.filter(
-          (f) => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
-        ).length;
-        const surveyedWithoutAadhaar = totalSurveyed - surveyedWithAadhaar;
-
-        return {
-          taluka: t.name,
-          totalSurveyed,
-          surveyedWithAadhaar,
-          surveyedWithoutAadhaar,
-          taluka_id: t.taluka_id,
-        };
-      });
-  } else {
-    surveyedAadhaarChartData = taluka.map((t) => {
-      const farmersInTaluka = farmers.filter(
-        (f) => f.taluka_id?.toString() === t.taluka_id.toString()
-      );
-
-      // Get only surveyed farmers
-      const surveyedFarmers = farmersInTaluka.filter(
-        (f) => f.update_record && f.update_record.trim() !== ""
-      );
-
-      const totalSurveyed = surveyedFarmers.length;
-      const surveyedWithAadhaar = surveyedFarmers.filter(
-        (f) => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== ""
-      ).length;
-      const surveyedWithoutAadhaar = totalSurveyed - surveyedWithAadhaar;
-
-      return {
-        taluka: t.name,
-        totalSurveyed,
-        surveyedWithAadhaar,
-        surveyedWithoutAadhaar,
-        taluka_id: t.taluka_id,
-      };
-    });
-  }
+  const surveyTicks = buildTicks(surveyMaxValue, 0);
 
   const surveyedAadhaarMaxValue = Math.max(...surveyedAadhaarChartData.map((item) => item.totalSurveyed), 0);
-  const surveyedAadhaarTicks: number[] = [];
-  if (surveyedAadhaarMaxValue <= 1000) {
-    const interval = surveyedAadhaarMaxValue <= 500 ? 100 : 200;
-    for (let i = 0; i <= surveyedAadhaarMaxValue + interval; i += interval) {
-      surveyedAadhaarTicks.push(i);
-    }
-  } else {
-    for (let i = 0; i <= surveyedAadhaarMaxValue + 1000; i += 1000) {
-      surveyedAadhaarTicks.push(i);
-    }
-  }
+  const surveyedAadhaarTicks = buildTicks(surveyedAadhaarMaxValue, 0);
 
   // --- State for Survey Modal ---
   const [surveyModalOpen, setSurveyModalOpen] = useState(false);
@@ -308,18 +212,18 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
 
   // --- Aadhaar Modal Data (memoized) ---
   const aadhaarFilteredFarmers = useMemo(() => {
-    if (!aadhaarModalTalukaId) return [];
-    const talukaFarmers = farmers.filter(f => Number(f.taluka_id) === aadhaarModalTalukaId);
+    if (!aadhaarModalTalukaId || !aadhaarModalOpen) return [];
+    const talukaFarmers = farmersdata.filter(f => Number(f.taluka_id) === aadhaarModalTalukaId);
     if (aadhaarFilter === "with") {
-      return talukaFarmers.filter(f => f.farmer_record?.split('|')[5] && f.farmer_record?.split('|')[5].trim() !== "");
+      return talukaFarmers.filter(f => hasAadhaarFromRecord(f.farmer_record));
     }
     if (aadhaarFilter === "without") {
-      return talukaFarmers.filter(f => !f.farmer_record?.split('|')[5] || f.farmer_record?.split('|')[5].trim() === "");
+      return talukaFarmers.filter(f => !hasAadhaarFromRecord(f.farmer_record));
     }
     return talukaFarmers;
-  }, [farmers, aadhaarModalTalukaId, aadhaarFilter]);
+  }, [farmersdata, aadhaarModalTalukaId, aadhaarFilter, aadhaarModalOpen]);
 
-  const aadhaarTotalPages = Math.ceil(aadhaarFilteredFarmers.length / PAGE_SIZE);
+  const aadhaarTotalPages = Math.ceil(aadhaarFilteredFarmers.length / PAGE_SIZE) || 1;
   const aadhaarPaginatedFarmers = useMemo(() => {
     const start = (aadhaarPage - 1) * PAGE_SIZE;
     return aadhaarFilteredFarmers.slice(start, start + PAGE_SIZE);
@@ -327,18 +231,18 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
 
   // --- Survey Modal Data (memoized) ---
   const surveyFilteredFarmers = useMemo(() => {
-    if (!surveyModalTalukaId) return [];
-    const talukaFarmers = farmers.filter(f => Number(f.taluka_id) === surveyModalTalukaId);
+    if (!surveyModalTalukaId || !surveyModalOpen) return [];
+    const talukaFarmers = farmersdata.filter(f => Number(f.taluka_id) === surveyModalTalukaId);
     if (surveyFilter === "surveyed") {
-      return talukaFarmers.filter(f => f.update_record && f.update_record.trim() !== "");
+      return talukaFarmers.filter(isSurveyedFarmer);
     }
     if (surveyFilter === "yetToBeSurveyed") {
-      return talukaFarmers.filter(f => !f.update_record || f.update_record.trim() === "");
+      return talukaFarmers.filter(f => !isSurveyedFarmer(f));
     }
     return talukaFarmers;
-  }, [farmers, surveyModalTalukaId, surveyFilter]);
+  }, [farmersdata, surveyModalTalukaId, surveyFilter, surveyModalOpen]);
 
-  const surveyTotalPages = Math.ceil(surveyFilteredFarmers.length / PAGE_SIZE);
+  const surveyTotalPages = Math.ceil(surveyFilteredFarmers.length / PAGE_SIZE) || 1;
   const surveyPaginatedFarmers = useMemo(() => {
     const start = (surveyPage - 1) * PAGE_SIZE;
     return surveyFilteredFarmers.slice(start, start + PAGE_SIZE);
@@ -360,9 +264,9 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
       FarmerID: farmer.farmer_id,
       Name: farmer.farmer_record?.split('|')[0] || "",
       ClaimID: farmer.farmer_record?.split('|')[15] || "",
-      Village: villages.find((v) => v.village_id === Number(farmer.village_id))?.marathi_name || "",
+      Village: villageNameById.get(Number(farmer.village_id)) || "",
       Taluka: surveyModalTalukaName,
-      SurveyStatus: farmer.update_record && farmer.update_record.trim() !== "" ? "Surveyed" : "Yet to be Surveyed",
+      SurveyStatus: isSurveyedFarmer(farmer) ? "Surveyed" : "Yet to be Surveyed",
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);

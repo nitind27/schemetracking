@@ -24,7 +24,11 @@ import { Documents } from "../Documentsdata/documents";
 import { Taluka } from "../Taluka/Taluka";
 import { Village } from "../Village/village";
 import { Schemesubcategorytype } from "../Schemesubcategory/Schemesubcategory";
-import { parseFarmerDocuments } from "../farmersdata/parseFarmerDocuments";
+import {
+  buildDocumentAvailabilityCounts,
+  isDocumentAvailable,
+  isSurveyedFarmer,
+} from "../farmersdata/parseFarmerDocuments";
 
 type ActivePayloadItem = {
   payload: {
@@ -62,11 +66,6 @@ type DocumentBar = {
 const PAGE_SIZE = 50;
 const PAGE_SIZE_FARMERS = 10;
 
-const farmerHasAvailableDocument = (farmer: FarmdersType, docId: number) => {
-  const docMap = parseFarmerDocuments(farmer.documents);
-  return docMap[String(docId)] && docMap[String(docId)].available === 'Yes';
-};
-
 const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const { taluka, farmers, documents, villages } = farmersData;
 
@@ -75,55 +74,35 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
   const userName = sessionStorage.getItem('userName');
   const categoryId = sessionStorage.getItem('category_id');
   const isPESACoordinator = categoryId === "37";
-  const farmersdata = (userName === "BDO" || isPESACoordinator) ? farmers.filter((data) => data.taluka_id == talukaId) : farmers;
 
-  // All farmers chart data
-  const documentChartData: DocumentBar[] = documents?.map((doc) => {
-    let hasCount = 0;
-    let notCount = 0;
+  const farmersdata = useMemo(
+    () =>
+      userName === "BDO" || isPESACoordinator
+        ? farmers.filter((data) => data.taluka_id == talukaId)
+        : farmers,
+    [farmers, userName, isPESACoordinator, talukaId]
+  );
 
-    farmersdata.forEach((farmer) => {
-      const docMap = parseFarmerDocuments(farmer.documents);
-      const docEntry = docMap[String(doc.id)];
-      if (docEntry?.available === 'Yes') {
-        hasCount++;
-      } else if (!docEntry || docEntry.notAvailable === 'Yes') {
-        notCount++;
-      }
-    });
+  const villageNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    villages.forEach((v) => map.set(Number(v.village_id), v.name || v.marathi_name || ""));
+    return map;
+  }, [villages]);
 
-    return {
-      document: doc.document_name,
-      has: hasCount,
-      not: notCount,
-      id: doc.id,
-    };
-  }) || [];
+  const surveyedFarmers = useMemo(
+    () => farmersdata.filter(isSurveyedFarmer),
+    [farmersdata]
+  );
 
-  // Surveyed farmers chart data (only farmers with update_record)
-  const surveyedFarmers = farmersdata.filter((f) => f.update_record && f.update_record.trim() !== "");
-  
-  const surveyedDocumentChartData: DocumentBar[] = documents?.map((doc) => {
-    let hasCount = 0;
-    let notCount = 0;
+  const documentChartData: DocumentBar[] = useMemo(
+    () => (documents?.length ? buildDocumentAvailabilityCounts(farmersdata, documents) : []),
+    [farmersdata, documents]
+  );
 
-    surveyedFarmers.forEach((farmer) => {
-      const docMap = parseFarmerDocuments(farmer.documents);
-      const docEntry = docMap[String(doc.id)];
-      if (docEntry?.available === 'Yes') {
-        hasCount++;
-      } else if (!docEntry || docEntry.notAvailable === 'Yes') {
-        notCount++;
-      }
-    });
-
-    return {
-      document: doc.document_name,
-      has: hasCount,
-      not: notCount,
-      id: doc.id,
-    };
-  }) || [];
+  const surveyedDocumentChartData: DocumentBar[] = useMemo(
+    () => (documents?.length ? buildDocumentAvailabilityCounts(surveyedFarmers, documents) : []),
+    [surveyedFarmers, documents]
+  );
 
   // --- Modal State for Documents ---
   const [modalOpen, setModalOpen] = useState(false);
@@ -147,14 +126,19 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
   // --- Modal Data (memoized for performance) ---
   const filteredFarmers = useMemo(() => {
     const docId = selectedDocDropdown ?? selectedDocId;
-    if (!docId) return [];
+    if (!docId || !modalOpen) return [];
     return farmersdata.filter((farmer) => {
-      const hasAvailable = farmerHasAvailableDocument(farmer, docId);
+      const hasAvailable = isDocumentAvailable(farmer, docId);
       if (docFilter === "has") return hasAvailable;
       if (docFilter === "not") return !hasAvailable;
       return true;
     });
-  }, [farmersdata, docFilter, selectedDocDropdown, selectedDocId]);
+  }, [farmersdata, docFilter, selectedDocDropdown, selectedDocId, modalOpen]);
+
+  const paginatedModalFarmers = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filteredFarmers.slice(start, start + PAGE_SIZE);
+  }, [filteredFarmers, page]);
 
   // --- Document Dropdown Change Handler ---
   const handleDocDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -175,7 +159,7 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
       documents.find((d) => d.id === docId)?.document_name || "Document";
 
     const farmersToExport = farmersdata.filter((farmer) => {
-      const hasAvailable = farmerHasAvailableDocument(farmer, docId);
+      const hasAvailable = isDocumentAvailable(farmer, docId);
       if (docFilter === "has") return hasAvailable;
       if (docFilter === "not") return !hasAvailable;
       return true;
@@ -185,8 +169,8 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
       FarmerID: farmer.farmer_id,
       Name: farmer.farmer_record?.split('|')[0] || "",
       Aadhaar: farmer.farmer_record?.split('|')[5] || "",
-      Village: villages.find((v) => v.village_id === Number(farmer.village_id))?.name || "",
-      HasDocument: farmerHasAvailableDocument(farmer, docId) ? "Yes" : "No",
+      Village: villageNameById.get(Number(farmer.village_id)) || "",
+      HasDocument: isDocumentAvailable(farmer, docId) ? "Yes" : "No",
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -284,23 +268,24 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
                     </td>
                   </tr>
                 ) : (
-                  filteredFarmers.map((farmer, idx) => {
+                  paginatedModalFarmers.map((farmer, idx) => {
                     const docId = selectedDocDropdown ?? selectedDocId;
-                    const hasDoc = farmerHasAvailableDocument(farmer, docId!);
+                    const hasDoc = isDocumentAvailable(farmer, docId!);
+                    const record = farmer.farmer_record?.split('|') || [];
                     return (
                       <tr key={farmer.farmer_id}>
                         <td className="border px-2 py-1">
                           {(page - 1) * PAGE_SIZE + idx + 1}
                         </td>
-                        <td className="border px-2 py-1"> {farmer.farmer_record?.split('|')[15] || ""}</td>
+                        <td className="border px-2 py-1"> {record[15] || ""}</td>
                         <td className="border px-2 py-1">
-                          {farmer.farmer_record?.split('|')[0] || ""}
+                          {record[0] || ""}
                         </td>
                         <td className="border px-2 py-1">
-                          {farmer.farmer_record?.split('|')[5] || ""}
+                          {record[5] || ""}
                         </td>
                         <td className="border px-2 py-1">
-                          {villages.find((v) => v.village_id === Number(farmer.village_id))?.name || ""}
+                          {villageNameById.get(Number(farmer.village_id)) || ""}
                         </td>
                         <td className="border px-2 py-1">
                           {hasDoc ? (
@@ -390,7 +375,7 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
     return taluka
       .map(t => {
         const talukaFarmers = farmersdata.filter(f => Number(f.taluka_id) === Number(t.taluka_id));
-        const withDoc = talukaFarmers.filter(f => farmerHasAvailableDocument(f, selectedDocumentId)).length;
+        const withDoc = talukaFarmers.filter(f => isDocumentAvailable(f, selectedDocumentId)).length;
         return {
           ...t,
           total: talukaFarmers.length,
@@ -409,7 +394,7 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
         const villageFarmers = farmersdata.filter(
           f => Number(f.village_id) === Number(v.village_id) && Number(f.taluka_id) === Number(selectedTalukaId)
         );
-        const withDoc = villageFarmers.filter(f => farmerHasAvailableDocument(f, selectedDocumentId)).length;
+        const withDoc = villageFarmers.filter(f => isDocumentAvailable(f, selectedDocumentId)).length;
         return {
           ...v,
           total: villageFarmers.length,
@@ -439,9 +424,9 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
     if (!selectedDocumentId) return [];
     let filtered = farmersInVillage;
     if (farmerDocFilter === "has") {
-      filtered = filtered.filter(f => farmerHasAvailableDocument(f, selectedDocumentId!));
+      filtered = filtered.filter(f => isDocumentAvailable(f, selectedDocumentId!));
     } else if (farmerDocFilter === "not") {
-      filtered = filtered.filter(f => !farmerHasAvailableDocument(f, selectedDocumentId!));
+      filtered = filtered.filter(f => !isDocumentAvailable(f, selectedDocumentId!));
     }
     if (farmerSearch) {
       filtered = filtered.filter(f =>
@@ -470,7 +455,7 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
       Name: farmer.farmer_record?.split('|')[0] || "",
       Aadhaar: farmer.farmer_record?.split('|')[5] || "",
       Village: villages.find(v => Number(v.village_id) === Number(farmer.village_id))?.name || "",
-      HasDocument: farmerHasAvailableDocument(farmer, selectedDocumentId) ? "Yes" : "No",
+      HasDocument: isDocumentAvailable(farmer, selectedDocumentId) ? "Yes" : "No",
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -645,7 +630,7 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
                       <td className="border px-2 py-1">{f.farmer_record?.split('|')[0]}</td>
                       <td className="border px-2 py-1">{f.farmer_record?.split('|')[5]}</td>
                       <td className="border px-2 py-1">{villages.find(v => Number(v.village_id) === Number(f.village_id))?.name || ""}</td>
-                      <td className="border px-2 py-1">{farmerHasAvailableDocument(f, selectedDocumentId) ? "Yes" : "No"}</td>
+                      <td className="border px-2 py-1">{isDocumentAvailable(f, selectedDocumentId) ? "Yes" : "No"}</td>
                     </tr>
                   ))
                 )}

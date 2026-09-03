@@ -15,35 +15,43 @@ const PerformanceScorecard: React.FC<PerformanceScorecardProps> = ({
   farmers,
 }) => {
   const talukaPerformance = useMemo(() => {
-    return talukas.map((taluka) => {
-      const talukaFarmers = farmers.filter(
-        (f) => String(f.taluka_id) === String(taluka.taluka_id)
-      );
-      const total = talukaFarmers.length;
-      const completed = talukaFarmers.filter(
-        (f) => f.update_record && f.update_record.trim() !== ""
-      ).length;
+    const buckets = new Map<number, {
+      name: string;
+      total: number;
+      completed: number;
+      aadhaarLinked: number;
+      withDocs: number;
+    }>();
+
+    talukas.forEach((taluka) => {
+      buckets.set(Number(taluka.taluka_id), {
+        name: taluka.name,
+        total: 0,
+        completed: 0,
+        aadhaarLinked: 0,
+        withDocs: 0,
+      });
+    });
+
+    for (let i = 0; i < farmers.length; i++) {
+      const f = farmers[i];
+      const bucket = buckets.get(Number(f.taluka_id));
+      if (!bucket) continue;
+      bucket.total += 1;
+      if (f.update_record && f.update_record.trim() !== "") bucket.completed += 1;
+      const record = f.farmer_record?.split("|") || [];
+      if (record[5] && record[5].trim() !== "") bucket.aadhaarLinked += 1;
+      if (record.length > 10 && record[10]?.trim() !== "") bucket.withDocs += 1;
+    }
+
+    return Array.from(buckets.values()).map((bucket) => {
+      const { total, completed, aadhaarLinked, withDocs, name } = bucket;
       const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-      
-      // Calculate Aadhaar linked percentage
-      const aadhaarLinked = talukaFarmers.filter((f) => {
-        const record = f.farmer_record?.split("|") || [];
-        return record[5] && record[5].trim() !== "";
-      }).length;
       const aadhaarRate = total > 0 ? Math.round((aadhaarLinked / total) * 100) : 0;
-      
-      // Calculate document upload percentage
-      const withDocs = talukaFarmers.filter((f) => {
-        const record = f.farmer_record?.split("|") || [];
-        return record.length > 10 && record[10]?.trim() !== "";
-      }).length;
       const docRate = total > 0 ? Math.round((withDocs / total) * 100) : 0;
-      
-      // Overall score (average of all metrics)
       const overallScore = Math.round((completionRate + aadhaarRate + docRate) / 3);
-      
       return {
-        talukaName: taluka.name,
+        talukaName: name,
         total,
         completed,
         completionRate,

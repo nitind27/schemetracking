@@ -75,23 +75,17 @@ const Showschemstable = ({ farmersData }: { farmersData: AllFarmersData }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 md:gap-2 ">
                 {activeTab === 'documents' && (
-
                     <div className='w-full'>
-
                         <Documentstabview farmersData={farmersData} />
                     </div>
                 )}
                 {activeTab === 'schemes' && (
-
                     <div className='w-full'>
-
                         <SchemesDashboardcounting farmersData={farmersData} />
                     </div>
                 )}
-
                 {activeTab === 'farmers' && (
                     <div className='w-full '>
-
                         <FarmersDashboard farmersData={farmersData} />
                     </div>
                 )}

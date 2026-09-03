@@ -142,10 +142,19 @@ const SchemeStatusBarChart = ({
   const userName = sessionStorage.getItem('userName');
   const categoryId = sessionStorage.getItem('category_id');
   const isPESACoordinator = categoryId === "37";
-  const farmersdata = (userName === "BDO" || isPESACoordinator) ? farmers.filter((data) => data.taluka_id == talukaId) : farmers;
+
+  const farmersdata = useMemo(
+    () => (userName === "BDO" || isPESACoordinator)
+      ? farmers.filter((data) => data.taluka_id == talukaId)
+      : farmers,
+    [farmers, userName, isPESACoordinator, talukaId]
+  );
   
   // Surveyed farmers (only farmers with update_record)
-  const surveyedFarmers = farmersdata.filter((f) => f.update_record && f.update_record.trim() !== "");
+  const surveyedFarmers = useMemo(
+    () => farmersdata.filter((f) => f.update_record && f.update_record.trim() !== ""),
+    [farmersdata]
+  );
 
   const [modalLevel, setModalLevel] = useState<"none" | "scheme" | "taluka" | "village">("none");
   const [selectedScheme, setSelectedScheme] = useState<Schemesdatas | null>(null);
@@ -158,20 +167,18 @@ const SchemeStatusBarChart = ({
   // Chart Data for all farmers
   const chartData = useMemo(() => {
     const stats = getSchemeStats(farmersdata, schemes);
-    // Sort descending by benefitedPercent
     return stats.sort((a, b) => b.benefitedPercent! - a.benefitedPercent!);
   }, [farmersdata, schemes]);
 
   // Chart Data for surveyed farmers only
   const surveyedChartData = useMemo(() => {
     const stats = getSchemeStats(surveyedFarmers, schemes);
-    // Sort descending by benefitedPercent
     return stats.sort((a, b) => b.benefitedPercent! - a.benefitedPercent!);
   }, [surveyedFarmers, schemes]);
 
   // Taluka-wise stats for selected scheme and status
   const talukaStats = useMemo(() => {
-    if (!selectedScheme) return [];
+    if (!selectedScheme || modalLevel === "none") return [];
     return taluka
       .map((t) => {
         const farmersInTaluka = farmersdata.filter((f) => Number(f.taluka_id) === t.taluka_id);
@@ -193,11 +200,11 @@ const SchemeStatusBarChart = ({
         };
       })
       .sort((a, b) => b.percent - a.percent);
-  }, [selectedScheme, selectedStatus, farmersdata, taluka]);
+  }, [selectedScheme, selectedStatus, farmersdata, taluka, modalLevel]);
 
   // Village-wise stats for selected taluka+scheme+status
   const villageStats = useMemo(() => {
-    if (!selectedScheme || !selectedTaluka) return [];
+    if (!selectedScheme || !selectedTaluka || (modalLevel !== "taluka" && modalLevel !== "village")) return [];
     const villagesInTaluka = villages.filter((v) => Number(v.taluka_id) === selectedTaluka.taluka_id);
     return villagesInTaluka
       .map((v) => {
@@ -220,7 +227,7 @@ const SchemeStatusBarChart = ({
         };
       })
       .sort((a, b) => b.percent - a.percent);
-  }, [selectedScheme, selectedTaluka, selectedStatus, farmersdata, villages]);
+  }, [selectedScheme, selectedTaluka, selectedStatus, farmersdata, villages, modalLevel]);
 
   // Filtered village stats based on search term
   const filteredVillageStats = useMemo(() => {

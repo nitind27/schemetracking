@@ -107,11 +107,11 @@ const DashboardTalukatabview: React.FC<DashboardTalukatabviewProps> = ({ farmers
         return farmersData;
     }, [farmersData, isPESACoordinator, userTalukaId, isCategory4, isCategory8]);
 
-    const tabs = [
+    const tabs = useMemo(() => [
         {
             id: "taluka-survey",
             label: "Taluka Wise Survey",
-            content: (
+            content: () => (
                 <>
                     <DistrictMap
                         data={filteredFarmersData.farmers}
@@ -135,28 +135,24 @@ const DashboardTalukatabview: React.FC<DashboardTalukatabviewProps> = ({ farmers
         {
             id: "aadhaar-status",
             label: "Aadhaar Status",
-            content:
-                <AadhaarStatusChart farmersData={filteredFarmersData} />
+            content: () => <AadhaarStatusChart farmersData={filteredFarmersData} />
         },
         {
             id: "document-availability",
             label: "Availability of documents",
-            content:
-                <DocumentAvailabilityChart farmersData={filteredFarmersData} />
+            content: () => <DocumentAvailabilityChart farmersData={filteredFarmersData} />
         },
         {
             id: "scheme-wise",
             label: "Scheme wise IFR holders",
-            content:
-                <SchemesBarChart farmersData={filteredFarmersData} />
+            content: () => <SchemesBarChart farmersData={filteredFarmersData} />
         },
         {
             id: "general-table",
             label: "General Information",
-            content:
-                <Showschemstable farmersData={filteredFarmersData} />
+            content: () => <Showschemstable farmersData={filteredFarmersData} />
         }
-    ];
+    ], [filteredFarmersData]);
 
     return (
         <div className="w-full">

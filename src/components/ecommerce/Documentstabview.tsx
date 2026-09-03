@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState, useCallback, startTransition } from 'react';
 import { Column } from '../tables/tabletype';
 import { Simpletableshowdata } from '../tables/Simpletableshowdata';
 import { FarmdersType } from '../farmersdata/farmers';
@@ -8,7 +8,12 @@ import { Taluka } from '../Taluka/Taluka';
 import { Village } from '../Village/village';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { parseFarmerDocuments } from '../farmersdata/parseFarmerDocuments';
+import {
+    getParsedFarmerDocuments,
+    isDocumentAvailable,
+    isDocumentNotAvailable,
+    isDocumentUpdationNeeded,
+} from '../farmersdata/parseFarmerDocuments';
 
 interface AllFarmersData {
     farmers: FarmdersType[];
@@ -29,121 +34,98 @@ type ModalType = 'has' | 'not' | 'updation';
 const rowsPerPage = 10;
 
 const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
-    const [datafarmers, setDatafarmers] = useState<FarmdersType[]>([]);
-    const [documents, setDocuments] = useState<Documents[]>([]);
-    const [documentUsageList, setDocumentUsageList] = useState<DocumentUsage[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [modalFarmers, setModalFarmers] = useState<FarmdersType[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
-    
-    // Add filter states
     const [selectedTaluka, setSelectedTaluka] = useState<string>('');
     const [selectedVillage, setSelectedVillage] = useState<string>('');
-    const [filteredFarmers, setFilteredFarmers] = useState<FarmdersType[]>([]);
 
-    useEffect(() => {
-        if (farmersData) {
-            setDatafarmers(farmersData.farmers);
-            setDocuments(farmersData.documents);
-        }
-    }, [farmersData]);
+    const datafarmers = farmersData.farmers;
+    const documents = farmersData.documents;
 
-    // Initialize filteredFarmers with all farmers
-    useEffect(() => {
-        setFilteredFarmers(datafarmers);
-    }, [datafarmers]);
+    const talukaNameById = useMemo(() => {
+        const map = new Map<number, string>();
+        farmersData.taluka.forEach((t) => map.set(Number(t.taluka_id), t.name));
+        return map;
+    }, [farmersData.taluka]);
 
-    // Filter farmers based on taluka and village selection
-    useEffect(() => {
-        let filtered = [...datafarmers];
-        
+    const villageNameById = useMemo(() => {
+        const map = new Map<number, string>();
+        farmersData.villages.forEach((v) => map.set(Number(v.village_id), v.marathi_name || v.name));
+        return map;
+    }, [farmersData.villages]);
+
+    const filteredFarmers = useMemo(() => {
+        let filtered = datafarmers;
         if (selectedTaluka) {
-            filtered = filtered.filter(farmer => farmer.taluka_id === selectedTaluka);
+            filtered = filtered.filter((farmer) => String(farmer.taluka_id) === selectedTaluka);
         }
-        
         if (selectedVillage) {
-            filtered = filtered.filter(farmer => farmer.village_id === selectedVillage);
+            filtered = filtered.filter((farmer) => String(farmer.village_id) === selectedVillage);
         }
-        
-        setFilteredFarmers(filtered);
+        return filtered;
     }, [datafarmers, selectedTaluka, selectedVillage]);
 
-    // Calculate document usage based on filtered farmers
-    useEffect(() => {
-        if (filteredFarmers.length === 0 || documents.length === 0) {
-            setDocumentUsageList([]);
-            return;
-        }
+    const documentUsageList = useMemo((): DocumentUsage[] => {
+        if (!filteredFarmers.length || !documents.length) return [];
 
-        const farmersDocsParsed = filteredFarmers.map(farmer =>
-            parseFarmerDocuments(typeof farmer.documents === 'string' ? farmer.documents : '')
-        );
+        const counts = documents.map((doc) => ({
+            document: doc,
+            countHas: 0,
+            countNotHas: 0,
+            countUpdationNeeded: 0,
+        }));
 
-        const usageList: DocumentUsage[] = documents.map(doc => {
-            let countHas = 0;
-            let countNotHas = 0;
-            let countUpdationNeeded = 0;
-
-            filteredFarmers.forEach((farmer, idx) => {
-                const docEntry = farmersDocsParsed[idx][String(doc.id)];
-                if (docEntry) {
-                    if (docEntry.available === 'Yes') {
-                        countHas++;
-                    }
-                    if (docEntry.notAvailable === 'Yes') {
-                        countNotHas++;
-                    }
-                    if (docEntry.updateNeeded === 'Yes') {
-                        countUpdationNeeded++;
-                    }
+        for (let i = 0; i < filteredFarmers.length; i++) {
+            const docMap = getParsedFarmerDocuments(filteredFarmers[i]);
+            for (let d = 0; d < documents.length; d++) {
+                const doc = documents[d];
+                const entry = docMap[String(doc.id)];
+                const bucket = counts[d];
+                if (entry) {
+                    if (entry.available === 'Yes') bucket.countHas++;
+                    if (entry.notAvailable === 'Yes') bucket.countNotHas++;
+                    if (entry.updateNeeded === 'Yes') bucket.countUpdationNeeded++;
                 } else {
-                    countNotHas++;
+                    bucket.countNotHas++;
                 }
-            });
-
-            return {
-                document: doc,
-                countHas,
-                countNotHas,
-                countUpdationNeeded
-            };
-        });
-
-        setDocumentUsageList(usageList);
+            }
+        }
+        return counts;
     }, [filteredFarmers, documents]);
 
-    // Modal logic
-    const openModal = (docId: number, docName: string, type: ModalType) => {
+    const openModal = useCallback((docId: number, docName: string, type: ModalType) => {
         setModalTitle(`${docName} - ${type === 'has' ? 'Available' : type === 'not' ? 'Not Available' : 'Updation Needed'}`);
-        // Filter farmers from filteredFarmers instead of datafarmers
-        const filteredFarmersForModal = filteredFarmers.filter(farmer => {
-            const docMap = parseFarmerDocuments(farmer.documents);
-            const entry = docMap[String(docId)];
-            if (type === 'has') return entry && entry.available === 'Yes';
-            if (type === 'not') return !entry || entry.notAvailable === 'Yes';
-            if (type === 'updation') return entry && entry.updateNeeded === 'Yes';
-            return false;
+        startTransition(() => {
+            const filteredFarmersForModal = filteredFarmers.filter((farmer) => {
+                if (type === 'has') return isDocumentAvailable(farmer, docId);
+                if (type === 'not') return isDocumentNotAvailable(farmer, docId);
+                if (type === 'updation') return isDocumentUpdationNeeded(farmer, docId);
+                return false;
+            });
+            setModalFarmers(filteredFarmersForModal);
+            setCurrentPage(1);
+            setIsModalOpen(true);
         });
-        setModalFarmers(filteredFarmersForModal);
-        setCurrentPage(1);
-        setIsModalOpen(true);
-    };
+    }, [filteredFarmers]);
 
-    const totalPages = Math.ceil(modalFarmers.length / rowsPerPage);
-    const paginatedFarmers = modalFarmers.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+    const totalPages = Math.ceil(modalFarmers.length / rowsPerPage) || 1;
+    const paginatedFarmers = useMemo(
+        () => modalFarmers.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage),
+        [modalFarmers, currentPage]
+    );
 
     const handlePreviousPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
     const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
-    // Excel download handler (modal - current farmers list)
     const handleDownloadExcel = () => {
         const excelData = modalFarmers.map((farmer, idx) => ({
             "Sr.No": idx + 1,
-            "IFR Holder":farmer.farmer_record?.split('|')[0] || "",
-            "Contact No": farmer.farmer_record?.split('|')[6]|| "-",
-            "Taluka": farmersData.taluka.find(t => t.taluka_id === Number(farmer.taluka_id))?.name || "",
-            "Village": farmersData.villages.find(v => v.village_id === Number(farmer.village_id))?.marathi_name || ""
+            "IFR Holder": farmer.farmer_record?.split('|')[0] || "",
+            "Contact No": farmer.farmer_record?.split('|')[6] || "-",
+            "Taluka": talukaNameById.get(Number(farmer.taluka_id)) || "",
+            "Village": villageNameById.get(Number(farmer.village_id)) || "",
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -155,7 +137,6 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
         saveAs(blob, `${modalTitle.replace(/\s+/g, "_")}_Farmers.xlsx`);
     };
 
-    // All data Excel download (main table: document availability)
     const handleDownloadAllExcel = () => {
         if (!documentUsageList?.length) return;
         const excelData = documentUsageList.map((usage, idx) => ({
@@ -180,83 +161,25 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
         saveAs(blob, "Document_Availability_All_Data.xlsx");
     };
 
-    // Create filter options
-    const talukaOptions = farmersData.taluka.map(taluka => ({
-        label: taluka.name,
-        value: taluka.taluka_id.toString()
-    }));
-
-    const villageOptions = farmersData.villages
-        .filter(village => !selectedTaluka || village.taluka_id === selectedTaluka)
-        .map(village => ({
-            label: village.marathi_name,
-            value: village.village_id.toString()
-        }));
-
-    // Custom filter component
-    const FilterComponent = () => (
-        <div className="flex flex-col md:flex-row gap-4 mb-4 flex-wrap items-end">
-            <div className="flex flex-col md:flex-row gap-2">
-                <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700">Taluka</label>
-                <select
-                    className="border rounded px-3 py-2 min-w-[150px]"
-                    value={selectedTaluka}
-                    onChange={(e) => {
-                        setSelectedTaluka(e.target.value);
-                        setSelectedVillage(''); // Reset village when taluka changes
-                    }}
-                >
-                    <option value="">All Taluka</option>
-                    {talukaOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-                </div>
-                <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700">Village</label>
-                <select
-                    className="border rounded px-3 py-2 min-w-[150px]"
-                    value={selectedVillage}
-                    onChange={(e) => setSelectedVillage(e.target.value)}
-                >
-                    <option value="">All Village</option>
-                    {villageOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-                </div>
-                <div className="flex flex-col gap-2 mt-7">
-                <button
-                    onClick={() => {
-                        setSelectedTaluka('');
-                        setSelectedVillage('');
-                    }}
-                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                    >
-                        Clear Filters
-                    </button>
-                </div>
-            </div>
-            <button
-                type="button"
-                onClick={handleDownloadAllExcel}
-                disabled={documentUsageList.length === 0}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed h-[42px]"
-            >
-                डाउनलोड करा (Excel) - All Data
-            </button>
-            <div className="text-sm text-gray-600 flex items-center">
-                Showing {filteredFarmers.length} IFR Holders
-            </div>
-        </div>
+    const talukaOptions = useMemo(
+        () => farmersData.taluka.map((taluka) => ({
+            label: taluka.name,
+            value: taluka.taluka_id.toString(),
+        })),
+        [farmersData.taluka]
     );
 
-    const columns: Column<DocumentUsage>[] = [
+    const villageOptions = useMemo(
+        () => farmersData.villages
+            .filter((village) => !selectedTaluka || String(village.taluka_id) === selectedTaluka)
+            .map((village) => ({
+                label: village.marathi_name,
+                value: village.village_id.toString(),
+            })),
+        [farmersData.villages, selectedTaluka]
+    );
+
+    const columns: Column<DocumentUsage>[] = useMemo(() => [
         {
             key: 'documentName',
             label: 'Document Name',
@@ -302,7 +225,7 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 </span>
             )
         }
-    ];
+    ], [openModal]);
 
     return (
         <div className='bg-white'>
@@ -310,9 +233,67 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
                 <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-4">
                     Availability of documents
                 </h2>
-                
-                <FilterComponent />
-                
+
+                <div className="flex flex-col md:flex-row gap-4 mb-4 flex-wrap items-end">
+                    <div className="flex flex-col md:flex-row gap-2">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-gray-700">Taluka</label>
+                            <select
+                                className="border rounded px-3 py-2 min-w-[150px]"
+                                value={selectedTaluka}
+                                onChange={(e) => {
+                                    setSelectedTaluka(e.target.value);
+                                    setSelectedVillage('');
+                                }}
+                            >
+                                <option value="">All Taluka</option>
+                                {talukaOptions.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-gray-700">Village</label>
+                            <select
+                                className="border rounded px-3 py-2 min-w-[150px]"
+                                value={selectedVillage}
+                                onChange={(e) => setSelectedVillage(e.target.value)}
+                            >
+                                <option value="">All Village</option>
+                                {villageOptions.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex flex-col gap-2 mt-7">
+                            <button
+                                onClick={() => {
+                                    setSelectedTaluka('');
+                                    setSelectedVillage('');
+                                }}
+                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                            >
+                                Clear Filters
+                            </button>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleDownloadAllExcel}
+                        disabled={documentUsageList.length === 0}
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed h-[42px]"
+                    >
+                        डाउनलोड करा (Excel) - All Data
+                    </button>
+                    <div className="text-sm text-gray-600 flex items-center">
+                        Showing {filteredFarmers.length} IFR Holders
+                    </div>
+                </div>
+
                 <Simpletableshowdata
                     data={documentUsageList}
                     columns={columns}
@@ -321,7 +302,7 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
                     searchKey="document"
                 />
             </div>
-            
+
             {isModalOpen && (
                 <div className="fixed inset-0 bg-[#0303033f] bg-opacity-50 flex items-center justify-center p-4 z-999999">
                     <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl max-h-[90vh] overflow-auto z-999999">
@@ -345,43 +326,28 @@ const Documentstabview = ({ farmersData }: { farmersData: AllFarmersData }) => {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Sr.No
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                IFR holders
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Contact No
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Taluka
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Village
-                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sr.No</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IFR holders</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact No</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taluka</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Village</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {paginatedFarmers.map((farmer, index) => (
-                                            <tr key={farmer.farmer_id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {(currentPage - 1) * rowsPerPage + index + 1}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.farmer_record?.split('|')[0] || ""}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmer.farmer_record?.split('|')[6] || ""}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmersData.taluka.find((data) => data.taluka_id === Number(farmer.taluka_id))?.name || ""}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {farmersData.villages.find((data) => data.village_id === Number(farmer.village_id))?.marathi_name || ""}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {paginatedFarmers.map((farmer, index) => {
+                                            const record = farmer.farmer_record?.split('|') || [];
+                                            return (
+                                                <tr key={farmer.farmer_id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {(currentPage - 1) * rowsPerPage + index + 1}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{record[0] || ""}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{record[6] || ""}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{talukaNameById.get(Number(farmer.taluka_id)) || ""}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{villageNameById.get(Number(farmer.village_id)) || ""}</td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>

@@ -32,21 +32,23 @@ const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
 }) => {
   // Taluka-wise comparison data
   const talukaComparisonData = useMemo(() => {
-    return talukas.map((taluka) => {
-      const talukaFarmers = farmers.filter(
-        (f) => String(f.taluka_id) === String(taluka.taluka_id)
-      );
-      const completed = talukaFarmers.filter(
-        (f) => f.update_record && f.update_record.trim() !== ""
-      ).length;
-      const total = talukaFarmers.length;
-      return {
-        name: taluka.name,
-        completed,
-        pending: total - completed,
-        total,
-      };
+    const buckets = new Map<number, { name: string; completed: number; total: number }>();
+    talukas.forEach((taluka) => {
+      buckets.set(Number(taluka.taluka_id), { name: taluka.name, completed: 0, total: 0 });
     });
+    for (let i = 0; i < farmers.length; i++) {
+      const f = farmers[i];
+      const bucket = buckets.get(Number(f.taluka_id));
+      if (!bucket) continue;
+      bucket.total += 1;
+      if (f.update_record && f.update_record.trim() !== "") bucket.completed += 1;
+    }
+    return Array.from(buckets.values()).map((b) => ({
+      name: b.name,
+      completed: b.completed,
+      pending: b.total - b.completed,
+      total: b.total,
+    }));
   }, [farmers, talukas]);
 
 
