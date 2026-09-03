@@ -49,14 +49,6 @@ type ChartData = {
   taluka_id: number;
 };
 
-type SurveyChartData = {
-  taluka: string;
-  total: number;
-  surveyed: number;
-  yetToBeSurveyed: number;
-  taluka_id: number;
-};
-
 type SurveyedAadhaarChartData = {
   taluka: string;
   totalSurveyed: number;
@@ -107,14 +99,12 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
     return map;
   }, [villages]);
 
-  const { chartData, surveyChartData, surveyedAadhaarChartData } = useMemo(() => {
+  const { chartData, surveyedAadhaarChartData } = useMemo(() => {
     const aadhaarStats = new Map<number, { total: number; withAadhaar: number }>();
-    const surveyStats = new Map<number, { total: number; withAadhaar: number }>();
     const surveyedAadhaarStats = new Map<number, { total: number; withAadhaar: number }>();
 
     scopedTalukas.forEach((t) => {
       aadhaarStats.set(t.taluka_id, { total: 0, withAadhaar: 0 });
-      surveyStats.set(t.taluka_id, { total: 0, withAadhaar: 0 });
       surveyedAadhaarStats.set(t.taluka_id, { total: 0, withAadhaar: 0 });
     });
 
@@ -129,12 +119,9 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
       if (withAadhaar) aBucket.withAadhaar += 1;
 
       if (isSurveyedFarmer(farmer)) {
-        const sBucket = surveyStats.get(tid)!;
         const saBucket = surveyedAadhaarStats.get(tid)!;
-        sBucket.total += 1;
         saBucket.total += 1;
         if (withAadhaar) {
-          sBucket.withAadhaar += 1;
           saBucket.withAadhaar += 1;
         }
       }
@@ -151,17 +138,6 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
       };
     });
 
-    const surveyChartData: SurveyChartData[] = scopedTalukas.map((t) => {
-      const s = surveyStats.get(t.taluka_id)!;
-      return {
-        taluka: t.name,
-        total: s.total,
-        surveyed: s.withAadhaar,
-        yetToBeSurveyed: s.total - s.withAadhaar,
-        taluka_id: t.taluka_id,
-      };
-    });
-
     const surveyedAadhaarChartData: SurveyedAadhaarChartData[] = scopedTalukas.map((t) => {
       const s = surveyedAadhaarStats.get(t.taluka_id)!;
       return {
@@ -173,14 +149,11 @@ const AadhaarStatusChart = ({ farmersData }: { farmersData: AllFarmersData }) =>
       };
     });
 
-    return { chartData, surveyChartData, surveyedAadhaarChartData };
+    return { chartData, surveyedAadhaarChartData };
   }, [farmersdata, scopedTalukas]);
 
   const maxValue = Math.max(...chartData.map((item) => item.total), 1000);
   const ticks = buildTicks(maxValue);
-
-  const surveyMaxValue = Math.max(...surveyChartData.map((item) => item.total), 0);
-  const surveyTicks = buildTicks(surveyMaxValue, 0);
 
   const surveyedAadhaarMaxValue = Math.max(...surveyedAadhaarChartData.map((item) => item.totalSurveyed), 0);
   const surveyedAadhaarTicks = buildTicks(surveyedAadhaarMaxValue, 0);
