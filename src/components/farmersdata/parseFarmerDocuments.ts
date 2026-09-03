@@ -64,19 +64,139 @@ export function getParsedFarmerDocuments(farmer: FarmerLike): FarmerDocumentMap 
   return parsed;
 }
 
+export type DocumentCountRow = {
+  id: number;
+  document: string;
+  has: number;
+  not: number;
+};
+
+/**
+ * Fast availability counts — avoids allocating a status map object per farmer.
+ * Matches: available=Yes → has; missing or notAvailable=Yes → not; else neither.
+ */
+export function buildDocumentAvailabilityCounts(
+  farmers: FarmerLike[],
+  documents: { id: number; document_name: string }[]
+): DocumentCountRow[] {
+  const n = documents.length;
+  if (!n) return [];
+
+  const has = new Int32Array(n);
+  const not = new Int32Array(n);
+  const idIndex = new Map<string, number>();
+  for (let d = 0; d < n; d++) {
+    idIndex.set(String(documents[d].id), d);
+  }
+
+  const farmerCount = farmers.length;
+  const seen = new Uint8Array(n);
+  for (let i = 0; i < farmerCount; i++) {
+    const docString = farmers[i].documents;
+    seen.fill(0);
+
+    if (typeof docString === 'string' && docString.length > 0) {
+      let start = 0;
+      const len = docString.length;
+      while (start < len) {
+        let end = docString.indexOf('|', start);
+        if (end < 0) end = len;
+
+        const sep = docString.indexOf('--', start);
+        if (sep > start && sep < end) {
+          const id = docString.slice(start, sep).trim();
+          const idx = idIndex.get(id);
+          if (idx !== undefined) {
+            const rest = docString.slice(sep + 2, end);
+            const p1 = rest.indexOf('-');
+            if (p1 >= 0) {
+              const p2 = rest.indexOf('-', p1 + 1);
+              if (p2 >= 0) {
+                const available = rest.slice(p1 + 1, p2).trim();
+                const notAvailable = rest.slice(p2 + 1).trim();
+                if (available === 'Yes') {
+                  has[idx]++;
+                  seen[idx] = 1;
+                } else if (notAvailable === 'Yes') {
+                  not[idx]++;
+                  seen[idx] = 2;
+                } else {
+                  seen[idx] = 3; // present but neither (e.g. updation only)
+                }
+              }
+            }
+          }
+        }
+        start = end + 1;
+      }
+    }
+
+    for (let d = 0; d < n; d++) {
+      if (seen[d] === 0) not[d]++;
+    }
+  }
+
+  const rows: DocumentCountRow[] = new Array(n);
+  for (let d = 0; d < n; d++) {
+    rows[d] = {
+      id: documents[d].id,
+      document: documents[d].document_name,
+      has: has[d],
+      not: not[d],
+    };
+  }
+  return rows;
+}
+
+/** Single-document flag lookup without parsing the whole map. */
+export function getDocumentFlags(
+  docString: string | undefined,
+  docId: number | string
+): FarmerDocumentStatus | null {
+  if (!docString) return null;
+  const id = String(docId);
+  let start = 0;
+  const len = docString.length;
+  while (start < len) {
+    let end = docString.indexOf('|', start);
+    if (end < 0) end = len;
+    const sep = docString.indexOf('--', start);
+    if (sep > start && sep < end) {
+      if (docString.slice(start, sep).trim() === id) {
+        const rest = docString.slice(sep + 2, end);
+        const [updateNeeded = '', available = '', notAvailable = ''] = rest.split('-');
+        return {
+          updateNeeded: updateNeeded.trim(),
+          available: available.trim(),
+          notAvailable: notAvailable.trim(),
+        };
+      }
+    }
+    start = end + 1;
+  }
+  return null;
+}
+
 export function isDocumentAvailable(farmer: FarmerLike, docId: number | string): boolean {
-  const entry = getParsedFarmerDocuments(farmer)[String(docId)];
-  return entry?.available === 'Yes';
+  return getDocumentFlags(
+    typeof farmer.documents === 'string' ? farmer.documents : undefined,
+    docId
+  )?.available === 'Yes';
 }
 
 export function isDocumentNotAvailable(farmer: FarmerLike, docId: number | string): boolean {
-  const entry = getParsedFarmerDocuments(farmer)[String(docId)];
-  return !entry || entry.notAvailable === 'Yes';
+  const flags = getDocumentFlags(
+    typeof farmer.documents === 'string' ? farmer.documents : undefined,
+    docId
+  );
+  return !flags || flags.notAvailable === 'Yes';
 }
 
 export function isDocumentUpdationNeeded(farmer: FarmerLike, docId: number | string): boolean {
-  const entry = getParsedFarmerDocuments(farmer)[String(docId)];
-  return entry?.updateNeeded === 'Yes';
+  return getDocumentFlags(
+    typeof farmer.documents === 'string' ? farmer.documents : undefined,
+    docId
+  )?.updateNeeded === 'Yes';
 }
 
 /** Parse farmer_record once for Aadhaar (index 5). */
@@ -88,46 +208,4 @@ export function hasAadhaarFromRecord(farmerRecord: string | undefined): boolean 
 
 export function isSurveyedFarmer(farmer: FarmerLike): boolean {
   return !!(farmer.update_record && farmer.update_record.trim() !== '');
-}
-
-export type DocumentCountRow = {
-  id: number;
-  document: string;
-  has: number;
-  not: number;
-};
-
-/** Single-pass document availability counts for a farmer list. */
-export function buildDocumentAvailabilityCounts(
-  farmers: FarmerLike[],
-  documents: { id: number; document_name: string }[]
-): DocumentCountRow[] {
-  const counts = new Map<number, { has: number; not: number }>();
-  for (let d = 0; d < documents.length; d++) {
-    counts.set(documents[d].id, { has: 0, not: 0 });
-  }
-
-  for (let i = 0; i < farmers.length; i++) {
-    const docMap = getParsedFarmerDocuments(farmers[i]);
-    for (let d = 0; d < documents.length; d++) {
-      const doc = documents[d];
-      const bucket = counts.get(doc.id)!;
-      const entry = docMap[String(doc.id)];
-      if (entry?.available === 'Yes') {
-        bucket.has++;
-      } else if (!entry || entry.notAvailable === 'Yes') {
-        bucket.not++;
-      }
-    }
-  }
-
-  return documents.map((doc) => {
-    const c = counts.get(doc.id)!;
-    return {
-      id: doc.id,
-      document: doc.document_name,
-      has: c.has,
-      not: c.not,
-    };
-  });
 }

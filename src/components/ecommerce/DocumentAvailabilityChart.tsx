@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useTransition, useCallback } from "react";
 import {
   BarChart,
   Bar,
@@ -12,7 +12,6 @@ import {
 } from "recharts";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import Tabviewflex from "../common/Tabviewflex";
 
 // --- Type Definitions ---
 import { FarmdersType } from "../farmersdata/farmers";
@@ -69,11 +68,15 @@ const PAGE_SIZE_FARMERS = 10;
 const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersData }) => {
   const { taluka, farmers, documents, villages } = farmersData;
 
-  // Get user info for filtering
   const talukaId = sessionStorage.getItem('taluka_id');
   const userName = sessionStorage.getItem('userName');
   const categoryId = sessionStorage.getItem('category_id');
   const isPESACoordinator = categoryId === "37";
+
+  const [activeSubTab, setActiveSubTab] = useState<"all" | "surveyed">("all");
+  const [chartData, setChartData] = useState<DocumentBar[]>([]);
+  const [isComputing, setIsComputing] = useState(true);
+  const [, startTransition] = useTransition();
 
   const farmersdata = useMemo(
     () =>
@@ -94,15 +97,137 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
     [farmersdata]
   );
 
-  const documentChartData: DocumentBar[] = useMemo(
-    () => (documents?.length ? buildDocumentAvailabilityCounts(farmersdata, documents) : []),
-    [farmersdata, documents]
-  );
+  const farmersByTaluka = useMemo(() => {
+    const map = new Map<number, FarmdersType[]>();
+    for (let i = 0; i < farmersdata.length; i++) {
+      const f = farmersdata[i];
+      const tid = Number(f.taluka_id);
+      let list = map.get(tid);
+      if (!list) {
+        list = [];
+        map.set(tid, list);
+      }
+      list.push(f);
+    }
+    return map;
+  }, [farmersdata]);
 
-  const surveyedDocumentChartData: DocumentBar[] = useMemo(
-    () => (documents?.length ? buildDocumentAvailabilityCounts(surveyedFarmers, documents) : []),
-    [surveyedFarmers, documents]
-  );
+  const farmersByVillage = useMemo(() => {
+    const map = new Map<string, FarmdersType[]>();
+    for (let i = 0; i < farmersdata.length; i++) {
+      const f = farmersdata[i];
+      const key = `${Number(f.taluka_id)}:${Number(f.village_id)}`;
+      let list = map.get(key);
+      if (!list) {
+        list = [];
+        map.set(key, list);
+      }
+      list.push(f);
+    }
+    return map;
+  }, [farmersdata]);
+
+  // Compute ONLY the active sub-tab chart, after first paint (chunked so UI stays responsive)
+  useEffect(() => {
+    let cancelled = false;
+    setIsComputing(true);
+    const source = activeSubTab === "all" ? farmersdata : surveyedFarmers;
+    const docs = documents || [];
+
+    const run = async () => {
+      await new Promise((r) => setTimeout(r, 0));
+      if (cancelled) return;
+
+      if (!docs.length) {
+        setChartData([]);
+        setIsComputing(false);
+        return;
+      }
+
+      // For large lists, process in chunks and yield between them
+      const CHUNK = 2500;
+      if (source.length <= CHUNK) {
+        const rows = buildDocumentAvailabilityCounts(source, docs);
+        if (!cancelled) {
+          setChartData(rows);
+          setIsComputing(false);
+        }
+        return;
+      }
+
+      const n = docs.length;
+      const has = new Int32Array(n);
+      const not = new Int32Array(n);
+      const idIndex = new Map<string, number>();
+      for (let d = 0; d < n; d++) idIndex.set(String(docs[d].id), d);
+      const seen = new Uint8Array(n);
+
+      for (let offset = 0; offset < source.length; offset += CHUNK) {
+        if (cancelled) return;
+        const end = Math.min(offset + CHUNK, source.length);
+        for (let i = offset; i < end; i++) {
+          const docString = source[i].documents;
+          seen.fill(0);
+          if (typeof docString === "string" && docString.length > 0) {
+            let start = 0;
+            const len = docString.length;
+            while (start < len) {
+              let pipe = docString.indexOf("|", start);
+              if (pipe < 0) pipe = len;
+              const sep = docString.indexOf("--", start);
+              if (sep > start && sep < pipe) {
+                const idx = idIndex.get(docString.slice(start, sep).trim());
+                if (idx !== undefined) {
+                  const rest = docString.slice(sep + 2, pipe);
+                  const p1 = rest.indexOf("-");
+                  if (p1 >= 0) {
+                    const p2 = rest.indexOf("-", p1 + 1);
+                    if (p2 >= 0) {
+                      const available = rest.slice(p1 + 1, p2).trim();
+                      const notAvailable = rest.slice(p2 + 1).trim();
+                      if (available === "Yes") {
+                        has[idx]++;
+                        seen[idx] = 1;
+                      } else if (notAvailable === "Yes") {
+                        not[idx]++;
+                        seen[idx] = 2;
+                      } else {
+                        seen[idx] = 3;
+                      }
+                    }
+                  }
+                }
+              }
+              start = pipe + 1;
+            }
+          }
+          for (let d = 0; d < n; d++) {
+            if (seen[d] === 0) not[d]++;
+          }
+        }
+        // Yield to keep UI responsive
+        await new Promise((r) => setTimeout(r, 0));
+      }
+
+      if (cancelled) return;
+      const rows: DocumentBar[] = new Array(n);
+      for (let d = 0; d < n; d++) {
+        rows[d] = {
+          id: docs[d].id,
+          document: docs[d].document_name,
+          has: has[d],
+          not: not[d],
+        };
+      }
+      setChartData(rows);
+      setIsComputing(false);
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSubTab, farmersdata, surveyedFarmers, documents]);
 
   // --- Modal State for Documents ---
   const [modalOpen, setModalOpen] = useState(false);
@@ -114,16 +239,12 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // --- Modal Data (memoized for performance) ---
   const filteredFarmers = useMemo(() => {
     const docId = selectedDocDropdown ?? selectedDocId;
     if (!docId || !modalOpen) return [];
@@ -140,39 +261,34 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
     return filteredFarmers.slice(start, start + PAGE_SIZE);
   }, [filteredFarmers, page]);
 
-  // --- Document Dropdown Change Handler ---
   const handleDocDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const docId = parseInt(e.target.value, 10);
     setSelectedDocDropdown(docId);
-    setSelectedDocName(
-      documents.find((d) => d.id === docId)?.document_name || ""
-    );
+    setSelectedDocName(documents.find((d) => d.id === docId)?.document_name || "");
     setDocFilter("all");
     setPage(1);
   };
 
-  // --- Download Excel Handler for Documents ---
   const handleDownload = () => {
     const docId = selectedDocDropdown ?? selectedDocId;
     if (!docId) return;
-    const docName =
-      documents.find((d) => d.id === docId)?.document_name || "Document";
-
+    const docName = documents.find((d) => d.id === docId)?.document_name || "Document";
     const farmersToExport = farmersdata.filter((farmer) => {
       const hasAvailable = isDocumentAvailable(farmer, docId);
       if (docFilter === "has") return hasAvailable;
       if (docFilter === "not") return !hasAvailable;
       return true;
     });
-
-    const data = farmersToExport.map((farmer) => ({
-      FarmerID: farmer.farmer_id,
-      Name: farmer.farmer_record?.split('|')[0] || "",
-      Aadhaar: farmer.farmer_record?.split('|')[5] || "",
-      Village: villageNameById.get(Number(farmer.village_id)) || "",
-      HasDocument: isDocumentAvailable(farmer, docId) ? "Yes" : "No",
-    }));
-
+    const data = farmersToExport.map((farmer) => {
+      const record = farmer.farmer_record?.split('|') || [];
+      return {
+        FarmerID: farmer.farmer_id,
+        Name: record[0] || "",
+        Aadhaar: record[5] || "",
+        Village: villageNameById.get(Number(farmer.village_id)) || "",
+        HasDocument: isDocumentAvailable(farmer, docId) ? "Yes" : "No",
+      };
+    });
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Farmers");
@@ -371,54 +487,59 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
 
   // --- Sorted and Filtered Progress ---
   const talukaProgress = useMemo(() => {
-    if (!selectedDocumentId) return [];
+    if (!selectedDocumentId || drillLevel === "none") return [];
     return taluka
-      .map(t => {
-        const talukaFarmers = farmersdata.filter(f => Number(f.taluka_id) === Number(t.taluka_id));
-        const withDoc = talukaFarmers.filter(f => isDocumentAvailable(f, selectedDocumentId)).length;
+      .map((t) => {
+        const talukaFarmers = farmersByTaluka.get(Number(t.taluka_id)) || [];
+        let withDoc = 0;
+        for (let i = 0; i < talukaFarmers.length; i++) {
+          if (isDocumentAvailable(talukaFarmers[i], selectedDocumentId)) withDoc++;
+        }
+        const total = talukaFarmers.length;
         return {
           ...t,
-          total: talukaFarmers.length,
+          total,
           withDoc,
-          percent: talukaFarmers.length ? (withDoc / talukaFarmers.length) * 100 : 0,
+          percent: total ? (withDoc / total) * 100 : 0,
         };
       })
       .sort((a, b) => b.percent - a.percent);
-  }, [selectedDocumentId, taluka, farmersdata]);
+  }, [selectedDocumentId, taluka, farmersByTaluka, drillLevel]);
 
   const villageProgress = useMemo(() => {
-    if (!selectedDocumentId || !selectedTalukaId) return [];
-    const villagesInTaluka = villages.filter(v => Number(v.taluka_id) === Number(selectedTalukaId));
+    if (!selectedDocumentId || !selectedTalukaId || (drillLevel !== "village" && drillLevel !== "farmers")) return [];
+    const villagesInTaluka = villages.filter((v) => Number(v.taluka_id) === Number(selectedTalukaId));
     return villagesInTaluka
-      .map(v => {
-        const villageFarmers = farmersdata.filter(
-          f => Number(f.village_id) === Number(v.village_id) && Number(f.taluka_id) === Number(selectedTalukaId)
-        );
-        const withDoc = villageFarmers.filter(f => isDocumentAvailable(f, selectedDocumentId)).length;
+      .map((v) => {
+        const villageFarmers = farmersByVillage.get(`${Number(selectedTalukaId)}:${Number(v.village_id)}`) || [];
+        let withDoc = 0;
+        for (let i = 0; i < villageFarmers.length; i++) {
+          if (isDocumentAvailable(villageFarmers[i], selectedDocumentId)) withDoc++;
+        }
+        const total = villageFarmers.length;
         return {
           ...v,
-          total: villageFarmers.length,
+          total,
           withDoc,
-          percent: villageFarmers.length ? (withDoc / villageFarmers.length) * 100 : 0,
+          percent: total ? (withDoc / total) * 100 : 0,
         };
       })
       .sort((a, b) => b.percent - a.percent);
-  }, [selectedDocumentId, selectedTalukaId, villages, farmersdata]);
+  }, [selectedDocumentId, selectedTalukaId, villages, farmersByVillage, drillLevel]);
 
   const filteredVillageProgress = useMemo(() => {
     if (!villageSearch) return villageProgress;
-    return villageProgress.filter(v =>
-      v.name.toLowerCase().includes(villageSearch.toLowerCase()) ||
-      (v.marathi_name && v.marathi_name.toLowerCase().includes(villageSearch.toLowerCase()))
+    const q = villageSearch.toLowerCase();
+    return villageProgress.filter((v) =>
+      v.name.toLowerCase().includes(q) ||
+      (v.marathi_name && v.marathi_name.toLowerCase().includes(q))
     );
   }, [villageProgress, villageSearch]);
 
   const farmersInVillage = useMemo(() => {
-    if (!selectedDocumentId || !selectedVillageId || !selectedTalukaId) return [];
-    return farmersdata.filter(
-      f => Number(f.village_id) === Number(selectedVillageId) && Number(f.taluka_id) === Number(selectedTalukaId)
-    );
-  }, [selectedDocumentId, selectedVillageId, selectedTalukaId, farmersdata]);
+    if (!selectedDocumentId || !selectedVillageId || !selectedTalukaId || drillLevel !== "farmers") return [];
+    return farmersByVillage.get(`${Number(selectedTalukaId)}:${Number(selectedVillageId)}`) || [];
+  }, [selectedDocumentId, selectedVillageId, selectedTalukaId, farmersByVillage, drillLevel]);
 
   const filteredFarmersInVillage = useMemo(() => {
     if (!selectedDocumentId) return [];
@@ -670,184 +791,120 @@ const DocumentAvailabilityChart = ({ farmersData }: { farmersData: AllFarmersDat
   };
 
   // --- Update BarChart onClick for Document Chart ---
-  const handleDocumentBarClick = (state: CategoricalChartState) => {
+  const handleDocumentBarClick = useCallback((state: CategoricalChartState) => {
     if (
       state &&
       state.activeLabel &&
       state.activePayload &&
       state.activePayload.length > 0
     ) {
-      const doc = documentChartData.find(
-        (d) => d.document === state.activeLabel
-      );
+      const doc = chartData.find((d) => d.document === state.activeLabel);
       if (doc) openTalukaModal(doc.id);
     }
+  }, [chartData]);
+
+  const switchSubTab = (tab: "all" | "surveyed") => {
+    if (tab === activeSubTab) return;
+    startTransition(() => setActiveSubTab(tab));
   };
 
-  // Chart component for all farmers
-  const AllFarmersChart = () => (
-    <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full mt-3 md:mt-3 overflow-x-auto">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-        <h2 className="text-lg md:text-2xl font-bold text-gray-800">
-          Availability of each documents for IFR holders
-        </h2>
-        {/* Overall summary card */}
-        <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
-          <div className="text-sm text-gray-700 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
-              <p>
-                Available
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
-              <p>
-                Not Available
-              </p>
-            </div>
-          </div>
-        </div>
+  return (
+    <div className="w-full">
+      <div className="flex flex-wrap gap-4 mb-3">
+        <button
+          type="button"
+          onClick={() => switchSubTab("all")}
+          className={`flex-1 min-w-[150px] py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+            activeSubTab === "all"
+              ? "bg-blue-600 text-white shadow-lg"
+              : "bg-white text-black hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+          }`}
+        >
+          All IFR Holders
+        </button>
+        <button
+          type="button"
+          onClick={() => switchSubTab("surveyed")}
+          className={`flex-1 min-w-[150px] py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+            activeSubTab === "surveyed"
+              ? "bg-blue-600 text-white shadow-lg"
+              : "bg-white text-black hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+          }`}
+        >
+          Surveyed IFR Holders
+        </button>
       </div>
-      <div className="h-[500px] md:h-[500px] w-full min-w-[600px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={documentChartData}
-            margin={{
-              top: 24,
-              right: isMobile ? 8 : 24,
-              left: isMobile ? 8 : 16,
-              bottom: isMobile ? 80 : 60
-            }}
-            barSize={isMobile ? 20 : 40}
-            onClick={handleDocumentBarClick}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="document"
-              angle={isMobile ? -45 : -35}
-              textAnchor="end"
-              interval={0}
-              height={isMobile ? 100 : 80}
-              tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
-            />
-            <YAxis 
-              tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
-            />
-            <Tooltip />
-            <Bar dataKey="has" fill="#10b981" name="उपलब्ध" />
-            <Bar dataKey="not" fill="#f87171" name="उपलब्ध नाही" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      <Modal />
-      {TalukaModal()}
-      {VillageModal()}
-      {FarmersModal()}
-    </div>
-  );
 
-  // Chart component for surveyed farmers only
-  const SurveyedFarmersChart = () => {
-    const handleSurveyedDocumentBarClick = (state: CategoricalChartState) => {
-      if (
-        state &&
-        state.activeLabel &&
-        state.activePayload &&
-        state.activePayload.length > 0
-      ) {
-        const doc = surveyedDocumentChartData.find(
-          (d) => d.document === state.activeLabel
-        );
-        if (doc) openTalukaModal(doc.id);
-      }
-    };
-
-    return (
-      <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full mt-3 md:mt-3 overflow-x-auto">
+      <div className="bg-white p-2 md:p-4 rounded-xl shadow-lg w-full mt-3 overflow-x-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
           <h2 className="text-lg md:text-2xl font-bold text-gray-800">
-            Surveyed IFR Holders Document Availability Across Talukas
+            {activeSubTab === "all"
+              ? "Availability of each documents for IFR holders"
+              : "Surveyed IFR Holders Document Availability Across Talukas"}
           </h2>
-          {/* Overall summary card */}
           <div className="bg-white p-3 rounded-lg shadow-md w-full md:w-auto min-w-[200px]">
             <div className="text-sm text-gray-700 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
-                <p>
-                  Total Surveyed: <strong>{surveyedFarmers.length}</strong>
-                </p>
-              </div>
+              {activeSubTab === "surveyed" && (
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 bg-[#6366f1] rounded-sm" />
+                  <p>
+                    Total Surveyed: <strong>{surveyedFarmers.length}</strong>
+                  </p>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <span className="w-4 h-4 bg-[#10b981] rounded-sm" />
-                <p>
-                  Available
-                </p>
+                <p>Available</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-4 h-4 bg-[#f87171] rounded-sm" />
-                <p>
-                  Not Available
-                </p>
+                <p>Not Available</p>
               </div>
             </div>
           </div>
         </div>
-        <div className="h-[500px] md:h-[500px] w-full min-w-[600px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={surveyedDocumentChartData}
-              margin={{
-                top: 24,
-                right: isMobile ? 8 : 24,
-                left: isMobile ? 8 : 16,
-                bottom: isMobile ? 80 : 60
-              }}
-              barSize={isMobile ? 20 : 40}
-              onClick={handleSurveyedDocumentBarClick}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="document"
-                angle={isMobile ? -45 : -35}
-                textAnchor="end"
-                interval={0}
-                height={isMobile ? 100 : 80}
-                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
-              />
-              <YAxis 
-                tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
-              />
-              <Tooltip />
-              <Bar dataKey="has" fill="#10b981" name="उपलब्ध" />
-              <Bar dataKey="not" fill="#f87171" name="उपलब्ध नाही" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+
+        {isComputing ? (
+          <div className="h-[500px] w-full flex items-center justify-center text-gray-500">
+            Loading document availability…
+          </div>
+        ) : (
+          <div className="h-[500px] md:h-[500px] w-full min-w-[600px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{
+                  top: 24,
+                  right: isMobile ? 8 : 24,
+                  left: isMobile ? 8 : 16,
+                  bottom: isMobile ? 80 : 60,
+                }}
+                barSize={isMobile ? 20 : 40}
+                onClick={handleDocumentBarClick}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="document"
+                  angle={isMobile ? -45 : -35}
+                  textAnchor="end"
+                  interval={0}
+                  height={isMobile ? 100 : 80}
+                  tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }}
+                />
+                <YAxis tick={{ fill: "#4b5563", fontSize: isMobile ? 10 : 12 }} />
+                <Tooltip />
+                <Bar dataKey="has" fill="#10b981" name="उपलब्ध" />
+                <Bar dataKey="not" fill="#f87171" name="उपलब्ध नाही" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
         <Modal />
         {TalukaModal()}
         {VillageModal()}
         {FarmersModal()}
       </div>
-    );
-  };
-
-  const tabs = [
-    {
-      id: "all-farmers",
-      label: "All IFR Holders",
-      content: <AllFarmersChart />
-    },
-    {
-      id: "surveyed-farmers",
-      label: "Surveyed IFR Holders",
-      content: <SurveyedFarmersChart />
-    }
-  ];
-
-  return (
-    <div className="w-full">
-      <Tabviewflex tabs={tabs} defaultTab="all-farmers" />
     </div>
   );
 };
