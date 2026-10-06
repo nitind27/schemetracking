@@ -180,6 +180,7 @@ const Basicvillageofabout: React.FC<Props> = ({ serverData }) => {
 
             <KMLMapdata
               kmlFile={`/api/uploadsvillagekml/${data.kmlfile}`}
+              villageId={data.village_id}
               title="Open KML in new tab"
             />
 

@@ -4,12 +4,44 @@ import React, { useCallback, useMemo } from 'react';
 
 interface KMLMapButtonProps {
 	kmlFile?: string;
+	villageId?: string | number;
 	title?: string;
 	className?: string;
 }
 
+interface WorkMapPoint {
+	lat: number;
+	lng: number;
+	name: string;
+	status: string;
+	area: string;
+}
+
+function toWorkPoints(rows: unknown): WorkMapPoint[] {
+	if (!Array.isArray(rows)) return [];
+	const points: WorkMapPoint[] = [];
+	for (const row of rows) {
+		if (!row || typeof row !== 'object') continue;
+		const rec = row as Record<string, unknown>;
+		const lat = parseFloat(String(rec.latitude ?? '').trim());
+		const lng = parseFloat(String(rec.longitude ?? '').trim());
+		if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+		if (Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
+		if (lat === 0 && lng === 0) continue;
+		points.push({
+			lat,
+			lng,
+			name: String(rec.work_name ?? '').trim() || 'काम',
+			status: String(rec.work_status ?? '').trim(),
+			area: String(rec.total_area ?? '').trim(),
+		});
+	}
+	return points;
+}
+
 const KMLMapdata: React.FC<KMLMapButtonProps> = ({
 	kmlFile,
+	villageId,
 	title = 'View KML on Map',
 	className = '',
 }) => {
@@ -48,8 +80,23 @@ const KMLMapdata: React.FC<KMLMapButtonProps> = ({
 			return;
 		}
 
+		let workMarkers: WorkMapPoint[] = [];
+		if (villageId != null && String(villageId).trim() !== '') {
+			try {
+				const fd = new FormData();
+				fd.append('village_id', String(villageId).trim());
+				const workRes = await fetch('/api/presentworkidwise', { method: 'POST', body: fd });
+				if (workRes.ok) {
+					workMarkers = toWorkPoints(await workRes.json());
+				}
+			} catch (err) {
+				console.error('Failed to fetch work locations:', err);
+			}
+		}
+
 		const kmlJson = JSON.stringify(kmlContent);
 		const filenameJson = JSON.stringify(kmlFile);
+		const workMarkersJson = JSON.stringify(workMarkers).replace(/</g, '\\u003c');
 
 		const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -66,6 +113,10 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .header h1{margin:0;font-size:14px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
 .header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .area-badge{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#86efac;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;display:none}
+.works-badge{background:rgba(220,38,38,0.18);border:1px solid rgba(248,113,113,0.45);color:#fecaca;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;display:none}
+#workList{position:absolute;z-index:1000;left:12px;bottom:12px;display:none;max-width:320px;max-height:40vh;overflow:auto;background:rgba(15,23,42,0.92);color:#fee2e2;border:1px solid rgba(248,113,113,0.45);border-radius:10px;padding:8px}
+#workList button{display:block;width:100%;text-align:left;background:transparent;color:#fecaca;border:0;border-bottom:1px solid rgba(255,255,255,0.08);padding:6px 4px;cursor:pointer;font-size:12px;line-height:1.35}
+#workList button:hover{background:rgba(220,38,38,0.25)}
 .close-btn{background:#ef4444;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500}
 .close-btn:hover{background:#dc2626}
 #loadingOverlay{position:absolute;inset:0;z-index:2000;background:rgba(15,23,42,0.85);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
@@ -82,11 +133,13 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 <div class="header">
   <h1 id="kmlTitle">📍 Loading...</h1>
   <div class="header-right">
+    <div id="worksBadge" class="works-badge">कामे: <span id="worksCount">0</span></div>
     <div id="areaBadge" class="area-badge">Area: <span id="areaValue">0</span> km²</div>
     <button class="close-btn" onclick="window.close()">✕ Close</button>
   </div>
 </div>
 <div id="map"></div>
+<div id="workList"></div>
 <div id="loadingOverlay">
   <div class="spinner"></div>
   <div class="loading-text">Loading KML data...</div>
@@ -99,6 +152,87 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 <script>
 var KML_STRING = ${kmlJson};
 var KML_FILENAME = ${filenameJson};
+var WORK_MARKERS = ${workMarkersJson};
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, function(ch) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+  });
+}
+
+function addWorkMarkers(map, bounds) {
+  if (!WORK_MARKERS || !WORK_MARKERS.length) return bounds;
+  if (!map.getPane('workPins')) {
+    var pane = map.createPane('workPins');
+    pane.style.zIndex = '650';
+    pane.style.pointerEvents = 'auto';
+  }
+  var buckets = {};
+  WORK_MARKERS.forEach(function(point) {
+    var key = point.lat.toFixed(5) + ',' + point.lng.toFixed(5);
+    if (!buckets[key]) buckets[key] = [];
+    buckets[key].push(point);
+  });
+  var group = L.featureGroup();
+  var markerByKey = {};
+  Object.keys(buckets).forEach(function(key) {
+    var list = buckets[key];
+    var first = list[0];
+    var html = list.map(function(point, index) {
+      return '<div style="margin-bottom:8px">'
+        + '<div style="font-weight:600;color:#0f172a">' + (list.length > 1 ? (index + 1) + '. ' : '') + escapeHtml(point.name) + '</div>'
+        + (point.status ? '<div>स्थिती: ' + escapeHtml(point.status) + '</div>' : '')
+        + (point.area ? '<div>क्षेत्र: ' + escapeHtml(point.area) + '</div>' : '')
+        + '<div style="color:#64748b;font-size:12px">' + point.lat + ', ' + point.lng + '</div>'
+        + '</div>';
+    }).join('');
+    var marker = L.circleMarker([first.lat, first.lng], {
+      pane: 'workPins',
+      radius: 11,
+      color: '#ffffff',
+      weight: 3,
+      fillColor: '#dc2626',
+      fillOpacity: 1
+    });
+    marker.bindPopup('<div style="min-width:200px;max-width:280px;font-size:13px;line-height:1.4"><div style="font-weight:700;margin-bottom:6px;color:#dc2626">काम स्थान</div>' + html + '</div>', { maxWidth: 320 });
+    marker.addTo(group);
+    markerByKey[key] = marker;
+  });
+  group.addTo(map);
+  if (group.bringToFront) group.bringToFront();
+  document.getElementById('worksCount').textContent = String(WORK_MARKERS.length);
+  document.getElementById('worksBadge').style.display = 'block';
+
+  var listEl = document.getElementById('workList');
+  listEl.style.display = 'block';
+  listEl.innerHTML = '';
+  WORK_MARKERS.forEach(function(point, index) {
+    var key = point.lat.toFixed(5) + ',' + point.lng.toFixed(5);
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = (index + 1) + '. ' + point.name;
+    button.onclick = function() {
+      var target = markerByKey[key];
+      map.setView([point.lat, point.lng], 18);
+      if (target) target.openPopup();
+    };
+    listEl.appendChild(button);
+  });
+
+  try {
+    if (bounds && bounds.isValid && bounds.isValid()) {
+      var padded = bounds.pad(0.35);
+      WORK_MARKERS.forEach(function(point) {
+        var ll = L.latLng(point.lat, point.lng);
+        if (padded.contains(ll)) bounds.extend(ll);
+      });
+      return bounds;
+    }
+    return group.getBounds();
+  } catch (e) {
+    return bounds || group.getBounds();
+  }
+}
 
 function loadScript(src) {
   return new Promise(function(resolve, reject) {
@@ -149,17 +283,20 @@ function initMap() {
   kmlLayer.on('ready', function() {
     URL.revokeObjectURL(kmlObjectUrl);
     document.getElementById('loadingOverlay').style.display = 'none';
+    var bounds = null;
     try {
-      var bounds = kmlLayer.getBounds();
-      if (bounds && bounds.isValid()) {
-        kmlLayer.addTo(map);
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 18 });
-      } else {
-        showError('KML loaded but contains no map geometry.');
-        return;
-      }
+      kmlLayer.addTo(map);
+      bounds = kmlLayer.getBounds();
+      if (!bounds || !bounds.isValid()) bounds = null;
     } catch(e) {
-      showError('KML loaded but could not render boundaries.');
+      bounds = null;
+    }
+    bounds = addWorkMarkers(map, bounds);
+    map.invalidateSize();
+    if (bounds && bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
+    } else {
+      showError('KML loaded but contains no map geometry.');
       return;
     }
     try {
@@ -192,6 +329,12 @@ function initMap() {
   kmlLayer.on('error', function(e) {
     URL.revokeObjectURL(kmlObjectUrl);
     console.error('KML error:', e);
+    var bounds = addWorkMarkers(map, null);
+    if (bounds && bounds.isValid()) {
+      document.getElementById('loadingOverlay').style.display = 'none';
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 18 });
+      return;
+    }
     showError('KML file could not be parsed.');
   });
 }
