@@ -5,35 +5,52 @@ import React, { useCallback, useMemo } from 'react';
 interface KMLMapButtonProps {
 	kmlFile?: string;
 	villageId?: string | number;
+	villageName?: string;
 	title?: string;
 	className?: string;
 }
 
 interface WorkMapPoint {
-	lat: number;
-	lng: number;
+	lat: number | null;
+	lng: number | null;
 	name: string;
+	village: string;
 	status: string;
 	area: string;
+	kind: 'Pending' | 'Future' | 'In Progress' | 'Completed' | 'Present';
 }
 
-function toWorkPoints(rows: unknown): WorkMapPoint[] {
+function readCoord(value: unknown): number | null {
+	const n = parseFloat(String(value ?? '').trim());
+	return Number.isFinite(n) ? n : null;
+}
+
+function presentKind(status: string): WorkMapPoint['kind'] {
+	if (status === 'Pending') return 'Pending';
+	if (status === 'In Progress') return 'In Progress';
+	if (status === 'Completed') return 'Completed';
+	return 'Present';
+}
+
+function toWorkPoints(rows: unknown, source: 'present' | 'future'): WorkMapPoint[] {
 	if (!Array.isArray(rows)) return [];
 	const points: WorkMapPoint[] = [];
 	for (const row of rows) {
 		if (!row || typeof row !== 'object') continue;
 		const rec = row as Record<string, unknown>;
-		const lat = parseFloat(String(rec.latitude ?? '').trim());
-		const lng = parseFloat(String(rec.longitude ?? '').trim());
-		if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-		if (Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
-		if (lat === 0 && lng === 0) continue;
+		const lat = readCoord(rec.latitude);
+		const lng = readCoord(rec.longitude);
+		const hasCoord = lat != null && lng != null && !(lat === 0 && lng === 0) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+		const status = String(rec.work_status ?? '').trim();
+		if (source === 'present' && !hasCoord) continue;
 		points.push({
-			lat,
-			lng,
+			lat: hasCoord ? lat : null,
+			lng: hasCoord ? lng : null,
 			name: String(rec.work_name ?? '').trim() || 'काम',
-			status: String(rec.work_status ?? '').trim(),
+			village: String(rec.village_name ?? '').trim(),
+			status,
 			area: String(rec.total_area ?? '').trim(),
+			kind: source === 'future' ? 'Future' : presentKind(status),
 		});
 	}
 	return points;
@@ -42,6 +59,7 @@ function toWorkPoints(rows: unknown): WorkMapPoint[] {
 const KMLMapdata: React.FC<KMLMapButtonProps> = ({
 	kmlFile,
 	villageId,
+	villageName,
 	title = 'View KML on Map',
 	className = '',
 }) => {
@@ -82,21 +100,35 @@ const KMLMapdata: React.FC<KMLMapButtonProps> = ({
 
 		let workMarkers: WorkMapPoint[] = [];
 		if (villageId != null && String(villageId).trim() !== '') {
+			const villageKey = String(villageId).trim();
 			try {
 				const fd = new FormData();
-				fd.append('village_id', String(villageId).trim());
+				fd.append('village_id', villageKey);
 				const workRes = await fetch('/api/presentworkidwise', { method: 'POST', body: fd });
 				if (workRes.ok) {
-					workMarkers = toWorkPoints(await workRes.json());
+					workMarkers = toWorkPoints(await workRes.json(), 'present');
 				}
 			} catch (err) {
 				console.error('Failed to fetch work locations:', err);
+			}
+			try {
+				const futureRes = await fetch('/api/futurework', { cache: 'no-store' });
+				if (futureRes.ok) {
+					const futureRows = await futureRes.json();
+					const forVillage = Array.isArray(futureRows)
+						? futureRows.filter((row) => row && String((row as { village_id?: unknown }).village_id) === villageKey)
+						: [];
+					workMarkers = workMarkers.concat(toWorkPoints(forVillage, 'future'));
+				}
+			} catch (err) {
+				console.error('Failed to fetch future works:', err);
 			}
 		}
 
 		const kmlJson = JSON.stringify(kmlContent);
 		const filenameJson = JSON.stringify(kmlFile);
 		const workMarkersJson = JSON.stringify(workMarkers).replace(/</g, '\\u003c');
+		const villageNameJson = JSON.stringify(String(villageName ?? '').trim()).replace(/</g, '\\u003c');
 
 		const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -114,9 +146,19 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .area-badge{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#86efac;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;display:none}
 .works-badge{background:rgba(220,38,38,0.18);border:1px solid rgba(248,113,113,0.45);color:#fecaca;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;display:none}
-#workList{position:absolute;z-index:1000;left:12px;bottom:12px;display:none;max-width:320px;max-height:40vh;overflow:auto;background:rgba(15,23,42,0.92);color:#fee2e2;border:1px solid rgba(248,113,113,0.45);border-radius:10px;padding:8px}
-#workList button{display:block;width:100%;text-align:left;background:transparent;color:#fecaca;border:0;border-bottom:1px solid rgba(255,255,255,0.08);padding:6px 4px;cursor:pointer;font-size:12px;line-height:1.35}
+#workList{position:absolute;z-index:1000;left:12px;bottom:12px;display:none;width:min(380px,calc(100vw - 24px));max-height:46vh;overflow:auto;background:rgba(15,23,42,0.94);color:#fee2e2;border:1px solid rgba(248,113,113,0.45);border-radius:10px;padding:8px}
+.work-head{font-weight:700;color:#fff;font-size:14px;line-height:1.4;padding:2px 4px 8px;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.14);word-break:break-word}
+#workList button{display:flex;align-items:flex-start;gap:8px;width:100%;text-align:left;background:transparent;color:#fecaca;border:0;border-bottom:1px solid rgba(255,255,255,0.08);padding:7px 4px;cursor:pointer;font-size:12px;line-height:1.35}
 #workList button:hover{background:rgba(220,38,38,0.25)}
+#workList .nm{flex:1;min-width:0}
+#workList .vn{display:block;color:#93c5fd;font-size:12px;font-weight:700;margin-bottom:2px;word-break:break-word}
+#workList .wn{display:block;word-break:break-word}
+.tag{flex-shrink:0;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:700;line-height:1.6}
+.tag-pending{background:#fef3c7;color:#92400e}
+.tag-future{background:#dbeafe;color:#1e40af}
+.tag-progress{background:#ffedd5;color:#c2410c}
+.tag-done{background:#dcfce7;color:#166534}
+.tag-present{background:#e2e8f0;color:#334155}
 .close-btn{background:#ef4444;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500}
 .close-btn:hover{background:#dc2626}
 #loadingOverlay{position:absolute;inset:0;z-index:2000;background:rgba(15,23,42,0.85);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
@@ -153,11 +195,36 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 var KML_STRING = ${kmlJson};
 var KML_FILENAME = ${filenameJson};
 var WORK_MARKERS = ${workMarkersJson};
+var VILLAGE_NAME = ${villageNameJson};
+
+function villageOf(point) {
+  return (point && point.village) ? point.village : (VILLAGE_NAME || '');
+}
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, function(ch) {
     return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
   });
+}
+
+function typeLabel(point) {
+  if (point.kind === 'Future') {
+    return point.status ? ('Future · ' + point.status) : 'Future';
+  }
+  return point.status || point.kind || '';
+}
+
+function typeClass(point) {
+  if (point.kind === 'Future') return 'tag-future';
+  if (point.kind === 'Pending') return 'tag-pending';
+  if (point.kind === 'In Progress') return 'tag-progress';
+  if (point.kind === 'Completed') return 'tag-done';
+  return 'tag-present';
+}
+
+function pointKey(point) {
+  if (point.lat == null || point.lng == null) return '';
+  return point.lat.toFixed(5) + ',' + point.lng.toFixed(5);
 }
 
 function addWorkMarkers(map, bounds) {
@@ -169,7 +236,8 @@ function addWorkMarkers(map, bounds) {
   }
   var buckets = {};
   WORK_MARKERS.forEach(function(point) {
-    var key = point.lat.toFixed(5) + ',' + point.lng.toFixed(5);
+    var key = pointKey(point);
+    if (!key) return;
     if (!buckets[key]) buckets[key] = [];
     buckets[key].push(point);
   });
@@ -181,7 +249,8 @@ function addWorkMarkers(map, bounds) {
     var html = list.map(function(point, index) {
       return '<div style="margin-bottom:8px">'
         + '<div style="font-weight:600;color:#0f172a">' + (list.length > 1 ? (index + 1) + '. ' : '') + escapeHtml(point.name) + '</div>'
-        + (point.status ? '<div>स्थिती: ' + escapeHtml(point.status) + '</div>' : '')
+        + (villageOf(point) ? '<div>गाव: ' + escapeHtml(villageOf(point)) + '</div>' : '')
+        + '<div>प्रकार: ' + escapeHtml(typeLabel(point)) + '</div>'
         + (point.area ? '<div>क्षेत्र: ' + escapeHtml(point.area) + '</div>' : '')
         + '<div style="color:#64748b;font-size:12px">' + point.lat + ', ' + point.lng + '</div>'
         + '</div>';
@@ -198,20 +267,33 @@ function addWorkMarkers(map, bounds) {
     marker.addTo(group);
     markerByKey[key] = marker;
   });
-  group.addTo(map);
-  if (group.bringToFront) group.bringToFront();
+  if (group.getLayers().length) {
+    group.addTo(map);
+    if (group.bringToFront) group.bringToFront();
+  }
   document.getElementById('worksCount').textContent = String(WORK_MARKERS.length);
   document.getElementById('worksBadge').style.display = 'block';
 
   var listEl = document.getElementById('workList');
   listEl.style.display = 'block';
   listEl.innerHTML = '';
+  var boxVillage = villageOf(WORK_MARKERS[0]);
+  if (boxVillage) {
+    var head = document.createElement('div');
+    head.className = 'work-head';
+    head.textContent = 'गाव: ' + boxVillage;
+    listEl.appendChild(head);
+  }
   WORK_MARKERS.forEach(function(point, index) {
-    var key = point.lat.toFixed(5) + ',' + point.lng.toFixed(5);
+    var key = pointKey(point);
+    var village = villageOf(point);
     var button = document.createElement('button');
     button.type = 'button';
-    button.textContent = (index + 1) + '. ' + point.name;
+    button.innerHTML = '<span>' + (index + 1) + '.</span><span class="nm">'
+      + (village ? '<span class="vn">' + escapeHtml(village) + '</span>' : '')
+      + '<span class="wn">' + escapeHtml(point.name) + '</span></span><span class="tag ' + typeClass(point) + '">' + escapeHtml(typeLabel(point)) + '</span>';
     button.onclick = function() {
+      if (!key) return;
       var target = markerByKey[key];
       map.setView([point.lat, point.lng], 18);
       if (target) target.openPopup();
@@ -223,12 +305,13 @@ function addWorkMarkers(map, bounds) {
     if (bounds && bounds.isValid && bounds.isValid()) {
       var padded = bounds.pad(0.35);
       WORK_MARKERS.forEach(function(point) {
+        if (point.lat == null || point.lng == null) return;
         var ll = L.latLng(point.lat, point.lng);
         if (padded.contains(ll)) bounds.extend(ll);
       });
       return bounds;
     }
-    return group.getBounds();
+    return group.getLayers().length ? group.getBounds() : bounds;
   } catch (e) {
     return bounds || group.getBounds();
   }
