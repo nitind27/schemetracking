@@ -1546,7 +1546,8 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     );
   };
 
-  // Proposal Management Dashboard Component for category_id = 24
+  // Kept for the previous Section 3(2) screen. The tab now opens the external portal instead.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const ProposalManagementDashboard = () => {
     const [proposals, setProposals] = useState<Proposal[]>([]);
     const [loading, setLoading] = useState(true);
