@@ -16,6 +16,7 @@ interface WorkMapPoint {
 	name: string;
 	village: string;
 	status: string;
+	workType: string;
 	area: string;
 	kind: 'Pending' | 'Future' | 'In Progress' | 'Completed' | 'Present';
 }
@@ -49,6 +50,7 @@ function toWorkPoints(rows: unknown, source: 'present' | 'future'): WorkMapPoint
 			name: String(rec.work_name ?? '').trim() || 'काम',
 			village: String(rec.village_name ?? '').trim(),
 			status,
+			workType: String(rec.type ?? '').trim(),
 			area: String(rec.total_area ?? '').trim(),
 			kind: source === 'future' ? 'Future' : presentKind(status),
 		});
@@ -148,6 +150,7 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .works-badge{background:rgba(220,38,38,0.18);border:1px solid rgba(248,113,113,0.45);color:#fecaca;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;display:none}
 #workList{position:absolute;z-index:1000;left:12px;bottom:12px;display:none;width:min(380px,calc(100vw - 24px));max-height:46vh;overflow:auto;background:rgba(15,23,42,0.94);color:#fee2e2;border:1px solid rgba(248,113,113,0.45);border-radius:10px;padding:8px}
 .work-head{font-weight:700;color:#fff;font-size:14px;line-height:1.4;padding:2px 4px 8px;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.14);word-break:break-word}
+#workList .tags{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
 #workList button{display:flex;align-items:flex-start;gap:8px;width:100%;text-align:left;background:transparent;color:#fecaca;border:0;border-bottom:1px solid rgba(255,255,255,0.08);padding:7px 4px;cursor:pointer;font-size:12px;line-height:1.35}
 #workList button:hover{background:rgba(220,38,38,0.25)}
 #workList .nm{flex:1;min-width:0}
@@ -159,6 +162,7 @@ body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .tag-progress{background:#ffedd5;color:#c2410c}
 .tag-done{background:#dcfce7;color:#166534}
 .tag-present{background:#e2e8f0;color:#334155}
+.tag-type{background:#ede9fe;color:#5b21b6}
 .close-btn{background:#ef4444;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500}
 .close-btn:hover{background:#dc2626}
 #loadingOverlay{position:absolute;inset:0;z-index:2000;background:rgba(15,23,42,0.85);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
@@ -250,6 +254,7 @@ function addWorkMarkers(map, bounds) {
       return '<div style="margin-bottom:8px">'
         + '<div style="font-weight:600;color:#0f172a">' + (list.length > 1 ? (index + 1) + '. ' : '') + escapeHtml(point.name) + '</div>'
         + (villageOf(point) ? '<div>गाव: ' + escapeHtml(villageOf(point)) + '</div>' : '')
+        + (point.workType ? '<div>Work Type: ' + escapeHtml(point.workType) + '</div>' : '')
         + '<div>प्रकार: ' + escapeHtml(typeLabel(point)) + '</div>'
         + (point.area ? '<div>क्षेत्र: ' + escapeHtml(point.area) + '</div>' : '')
         + '<div style="color:#64748b;font-size:12px">' + point.lat + ', ' + point.lng + '</div>'
@@ -291,7 +296,9 @@ function addWorkMarkers(map, bounds) {
     button.type = 'button';
     button.innerHTML = '<span>' + (index + 1) + '.</span><span class="nm">'
       + (village ? '<span class="vn">' + escapeHtml(village) + '</span>' : '')
-      + '<span class="wn">' + escapeHtml(point.name) + '</span></span><span class="tag ' + typeClass(point) + '">' + escapeHtml(typeLabel(point)) + '</span>';
+      + '<span class="wn">' + escapeHtml(point.name) + '</span></span><span class="tags">'
+      + (point.workType ? '<span class="tag tag-type">' + escapeHtml(point.workType) + '</span>' : '')
+      + '<span class="tag ' + typeClass(point) + '">' + escapeHtml(typeLabel(point)) + '</span></span>';
     button.onclick = function() {
       if (!key) return;
       var target = markerByKey[key];

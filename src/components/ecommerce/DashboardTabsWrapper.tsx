@@ -14,10 +14,7 @@ import Loader from "@/common/Loader";
 // import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import DashboardTalukatabview from "@/components/ecommerce/DashboardTalukatabview";
 import { CFREcommer } from "@/components/ecommerce/CFREcommer";
-import Section32Tabs from "@/components/common/Section32Tabs";
 // import Category32Dashboard from "@/components/common/Category32Dashboard";
-import Category48Dashboard from "@/components/common/Category48Dashboard";
-import DCDashboard from "@/components/common/DCDashboard";
 import DLCDashboard from "@/components/common/DLCDashboard";
 import { FarmdersType } from "@/components/farmersdata/farmers";
 import { Schemesdatas } from "@/components/schemesdata/schemes";
@@ -44,6 +41,8 @@ import TodaySurveyComponent from "../common/TodaySurveyComponent";
 // import MainTab from "../common/MainTab";
 import NotificationManagement from "../common/NotificationManagement";
 import TabView from "../common/TabView";
+
+const SECTION_32_URL = "https://vansampada.co.in/section3.2/";
 // import { useRouter } from 'next/navigation';
 
 interface Metrics {
@@ -3456,12 +3455,6 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   // For user_category_id = 32, show Category32Dashboard in Section 3(2)
   // const isCategory32 = categoryId === "32";
   
-  // For user_category_id = 4, show Category32Dashboard in Section 3(2) (similar to category 32)
-  const isCategory4 = categoryId === "4";
-  
-  // For user_category_id = 8, show Category32Dashboard in Section 3(2) (similar to category 32)
-  const isCategory8 = categoryId === "8";
-
   // For District Collector (category_id = 32) - show DC Dashboard
   const isDistrictCollector = categoryId === "32";
   
@@ -3483,7 +3476,8 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     ...(isDistrictCollector ? [{
       id: "dc-dashboard",
       label: "Section 3(2)",
-      content: <div className="flex flex-col h-full"> <DCDashboard /> </div>
+      externalUrl: SECTION_32_URL,
+      content: null
     }] : []),
     // DLC Dashboard tab - only show for DLC (category_id = 35)
     ...(isDLC ? [{
@@ -3494,7 +3488,8 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
     {
       id: "notification",
       label: "Section 3(2)",
-      content: isSection32Only ? <ProposalManagementDashboard /> : (isCategory4 || isCategory8) ? <Category48Dashboard /> : <Section32Tabs />
+      externalUrl: SECTION_32_URL,
+      content: null
     },
     {
       id: "death-ifr-holder",
@@ -3527,14 +3522,9 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
   // Prefer DC Dashboard for District Collector, DLC Dashboard for DLC, 
   // "IFR Dashboard" (main-dashboard) as default, otherwise fall back to the first tab.
   const defaultTabId = 
-    isDistrictCollector ? "dc-dashboard" :
     isDLC ? "dlc-dashboard" :
     tabs.find(tab => tab.id === "main-dashboard")?.id ?? tabs[0]?.id ?? "main-dashboard";
 
-  // When user is category_id = 24, we only show Section 3(2) dashboard content.
-  // In that case, hide the TabView completely and render the content directly.
-  const section32Tab = allTabs.find(tab => tab.id === "notification");
-  
   // When user is category_id = 35 (DLC), we only show DLC Dashboard content.
   // In that case, hide the TabView completely and render the content directly.
   const dlcTab = allTabs.find(tab => tab.id === "dlc-dashboard");
@@ -3544,8 +3534,17 @@ const DashboardTabsWrapper: React.FC<DashboardTabsWrapperProps> = ({ metrics, fa
       {!isSection32Only && <TodaySurveyComponent metrics={metrics} farmersData={farmersData} />}
       {isDLC && dlcTab ? (
         <>{dlcTab.content}</>
-      ) : isSection32Only && section32Tab ? (
-        <>{section32Tab.content}</>
+      ) : isSection32Only ? (
+        <div className="flex min-h-[240px] items-center justify-center rounded-lg border border-gray-200 bg-white p-8">
+          <a
+            href={SECTION_32_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700"
+          >
+            Section 3(2) उघडा
+          </a>
+        </div>
       ) : (
         <TabView tabs={tabs} defaultTab={defaultTabId} />
       )}

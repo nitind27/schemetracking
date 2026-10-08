@@ -7,6 +7,7 @@ interface TabViewProps {
     id: string;
     label: string;
     content: React.ReactNode;
+    externalUrl?: string;
   }[];
   defaultTab?: string;
 }
@@ -30,7 +31,13 @@ const TabView: React.FC<TabViewProps> = ({ tabs, defaultTab }) => {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              if (tab.externalUrl) {
+                window.open(tab.externalUrl, '_blank', 'noopener,noreferrer');
+                return;
+              }
+              setActiveTab(tab.id);
+            }}
             className={`col-span-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
               activeTab === tab.id
                 ? 'bg-blue-600 text-white shadow-lg'
